@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-labelledby="t">
+  <title id="t">grasp: build it, and grasp it</title>
+  <rect width="1280" height="640" fill="#1c1917"/>
+  <g transform="translate(150 200) scale(2.5)">
+    <path d="M44 21 A27 27 0 0 0 44 75" fill="none" stroke="#fafaf9" stroke-width="9" stroke-linecap="round"/>
+    <path d="M55 22 A27 27 0 0 1 72 60" fill="none" stroke="#f59e0b" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="48" cy="48" r="9" fill="#f59e0b"/>
+  </g>
+  <text x="440" y="318" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="112" font-weight="700" fill="#fafaf9">grasp</text>
+  <text x="444" y="388" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="40" fill="#f59e0b">Build it, and grasp it.</text>
+  <text x="444" y="446" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="28" fill="#d6d3d1">An agent skill that works one issue so the team</text>
+  <text x="444" y="484" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="28" fill="#d6d3d1">understands it before and after it is built.</text>
+</svg>
