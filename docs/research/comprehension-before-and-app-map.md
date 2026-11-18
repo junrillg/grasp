@@ -1,0 +1,50 @@
+# Comprehension before the build, and a map of the whole app
+
+Scope: what the earlier note ([2026-11-18-ai-code-comprehension.md](../2026-11-18-ai-code-comprehension.md)) did not cover. Searched 2026-11-18. Secondary sources are marked; check the primary before quoting.
+
+## 1. Before the agent builds
+
+- **Spec first is the common ground; spec kept afterwards is rare.** Spec Kit runs constitution, specify, plan, tasks, implement, with clarify and analyze between ([search summary](https://www.paperclipped.de/en/blog/github-spec-kit-spec-driven-development/)). Kiro writes requirements.md, design.md, tasks.md per spec, with EARS-style requirements ([comparison](https://codemyspec.com/blog/spec-driven-development)). Böckeler splits spec-first (all tools), spec-anchored (few tools) and spec-as-source (Tessl, beta) ([Fowler](https://www.martinfowler.com/articles/exploring-gen-ai/sdd-3-tools.html)).
+- **Specs cost review time.** Böckeler would "rather review code than all these markdown files", called Kiro "a sledgehammer to crack a nut" on a small bug, and saw agents ignore parts of the spec ([Fowler](https://www.martinfowler.com/articles/exploring-gen-ai/sdd-3-tools.html)). So the before page must scale with the card.
+- **Anthropic's own advice is lighter.** Have Claude "interview me until you could write the spec", write it to SPEC.md, then build from a fresh session; SPEC.md becomes the definition of done. Keep CLAUDE.md to what the code can't tell you ([Claude Code best practices](https://code.claude.com/docs/en/best-practices)).
+- **Osmani:** "be ruthlessly explicit about what a change is supposed to do before it's written", but specs won't capture the implicit decisions ([addyosmani.com](https://addyosmani.com/blog/comprehension-debt/)).
+- **Prediction before reveal.** Pretesting/prequestion meta-analysis: g = 0.54 on the pretested material (k = 97), g = 0.45 after publication-bias adjustment, and about zero (g = 0.04) on material not pretested ([St. Hilaire 2024](https://link.springer.com/article/10.3758/s13423-023-02353-8)). Generation effect about d = 0.40, from a secondary source citing Bertsch 2007 ([summary](https://www.structural-learning.com/post/generation-effect-active-learning)). Implication: predict about the specific parts you will later be asked about; it won't make you generally smarter about the app.
+- **Cognitive forcing (answer first, then see the AI) reduces overreliance but is disliked** ([Buçinca 2021](https://arxiv.org/pdf/2102.09692)). On a complex task it did not help, probably because the effort was too high ([arXiv 2409.08937](https://arxiv.org/pdf/2409.08937)). A coding design-space paper lists "Trace and Predict" and "Explain before Usage" techniques but I found no result for predicting a diff ([arXiv 2410.08922](https://arxiv.org/pdf/2410.08922)). **No study of predict-then-see-diff exists that I found.** Treat as untested; keep it to 1-2 questions and make it skippable for small cards.
+- One source warns forcing functions can teach experienced reviewers to type filler ([arXiv 2608.13867](https://arxiv.org/pdf/2608.13867)). Guard: check the prediction against the diff, not that it exists.
+
+## 2. Whole-app understanding
+
+- **matklad ARCHITECTURE.md**: for 10k-200k lines, short, a codemap ("a map of a country, not an atlas of maps of its states"), name files instead of linking them, state invariants (especially absences), name layer boundaries, and "don't try to keep it in sync", just revisit a couple of times a year ([matklad](https://matklad.github.io/2021/02/06/ARCHITECTURE.md.html)).
+- **Hosted auto wikis.** Google Code Wiki (public preview Nov 2025) regenerates after changes and links sections to code; free for public repos only ([Google blog](https://developers.googleblog.com/introducing-code-wiki-accelerating-your-code-understanding/)). DeepWiki regenerates on its own schedule; a competitor's test found wikis 29-33 commits behind HEAD and one user reported 846 commits stale, with no commit shown by the status API ([repowise, competitor](https://repowise.dev/blog/comparisons/repowise-vs-deepwiki); [issue #636](https://github.com/pjt222/agent-almanac/issues/636)). Both are for public repos; neither fits private code.
+- **Code-coupled docs (Swimm).** Docs tied to snippets and symbols; Auto-sync checks every PR against the diff, updates what it can, and asks a person on breaking changes ([Swimm](https://swimm.io/blog/keeping-internal-docs-up-to-date-always-with-the-swimm-github-app)). Vendor source; the mechanism, not the claims, is the useful part.
+- **Incremental beats rebuild, on the authors' own benchmarks.** RPG-Encoder: incremental updates matched full rebuild on accuracy (Acc@5 81.9% vs 80.3%) at 633K tokens versus over 14.7M ([arXiv 2602.02084](https://arxiv.org/pdf/2602.02084)). RepoDoc: 97.0% update recall incremental vs 88.0% full ([arXiv 2604.26523](https://arxiv.org/html/2604.26523v1)). A hybrid patches per change and fully rewrites every so often to keep the narrative coherent ([arXiv 2606.09877](https://arxiv.org/pdf/2606.09877)).
+- **Beware agent context files.** ETH: LLM-generated AGENTS.md files cut success in 5 of 8 settings and added about 20% cost; human-written ones gained 2.4% (not significant). Generated files mostly duplicated existing docs ([arXiv 2602.11988](https://arxiv.org/abs/2602.11988)). Python issue tasks only. This is about files agents read, not pages humans read, but it argues for keeping the map short and separate from CLAUDE.md.
+- **Shape.** I found no evidence ranking C4 vs request-lifecycle vs glossary for human learning. The sources agree on coarse and stable: codemap, boundaries, invariants. Cheapest per change: a one-line patch to a codemap row or a glossary term; most expensive: any diagram below container level.
+
+## 3. Comprehension and cognitive debt, 2025-2026
+
+- **Anthropic RCT** (Shen and Tamkin, Jan 2026): 52 mostly junior engineers learning Trio. AI group 4.15 points lower on a 27-point quiz (about 17%), d = 0.738, p = 0.010; speed gain not significant ([arXiv](https://arxiv.org/html/2601.20245v1)).
+- **Patterns that kept learning**: Conceptual Inquiry (n=7, only asked conceptual questions, fixed own errors, nearly as fast as delegation), Hybrid Code-Explanation (n=3, asked for code plus explanation), Generation-Then-Comprehension (n=2, generate then ask follow-ups). High group 65%+, low group under 40% (Delegation, Progressive Reliance, Iterative AI Debugging, n=4 each) ([arXiv](https://arxiv.org/html/2601.20245v1)). Per-pattern means vary between secondary sources; patterns are not causal and subgroups are tiny. Chat sidebar, not an agent; Anthropic expects agentic effects to be stronger ([Anthropic](https://www.anthropic.com/research/AI-assistance-coding-skills)).
+- **MIT "Your Brain on ChatGPT"** (preprint, n=54, essays): 15 of 18 LLM users could not quote their own essay in session 1 versus 2 of 18 in other groups; AI-after-own-draft kept more neural engagement than the reverse order. Criticised for sample size and EEG analysis; not about code ([summary](https://the-decoder.com/mit-study-shows-cognitive-debt-through-chatgpt-heres-what-it-means-in-real-world-practice/); [critique](https://arxiv.org/pdf/2601.00856)). Useful hint only: think first, then use the AI.
+- **Storey's triple debt**: technical debt in code, cognitive debt in people, intent debt in artifacts (missing goals and rationale). Missing intent causes cognitive debt ([arXiv 2603.22106](https://arxiv.org/pdf/2603.22106); [ACM Queue](https://queue.acm.org/detail.cfm?id=3807966)). That is the case for the before page: it is the intent artifact.
+- **Osmani**: reviewed is not understood; clean diffs and green tests hide shrinking comprehension ([O'Reilly](https://www.oreilly.com/radar/comprehension-debt-the-hidden-cost-of-ai-generated-code/)). His numbers are the Anthropic ones. METR and Microsoft/CMU are already in the earlier note.
+
+## 4. Keeping generation cheap
+
+- Cache reads cost about 10% of base input (some newer models 5%), 5-minute writes 1.25x; Batch API halves price and stacks with caching ([third-party summary](https://tokenmix.ai/blog/anthropic-api-pricing); verify on Anthropic's pricing page).
+- Incremental patching is the large lever (see section 2: 633K vs 14.7M tokens).
+- Subagents keep verbose reading out of the main context; Haiku/Sonnet for summaries is already in the earlier note.
+- Swimm's model works: map the diff to the docs that reference the changed symbols, touch only those.
+
+## Recommendation
+
+1. **Before page (5 min, written by the agent from the card, answered by the developer, 150-250 words):** goal and non-goals, the 3 or so places the change will touch (guessed from the code, not the diff), and the one risk.
+2. Add to it two questions the developer answers before the build: "which files change?" and "what could break?". One line each, free text. Skippable on one-file cards.
+3. The before page doubles as the spec the agent builds from (fresh session, per Anthropic), so no separate SPEC file.
+4. **After page** (earlier note's 9 sections) opens with "Your guess vs what happened": 2 lines, compared against the diff by the agent.
+5. After page keeps the explain-back; add one "ask-first" log line: the conceptual question the developer asked the agent (the pattern that preserved learning).
+6. **App map page (one page, under about 1,000 words):** bird's-eye problem statement, container diagram, codemap (module name, one line, where), invariants and boundaries, glossary, and one traced request lifecycle.
+7. Name files, no deep links, no diagrams below container level, so it doesn't rot.
+8. **Maintenance:** each card's PR checks the diff against the map's rows and glossary and patches only the touched rows; a full re-read monthly, not per card.
+9. Keep it out of CLAUDE.md. Link it, and do not LLM-generate a bulk map to load every session (ETH result).
+10. Measure: guess hit rate and explain-back accuracy a week later. If guesses never improve, shrink cards, not pages.
