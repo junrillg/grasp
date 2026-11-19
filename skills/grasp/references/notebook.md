@@ -65,6 +65,8 @@ parent and children on first run and save their IDs in `.grasp.md`. Edit with ta
 
 **Off**: write nothing; still ask the prediction and explain-back questions in chat.
 
+`review` and `resolve` also write to the issue page; see [review.md](review.md).
+
 One issue, one page. A later issue on the same feature patches that page and adds its link;
 never a second page. Bugs get no page of their own: add one line under "Issues met" on the page
 of the feature they touched, or skip when there is none.

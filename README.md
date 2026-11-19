@@ -60,6 +60,7 @@ BY DEFAULT
 | **Builds test-first** | Branch per project convention, failing test first, smallest change, the project's own checks. Asks before any push, pull request or tracker write. |
 | **Verifies with evidence** | "Verified" means a check ran green in this run and its result is quoted. `verify` proves an existing fix without touching code. |
 | **Leaves a learning page** | One short page per issue in the repository's root `docs/` (Obsidian-compatible Markdown, listed in the docs router), or in Notion on request: a diagram, the plan, what was built, what went wrong, how to check, and an explain-back question with the answer folded away. |
+| **Reviews and resolves pull requests** | `review PR` checks a pull request against its issue and the project's written rules and reports verified findings; `resolve PR` works the review threads in one new commit. Both update the issue page so it says what the code does now. |
 | **Keeps an app map** | One page that explains the whole app, patched only when an issue changes how it's put together. |
 
 ## Quick start
@@ -99,6 +100,8 @@ More examples:
 /grasp #42                      full run on a GitHub issue
 /grasp "add CSV export to the report page" --notebook off
 /grasp verify PROJ-123          prove an existing fix works, fill the after page
+/grasp review 42                review a pull request, update its issue page
+/grasp resolve 42               work the review threads on your pull request
 /grasp map                      map the whole app
 ```
 

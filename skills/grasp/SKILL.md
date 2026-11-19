@@ -1,7 +1,7 @@
 ---
 name: grasp
-description: Works one issue from any tracker (Jira, GitHub Issues, Linear, GitLab, or plain text) so the team understands it before and after it is built. Understand first: restate the ask, ask one question at a time, lay out two or three approaches and wait for a pick. Then build test-first, verify with fresh evidence, and write a short visual learning page (Markdown in the repository's root docs/ by default, Obsidian-compatible; Notion on request) with a "before" half, an "after" half and an explain-back question, plus a living map of the whole app. Use when given an issue key, URL or description to build, fix or investigate, when asked to verify that an issue is really fixed, or to map how an app works.
-argument-hint: "ISSUE [--plan] [--notebook markdown|notion|off] [--no-comment] | verify ISSUE|PR | map | help"
+description: Works one issue from any tracker (Jira, GitHub Issues, Linear, GitLab, or plain text) so the team understands it before and after it is built. Understand first: restate the ask, ask one question at a time, lay out two or three approaches and wait for a pick. Then build test-first, verify with fresh evidence, and write a short visual learning page (Markdown in the repository's root docs/ by default, Obsidian-compatible; Notion on request) with a "before" half, an "after" half and an explain-back question, plus a living map of the whole app. Use when given an issue key, URL or description to build, fix or investigate, when asked to verify that an issue is really fixed, to review a pull request or resolve its review comments (and keep the issue page current), or to map how an app works.
+argument-hint: "ISSUE [--plan] [--notebook markdown|notion|off] [--no-comment] | verify ISSUE|PR | review PR [--post] | resolve PR | map | help"
 ---
 
 # grasp
@@ -19,10 +19,13 @@ and how it fits the whole app.
 | `--notebook` | `markdown`, `notion`, `off` | no | the `.grasp.md` setting, else `markdown` | Where the learning page goes. `markdown` writes `docs/how-it-works/` at the repository root (the folder is confirmed with you on the first run), in Markdown that renders in Obsidian, GitHub and static doc sites. `notion` needs a Notion tool. |
 | `--no-comment` | flag | no | off | Write nothing back to the tracker. |
 | `verify` | subcommand | no | none | Verify an existing fix for `ISSUE` or a pull request, then fill the "after" half. No code changes. |
+| `review` | subcommand | no | none | Review a pull request against its issue and the project's written standard, report verified findings, write or update the issue page. Read only on the host unless `--post`. |
+| `--post` | flag, with `review` | no | off | Offer to post the review comments, after you approve the exact text. |
+| `resolve` | subcommand | no | none | Work the unresolved review threads on a pull request: verify, fix, one new commit, reply and resolve after approval, update the issue page. |
 | `map` | subcommand | no | none | Build or refresh the app map page only. |
 | `help` | first word | no | none | Also `--help`, `-h`. Print usage and stop. |
 
-No issue and no subcommand: ask for one and stop.
+No issue and no subcommand: ask for one and stop. `review` and `resolve` take a pull request number or URL.
 
 ## Help: handle before anything else
 
@@ -35,6 +38,8 @@ grasp: work one issue so the team understands it before and after it is built.
 USAGE
   /grasp ISSUE [--plan] [--notebook markdown|notion|off] [--no-comment]
   /grasp verify ISSUE|PR [--notebook ...] [--no-comment]
+  /grasp review PR [--post]
+  /grasp resolve PR
   /grasp map
   /grasp help
 
@@ -52,6 +57,11 @@ FLAGS
 
 SUBCOMMANDS
   verify ISSUE|PR   prove an existing fix works with fresh evidence; fill the "after" half.
+  review PR         review against the issue and the project's standard, verified findings
+                    with file and line, then write or update the issue page. Posts only
+                    with --post, after you approve the exact text.
+  resolve PR        verify each unresolved review thread, fix what is right, one new commit,
+                    reply and resolve after you approve, update the issue page.
   map               build or refresh the one-page map of the whole app.
 
 BY DEFAULT
@@ -71,6 +81,8 @@ EXAMPLES
   /grasp #42                      GitHub issue, full run
   /grasp "add CSV export to the report page" --notebook off
   /grasp verify PROJ-123          is it really fixed?
+  /grasp review 42                review pull request 42, report only, update the page
+  /grasp resolve 42               work the review threads on your pull request 42
   /grasp map                      first time in a repo: map the whole app
 
 IT WILL ASK YOU
@@ -88,6 +100,7 @@ REFERENCES
   references/build.md        branch, test first, checks, commit, pull request
   references/verify.md       evidence rules and the gate
   references/notebook.md     page shapes, app map, token budget
+  references/review.md       review and resolve: pull requests, and the page they update
   templates/issue-page.md    the learning page, both halves
   templates/app-map.md       the app map page
   templates/grasp-config.md  the .grasp.md project settings file
@@ -186,6 +199,15 @@ Run steps 1, 5, 6 and 7 only. Find the pull request from the issue (branch name 
 the key) or take it as given. Never edit, commit, push or merge. If there is no page for the
 issue yet, write the "after" half alone.
 
+## `review` and `resolve` subcommands
+
+Follow [references/review.md](references/review.md). `review` reads the pull request, its issue
+and the project's written standard, reviews with parallel read-only subagents, verifies every
+finding against the code itself, reports, and writes or updates the issue page with what the
+pull request implements. It posts nothing unless `--post` and a yes. `resolve` fetches every
+unresolved thread verbatim, verifies each claim, fixes what is right in one new commit, updates
+the issue page to match the fixes, and pushes, replies and resolves only after a yes.
+
 ## `map` subcommand
 
 Build or refresh the app map as "App map" in [references/notebook.md](references/notebook.md)
@@ -198,3 +220,4 @@ describes, then stop.
 - [references/build.md](references/build.md): step 4.
 - [references/verify.md](references/verify.md): step 5 and `verify`.
 - [references/notebook.md](references/notebook.md): steps 3, 6, 7 and `map`.
+- [references/review.md](references/review.md): `review` and `resolve`.

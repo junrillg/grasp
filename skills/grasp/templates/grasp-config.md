@@ -15,6 +15,7 @@
 - target: {markdown | notion | off}
 - markdown folder: {docs/how-it-works, confirmed with the user on the first run}
 - docs router: {docs/README.md, or none}
+- docs repo: {same | path of a separate docs repository, e.g. a workspace wrapper}
 - notion parent: {page id, only for target notion}
 - notion features: {page id, only for target notion}
 - notion app map: {page id, only for target notion}
