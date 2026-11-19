@@ -1,7 +1,7 @@
 ---
 name: grasp
-description: Works one issue from any tracker (Jira, GitHub Issues, Linear, GitLab, or plain text) so the team understands it before and after it is built. Understand first: restate the ask, ask one question at a time, lay out two or three approaches and wait for a pick. Then build test-first, verify with fresh evidence, and write a short visual learning page (Notion by default, Markdown fallback) with a "before" half, an "after" half and an explain-back question, plus a living map of the whole app. Use when given an issue key, URL or description to build, fix or investigate, when asked to verify that an issue is really fixed, or to map how an app works.
-argument-hint: "ISSUE [--plan] [--notebook notion|markdown|off] [--no-comment] | verify ISSUE|PR | map | help"
+description: Works one issue from any tracker (Jira, GitHub Issues, Linear, GitLab, or plain text) so the team understands it before and after it is built. Understand first: restate the ask, ask one question at a time, lay out two or three approaches and wait for a pick. Then build test-first, verify with fresh evidence, and write a short visual learning page (Markdown in the repository's root docs/ by default, Obsidian-compatible; Notion on request) with a "before" half, an "after" half and an explain-back question, plus a living map of the whole app. Use when given an issue key, URL or description to build, fix or investigate, when asked to verify that an issue is really fixed, or to map how an app works.
+argument-hint: "ISSUE [--plan] [--notebook markdown|notion|off] [--no-comment] | verify ISSUE|PR | map | help"
 ---
 
 # grasp
@@ -16,7 +16,7 @@ and how it fits the whole app.
 | -------- | ---- | -------- | ------- | ------- |
 | `ISSUE` | key, URL, file path or quoted text | yes, except for `map` and `help` | none | `PROJ-123`, `#42`, `owner/repo#42`, `LIN-7`, a tracker URL, a `.md` file, or `"text"` |
 | `--plan` | flag | no | off | Stop after the approach is picked and the "before" page is written. No code. |
-| `--notebook` | `notion`, `markdown`, `off` | no | `notion` if a Notion tool is connected, else `markdown` | Where the learning page goes. `markdown` writes `docs/grasp/` in the repository. |
+| `--notebook` | `markdown`, `notion`, `off` | no | the `.grasp.md` setting, else `markdown` | Where the learning page goes. `markdown` writes `docs/how-it-works/` at the repository root (the folder is confirmed with you on the first run), in Markdown that renders in Obsidian, GitHub and static doc sites. `notion` needs a Notion tool. |
 | `--no-comment` | flag | no | off | Write nothing back to the tracker. |
 | `verify` | subcommand | no | none | Verify an existing fix for `ISSUE` or a pull request, then fill the "after" half. No code changes. |
 | `map` | subcommand | no | none | Build or refresh the app map page only. |
@@ -33,7 +33,7 @@ read, no network call, no subagent, no write.
 grasp: work one issue so the team understands it before and after it is built.
 
 USAGE
-  /grasp ISSUE [--plan] [--notebook notion|markdown|off] [--no-comment]
+  /grasp ISSUE [--plan] [--notebook markdown|notion|off] [--no-comment]
   /grasp verify ISSUE|PR [--notebook ...] [--no-comment]
   /grasp map
   /grasp help
@@ -44,8 +44,10 @@ ISSUE
 
 FLAGS
   --plan            off. Understand only: restate, approaches, pick, "before" page. No code.
-  --notebook VALUE  notion (default when a Notion tool is connected), markdown
-                    (docs/grasp/ in the repo), or off.
+  --notebook VALUE  markdown (default): docs/how-it-works/ at the repo root,
+                    Obsidian-compatible, listed in the docs router. The folder
+                    is confirmed with you on the first run.
+                    notion: a Notion space (needs a Notion tool). off: no page.
   --no-comment      off. Nothing is written back to the tracker.
 
 SUBCOMMANDS
@@ -67,7 +69,7 @@ BY DEFAULT
 EXAMPLES
   /grasp PROJ-123 --plan          safe first run: understand and plan, no code, no writes
   /grasp #42                      GitHub issue, full run
-  /grasp "add CSV export to the report page" --notebook markdown
+  /grasp "add CSV export to the report page" --notebook off
   /grasp verify PROJ-123          is it really fixed?
   /grasp map                      first time in a repo: map the whole app
 
@@ -77,7 +79,8 @@ IT WILL ASK YOU
   - which approach to take (no code before you pick)
   - before a branch reset, a push, opening a pull request, any tracker write (exact text shown)
   - a prediction question before the build and an explain-back question after (never blocking)
-  - first run in a repo only: tracker, notebook location, check commands (saved to .grasp.md)
+  - first run in a repo only: tracker, check commands, and to confirm where the docs go
+    (default docs/how-it-works/ at the repo root), all saved to .grasp.md
 
 REFERENCES
   references/trackers.md     reading and writing each tracker
@@ -114,7 +117,10 @@ REFERENCES
 Look for `.grasp.md` at the repository root, then a "grasp" section in `CLAUDE.md` or
 `AGENTS.md`. If neither exists, detect what you can (git remote, tracker tools connected,
 `package.json` / `pyproject.toml` / `Makefile` scripts), then ask only for what you could not
-detect, one question at a time. Write `.grasp.md` from
+detect, one question at a time. Always confirm the docs location, even when it was detected:
+propose `docs/how-it-works/` at the repository root (or the folder an existing `docs/` router
+already uses for this kind of page), show the files the first page will create, and wait for a
+yes or another path. Write `.grasp.md` from
 [templates/grasp-config.md](templates/grasp-config.md) and tell the user to commit it.
 
 ## Workflow
@@ -159,9 +165,9 @@ failed gate is reported plainly and nothing is drafted as passing.
 ### 6. After page
 
 Fill the "after" half of the same page: what was built, plan vs actual, issues met, how to
-check, and the explain-back question with its answer in a collapsed toggle. Add or update the
-row in the Features table. Then ask the user the explain-back question. Put their answer under
-it on the page. A vague or wrong answer means the code is not understood yet: point them to the
+check, and the explain-back question with its answer folded away (`<details>` in Markdown, a
+toggle in Notion). Add or update the row in the Features table, and the docs router row for a
+new page. Then ask the user the explain-back question. Put their answer under it on the page. A vague or wrong answer means the code is not understood yet: point them to the
 section that answers it.
 
 ### 7. Close out
@@ -172,7 +178,7 @@ section that answers it.
 - Unless `--no-comment`, draft one short tracker comment (verdict first, link to the pull
   request, what to re-test), show it, and post only on yes.
 - Report: what the user can do now, what remains, the pull request and checks with results,
-  the page link, and anything blocked with what unblocks it.
+  the page path or link, and anything blocked with what unblocks it.
 
 ## `verify` subcommand
 

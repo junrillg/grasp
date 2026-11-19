@@ -6,7 +6,7 @@ true to say rather than padding it.
 
 ---
 
-{emoji} **{status: planned | building | built | blocked}** · [issue]({url}) · [pull request]({pr url or "not yet"})
+Status: {planned | building | built | verified | blocked} · [issue]({url}) · [pull request]({pr url or "not yet"})
 
 ## Before
 
@@ -71,17 +71,23 @@ lines, control result, behaviour seen} on `{commit}`
 1. {a "why", "what breaks if" or "trace this request" question}
    - Your answer: {filled after they reply}
 
-<toggle>Model answer
+<details>
+<summary>Model answer</summary>
+
 {2-4 lines}
-</toggle>
+
+</details>
 
 2. {optional second question}
 
-<toggle>Model answer
+<details>
+<summary>Model answer</summary>
+
 {2-4 lines}
-</toggle>
+
+</details>
 
 ---
 
-In Markdown notebooks use `<details><summary>Model answer</summary>...</details>` instead of
-`<toggle>`.
+Keep the blank lines inside `<details>`: without them Obsidian and GitHub show the answer's
+Markdown as raw text. In a Notion notebook use a toggle block instead.

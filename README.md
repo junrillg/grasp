@@ -59,7 +59,7 @@ BY DEFAULT
 | **Any tracker** | Jira, GitHub Issues, Linear, GitLab, a `.md` file or plain quoted text, all read through one intake contract. |
 | **Builds test-first** | Branch per project convention, failing test first, smallest change, the project's own checks. Asks before any push, pull request or tracker write. |
 | **Verifies with evidence** | "Verified" means a check ran green in this run and its result is quoted. `verify` proves an existing fix without touching code. |
-| **Leaves a learning page** | One short page per issue in Notion, or Markdown in `docs/grasp/`: a diagram, the plan, what was built, what went wrong, how to check, and an explain-back question with the answer folded away. |
+| **Leaves a learning page** | One short page per issue in the repository's root `docs/` (Obsidian-compatible Markdown, listed in the docs router), or in Notion on request: a diagram, the plan, what was built, what went wrong, how to check, and an explain-back question with the answer folded away. |
 | **Keeps an app map** | One page that explains the whole app, patched only when an issue changes how it's put together. |
 
 ## Quick start
@@ -97,14 +97,16 @@ More examples:
 ```
 /grasp help
 /grasp #42                      full run on a GitHub issue
-/grasp "add CSV export to the report page" --notebook markdown
+/grasp "add CSV export to the report page" --notebook off
 /grasp verify PROJ-123          prove an existing fix works, fill the after page
 /grasp map                      map the whole app
 ```
 
 **Trackers and notebook.** Connect whatever you use: `gh` for GitHub, the Atlassian MCP server
-for Jira, the Linear MCP server, `glab` for GitLab, or a project's own wrapper script. Connect
-the Notion MCP server for Notion pages; without it, pages go to `docs/grasp/`. The first run in
+for Jira, the Linear MCP server, `glab` for GitLab, or a project's own wrapper script. Pages go to
+`docs/how-it-works/` at the repository root by default, in Markdown that opens as an Obsidian
+vault and renders on GitHub; the first run confirms that folder with you. Pass
+`--notebook notion` (with the Notion MCP server connected) to use Notion instead. The first run in
 a repository asks what it can't detect and saves `.grasp.md`.
 
 ## How it is built

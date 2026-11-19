@@ -17,15 +17,51 @@ One space per project, set in `.grasp.md`:
   Glossary                       one line per domain word
 ```
 
-**Notion** (default when a Notion tool is connected): create the parent and children on first
-run and save their IDs in `.grasp.md`. Edit with targeted updates (`update_content` or
-equivalent); never replace a whole page. Collapsed answers use Notion's `<toggle>`. Mermaid goes
-in a ```mermaid code block, which Notion renders.
+**Markdown** (default): the layout lives in the repository's root `docs/` folder, so the pages
+travel with the code, show up in code review, and open as an Obsidian vault (`docs/` is the
+vault root) as well as on GitHub and in a static doc site:
 
-**Markdown** (`--notebook markdown`, or no Notion tool): the same layout under `docs/grasp/` in
-the repository: `README.md` (the parent), `app-map.md`, `features.md` (the table),
-`issues/KEY-short-name.md`, `decisions.md`, `glossary.md`. Collapsed answers use
-`<details><summary>`.
+```
+docs/
+  README.md                      the docs router; one row per page below
+  how-it-works/
+    README.md                    the parent: what each page is, in reading order
+    app-map.md
+    decisions.md
+    glossary.md
+    features/
+      README.md                  the Features table
+      KEY-short-name.md          one page per issue
+      assets/                    images for the issue pages, KEY-what.png
+```
+
+The folder is the one confirmed with the user at setup and saved in `.grasp.md`; never write
+somewhere else without asking. If `docs/` already has its own layout or router, fit into it and
+say where. **The router:** a project's `docs/README.md` is how people and agents find a page.
+When it exists, add one row per new page (a question in the left column, the link in the
+right). When it does not, create it on the first write with the pages above, after asking.
+
+**Markdown that renders everywhere.** Obsidian, GitHub and static sites (VitePress, MkDocs)
+share only plain Markdown, so the pages use only that:
+
+- Standard relative links with the `.md` extension, `[App map](../app-map.md)`. Never
+  `[[wikilinks]]`, `![[embeds]]`, block refs, `==highlight==` or `%%comments%%`.
+- Diagrams as ```mermaid fences. Quote labels that hold `( ) : / [ ]`. Validate each one (a
+  Mermaid validator tool if connected, otherwise the project's doc build) before saying done.
+- Images in an `assets/` folder beside the page, linked `![what it shows](assets/KEY-what.png)`.
+  Never hotlink an image from a tracker, Notion or a signed URL: those links expire.
+- Notes as GitHub alerts (`> [!NOTE]`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION`); Obsidian shows
+  them as callouts.
+- Folded answers as `<details><summary>Model answer</summary>`, with a blank line after
+  `</summary>` and before `</details>` so the Markdown inside renders.
+- Status as a word (`Status: built`), not a colour. No front matter unless the doc site needs
+  it. Lowercase file names joined with `-`.
+- If the repository ships a doc site build, run it after writing: it catches broken links.
+
+**Notion** (`--notebook notion`, needs a Notion tool): the same layout as pages. Create the
+parent and children on first run and save their IDs in `.grasp.md`. Edit with targeted updates
+(`update_content` or equivalent); never replace a whole page. Folded answers use Notion's
+`<toggle>`. Mermaid goes in a ```mermaid code block, which Notion renders.
 
 **Off**: write nothing; still ask the prediction and explain-back questions in chat.
 
@@ -55,7 +91,8 @@ Rules for every page:
 One image only when the issue brings a new domain idea that a flowchart cannot show (about one
 issue in five). Generate it with whatever image tool is available (for example `codex exec` with
 image generation), read the PNG before uploading, regenerate once if the text is garbled or the
-idea wrong, otherwise go without. Never decorative images.
+idea wrong, otherwise go without. Save it to the page's `assets/` folder (Markdown) before
+linking it. Never decorative images.
 
 ## App map
 
@@ -68,14 +105,14 @@ codemap (names, not links), one traced request, invariants and boundaries, and t
 
 Keep it current cheaply: step 7 patches only the rows the issue touched (a new module, service,
 data store, endpoint family or path step). Refresh in full with `/grasp map` when it feels
-stale, about monthly. The app map lives in the notebook only: never paste it into `CLAUDE.md` or
+stale, about monthly. The app map lives in the notebook (in `docs/` for Markdown) only: never paste it into `CLAUDE.md` or
 `AGENTS.md`, because a long generated context file loaded into every session costs tokens and
 has been measured to lower agent success.
 
 ## Token budget
 
 - **One subagent per page write**: Sonnet for a new page or the app map, Haiku for a patch. The
-  main thread keeps only the page link. For a small change whose context the main thread already
+  main thread keeps only the page path or link. For a small change whose context the main thread already
   holds (a diff of a few files), write the page inline: a subagent would cost more to brief.
 - **Narrow input**: the issue note, the picked approach, `git diff --stat` and the diff of
   changed source files (not lock files, not generated files), the pull request body, the verify
@@ -85,8 +122,8 @@ has been measured to lower agent success.
 - **Skip** the after half for a diff under about 20 changed lines that adds no behaviour; add one
   line to the Features table instead.
 - **Load references per step**: read a reference file only when its step starts.
-- **Fetch once to check**: after writing, fetch the page once and confirm the title, status line,
-  diagram, toggles and the Features row are there.
+- **Check once**: after writing, read the page once (fetch it for Notion) and confirm the title,
+  status line, diagram, folded answers, any image and the Features row are there.
 
 ## Explain-back
 
