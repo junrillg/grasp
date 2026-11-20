@@ -210,4 +210,79 @@ test_refresh_one_skill() {
   assert_eq 1 "$(grep -c 'b=0' "$p/.claude/skills/crlf/SKILL.md")" "other skill left alone"
 }
 
+# ---- check-link ----
+
+cl() { GRASP_CURL="$FIX/fake-curl" FAKE_CURL_CASE=$1 "$TOOLS" check-link "$2"; }
+
+test_youtube_ok_prints_title_channel() {
+  local log out
+  log=$(mktemp)
+  out=$(FAKE_CURL_LOG=$log cl yt-ok "https://www.youtube.com/watch?v=abcdefghijk")
+  assert_eq $'ok\tOAuth 2.0 explained\tTech Channel' "$out" "title and channel printed"
+  assert_contains "$(cat "$log")" "https://www.youtube.com/oembed?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3Dabcdefghijk&format=json" "oEmbed URL encoded"
+  assert_contains "$(cat "$log")" "grasp-link-check" "generic user agent"
+  assert_contains "$(cat "$log")" "10" "max time passed"
+}
+
+test_youtube_title_with_escapes() {
+  local out
+  out=$(cl yt-escapes "https://youtu.be/abcdefghijk")
+  assert_eq $'ok\tHe said "hi" é a/b \\ ok\tCafé \U0001F600 TV' "$out" "escapes decoded to UTF-8"
+}
+
+test_youtube_400_fails() {
+  local out rc=0
+  out=$(cl yt-400 "https://www.youtube.com/watch?v=aaaaaaaaaaa") || rc=$?
+  assert_eq 1 "$rc" "exit 1"
+  assert_eq "fail 400" "$out" "status reported"
+}
+
+test_linkedin_redirect_prints_final_url() {
+  local log out
+  log=$(mktemp)
+  out=$(FAKE_CURL_LOG=$log cl li-redirect "https://www.linkedin.com/learning/oauth-2-0-essentials-2")
+  assert_eq $'ok\thttps://www.linkedin.com/learning/oauth-2-0-essentials' "$out" "final URL printed"
+  assert_contains "$(cat "$log")" "-L" "follows redirects"
+}
+
+test_linkedin_404_fails() {
+  local out rc=0
+  out=$(cl li-404 "https://www.linkedin.com/learning/no-such-course") || rc=$?
+  assert_eq 1 "$rc" "exit 1"
+  assert_eq "fail 404" "$out" "status reported"
+}
+
+test_linkedin_leaves_learning_fails_not_learning() {
+  local out rc=0
+  out=$(cl li-leaves "https://www.linkedin.com/learning/gone") || rc=$?
+  assert_eq 1 "$rc" "exit 1"
+  assert_eq "fail not-learning" "$out" "redirect off /learning/ fails"
+}
+
+test_other_200_ok() {
+  assert_eq $'ok\thttps://developer.mozilla.org/en-US/docs/Web/HTTP' "$(cl other-200 "https://developer.mozilla.org/en-US/docs/Web/HTTP")" "other URL ok"
+}
+
+test_timeout_fails() {
+  local out rc=0
+  out=$(cl timeout "https://www.youtube.com/watch?v=abcdefghijk") || rc=$?
+  assert_eq 1 "$rc" "exit 1"
+  assert_eq "fail timeout" "$out" "timeout reported"
+}
+
+test_check_link_needs_url() {
+  assert_exit 2 "no URL exits 2" -- "$TOOLS" check-link
+}
+
+if [[ $LIVE == 1 ]]; then
+  test_live_youtube_invalid_id_fails() {
+    assert_exit 1 "invalid YouTube id fails live" -- "$TOOLS" check-link "https://www.youtube.com/watch?v=aaaaaaaaaaa"
+  }
+  test_live_youtube_real_video_ok() {
+    local out
+    out=$("$TOOLS" check-link "https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+    assert_contains "$out" $'ok\t' "real video passes live"
+  }
+fi
+
 run_tests "${1:-.}"

@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Stand-in for curl in tests. Logs its arguments to $FAKE_CURL_LOG (if set) and prints the
+# canned output for $FAKE_CURL_CASE in the shape grasp-tools asks curl for.
+[[ -n "${FAKE_CURL_LOG:-}" ]] && printf '%s\n' "$@" > "$FAKE_CURL_LOG"
+case "${FAKE_CURL_CASE:-}" in
+  yt-ok)       printf '%s\n%s' '{"title":"OAuth 2.0 explained","author_name":"Tech Channel","type":"video"}' 200 ;;
+  yt-escapes)  printf '%s\n%s' '{"type":"video","title":"He said \"hi\" \u00e9 a\/b \\ ok","author_name":"Caf\u00e9 \ud83d\ude00 TV"}' 200 ;;
+  yt-400)      printf '%s\n%s' 'Bad Request' 400 ;;
+  li-redirect) printf '%s' '200 https://www.linkedin.com/learning/oauth-2-0-essentials' ;;
+  li-404)      printf '%s' '404 https://www.linkedin.com/learning/no-such-course' ;;
+  li-leaves)   printf '%s' '200 https://www.linkedin.com/feed/' ;;
+  other-200)   printf '%s' '200 https://developer.mozilla.org/en-US/docs/Web/HTTP' ;;
+  timeout)     exit 28 ;;
+  *)           echo "fake-curl: unknown case '${FAKE_CURL_CASE:-}'" >&2; exit 99 ;;
+esac

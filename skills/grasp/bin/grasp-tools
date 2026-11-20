@@ -237,6 +237,95 @@ cmd_refresh() {
   return $bad
 }
 
+# ---------- check-link ----------
+
+urlencode() {
+  local s=$1 out='' c i
+  for ((i = 0; i < ${#s}; i++)); do
+    c=${s:i:1}
+    case "$c" in
+      [a-zA-Z0-9.~_-]) out+=$c ;;
+      *) out+=$(printf '%%%02X' "'$c") ;;
+    esac
+  done
+  printf '%s' "$out"
+}
+
+# json_field NAME < JSON -> decoded string value (handles \" \\ \/ \n \t \uXXXX incl. surrogates)
+json_field() {
+  LC_ALL=C awk -v name="$1" '
+    function hexval(h,   i, v, d) { v = 0; h = tolower(h)
+      for (i = 1; i <= length(h); i++) { d = index("0123456789abcdef", substr(h, i, 1)) - 1; v = v * 16 + d }
+      return v }
+    function utf8(cp) {
+      if (cp < 128) return sprintf("%c", cp)
+      if (cp < 2048) return sprintf("%c%c", 192 + int(cp / 64), 128 + cp % 64)
+      if (cp < 65536) return sprintf("%c%c%c", 224 + int(cp / 4096), 128 + int(cp / 64) % 64, 128 + cp % 64)
+      return sprintf("%c%c%c%c", 240 + int(cp / 262144), 128 + int(cp / 4096) % 64, 128 + int(cp / 64) % 64, 128 + cp % 64)
+    }
+    { buf = buf $0 "\n" }
+    END {
+      key = "\"" name "\""
+      p = index(buf, key); if (!p) exit 1
+      rest = substr(buf, p + length(key))
+      sub(/^[ \t\r\n]*:[ \t\r\n]*"/, "", rest)
+      out = ""; i = 1; n = length(rest)
+      while (i <= n) {
+        c = substr(rest, i, 1)
+        if (c == "\"") break
+        if (c != "\\") { out = out c; i++; continue }
+        e = substr(rest, i + 1, 1)
+        if (e == "u") {
+          cp = hexval(substr(rest, i + 2, 4)); i += 6
+          if (cp >= 55296 && cp <= 56319 && substr(rest, i, 2) == "\\u") {
+            lo = hexval(substr(rest, i + 2, 4))
+            if (lo >= 56320 && lo <= 57343) { cp = 65536 + (cp - 55296) * 1024 + (lo - 56320); i += 6 }
+          }
+          out = out utf8(cp); continue
+        }
+        if (e == "n") out = out " "; else if (e == "t") out = out " "
+        else if (e == "b" || e == "f" || e == "r") out = out ""
+        else out = out e
+        i += 2
+      }
+      printf "%s", out
+    }'
+}
+
+cmd_check_link() {
+  [[ $# -eq 1 && -n "$1" ]] || die 2 "usage: check-link URL"
+  local url=$1 curl=${GRASP_CURL:-curl} res rc code final body title channel
+  local common=(-s --max-time 10 -A grasp-link-check)
+  case "$url" in
+    https://www.youtube.com/*|https://youtube.com/*|https://m.youtube.com/*|https://youtu.be/*)
+      rc=0
+      res=$("$curl" "${common[@]}" -w $'\n%{http_code}' \
+        "https://www.youtube.com/oembed?url=$(urlencode "$url")&format=json") || rc=$?
+      [[ $rc == 28 ]] && { echo "fail timeout"; return 1; }
+      code=${res##*$'\n'}; body=${res%$'\n'*}
+      [[ "$code" == 200 ]] || { echo "fail ${code:-000}"; return 1; }
+      title=$(printf '%s' "$body" | json_field title) || { echo "fail no-title"; return 1; }
+      channel=$(printf '%s' "$body" | json_field author_name)
+      printf 'ok\t%s\t%s\n' "$title" "$channel"
+      ;;
+    *)
+      rc=0
+      res=$("$curl" "${common[@]}" -L -o /dev/null -w '%{http_code} %{url_effective}' "$url") || rc=$?
+      [[ $rc == 28 ]] && { echo "fail timeout"; return 1; }
+      code=${res%% *}; final=${res#* }
+      [[ "$code" == 200 ]] || { echo "fail ${code:-000}"; return 1; }
+      case "$url" in
+        https://www.linkedin.com/learning/*|https://linkedin.com/learning/*)
+          case "$final" in
+            https://www.linkedin.com/learning/*|https://linkedin.com/learning/*) ;;
+            *) echo "fail not-learning"; return 1 ;;
+          esac ;;
+      esac
+      printf 'ok\t%s\n' "$final"
+      ;;
+  esac
+}
+
 CONFIG=./.grasp.md
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -251,7 +340,8 @@ case "$cmd" in
   -h|--help|help) usage ;;
   version) cmd_version ;;
   connect|disconnect|status|refresh) "cmd_$cmd" "$@" ;;
-  check-link|lint-page) not_implemented "$cmd" ;;
+  check-link) cmd_check_link "$@" ;;
+  lint-page) not_implemented "$cmd" ;;
   "") usage >&2; exit 2 ;;
   *) usage >&2; printf '\ngrasp-tools: unknown command: %s\n' "$cmd" >&2; exit 2 ;;
 esac
