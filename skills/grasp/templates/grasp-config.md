@@ -1,14 +1,17 @@
 # grasp settings
 
-<!-- Saved as .grasp.md at the repository root by the first /grasp run. Commit it.
+<!-- Saved as .grasp.md at the repository root by /grasp setup (it runs by itself on the first
+     /grasp run). Commit it.
      No secrets here: tokens stay in the tracker tool or the OS keychain. -->
 
 ## Tracker
 
-- type: {jira | github | linear | gitlab | none}
-- reader: {e.g. "Atlassian MCP", "gh", "bin/tracker" (a project wrapper), "Linear MCP"}
-- project or repo: {e.g. PROJ, owner/repo}
+- type: {jira | github | clickup | linear | gitlab | azure-devops | other | none}
+- reader: {e.g. "Atlassian MCP", "gh", "ClickUp MCP", "az boards", "bin/tracker" (a project wrapper)}
+- project or repo: {e.g. PROJ, owner/repo, ClickUp space or list}
+- keys: {only when a key like DEV-42 could be two trackers: which one it means}
 - comments: {ask | never}
+- tested: {YYYY-MM-DD ok | YYYY-MM-DD failed (title | body | comments | attachments | write)}
 
 ## Notebook
 
@@ -35,3 +38,20 @@
 ## Voice
 
 - {e.g. "first person, no AI attribution", or "see CLAUDE.md"}
+
+## App
+
+- run: {command that starts the app, e.g. npm run dev, or "no UI"}
+- url: {e.g. http://localhost:3000}
+
+## Learning
+
+- linkedin learning: {yes | no}
+
+## Connected skills
+
+<!-- Written by `grasp-tools connect`; refreshed by /grasp update. Edit with connect/disconnect. -->
+
+| skill | step | grasp version |
+| ----- | ---- | ------------- |
+| {.claude/skills/work-issue} | {work | verify | review | resolve} | {0.2.0} |

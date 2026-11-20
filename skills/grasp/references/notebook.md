@@ -72,8 +72,8 @@ screenshots with the Notion file tool. `lint-page` is for Markdown only.
 `review` and `resolve` also write to the issue page; see [review.md](review.md).
 
 One issue, one page. A later issue on the same feature patches that page and adds its link;
-never a second page. Bugs get no page of their own: add one line under "Issues met" on the page
-of the feature they touched, or skip when there is none.
+never a second page. Bugs get no page of their own: add one line in the "Plan vs actual" toggle on the page of the
+feature they touched, or skip when there is none.
 
 ## Page shapes
 

@@ -44,4 +44,5 @@ Words like "should work", "looks fine", "probably" mean the gate has not passed.
 confidence percentage with what would raise it; it goes to the user, never onto a tracker.
 
 Whatever went wrong on the way (a failed check, a wrong first approach, a surprise in the code)
-goes into the "after" page under "Issues met". That is where the team learns the most.
+goes on the page: a blocker as a visible `> [!WARNING]` under Blocker, anything else in the
+"Plan vs actual" toggle. That is where the team learns the most.

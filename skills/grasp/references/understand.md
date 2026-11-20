@@ -45,8 +45,9 @@ full before page. Spec-first tools show long specs for small tasks are not read.
 
 Written by one subagent (Sonnet) from: the issue note, the restatement, the picked approach and
 rejected ones, the list of files expected to change, and the app map's diagram source. Never the
-whole repository. Shape is in [templates/issue-page.md](../templates/issue-page.md); 150 to 250
-words.
+whole repository. Shape is in [templates/issue-page.md](../templates/issue-page.md): the sections
+marked (before), about 150 words of visible text with the rest folded under its picture. Run
+`grasp-tools lint-page` on it, as [notebook.md](notebook.md) says.
 
 The before half is also the spec: the build works from it, and the "after" half is compared
 against it. If the plan changes during the build, update the before half in one line ("Changed:

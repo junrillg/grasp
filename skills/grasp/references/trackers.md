@@ -7,7 +7,7 @@ Detail for step 1 of [SKILL.md](../SKILL.md) and every tracker write.
 Whatever the source, intake produces the same note in the run's scratch folder:
 
 ```
-key:        PROJ-123 | owner/repo#42 | LIN-7 | text
+key:        PROJ-123 | owner/repo#42 | 86abc123 | LIN-7 | AB#1234 | text
 url:        link, or none
 type:       bug | feature | investigation (from the tracker type, else from the text)
 status:     as the tracker says
@@ -33,12 +33,26 @@ everything below.
 | ---------- | ------------------------------ |
 | `ABC-123`, `*.atlassian.net/browse/...` | the project's Jira wrapper; the Atlassian MCP tools (`getJiraIssue`); `acli jira workitem view ABC-123 --json` |
 | `#42`, `owner/repo#42`, `github.com/.../issues/42` | `gh issue view 42 -R owner/repo --json number,title,body,state,labels,comments,url`; the GitHub MCP tools |
+| `86abc123` (ClickUp task id), `app.clickup.com/t/...`, a ClickUp custom id like `DEV-42` | the ClickUp MCP tools (get the task, its comments and attachments); otherwise pasted text |
 | `LIN-7`, `linear.app/...` | the Linear MCP tools (`get_issue`, `list_comments`) |
 | `group/proj#9`, `gitlab.com/...` | `glab issue view 9 -R group/proj --comments` |
+| `AB#1234`, `dev.azure.com/.../_workitems/edit/1234` (Azure DevOps) | the Azure DevOps MCP tools; `az boards work-item show --id 1234 --expand all` (if it returns no comments, say comments were not read) |
+| anything else the project uses ("other") | the connected MCP tool or CLI recorded in `.grasp.md` as `reader`, as long as it returns title, body, comments and attachments |
 | a `.md` or `.txt` path | read the file |
 | quoted text | the text is the body; `key: text` |
 
-`ABC-123` is ambiguous between Jira and Linear: `.grasp.md` settles it; if it is not set, ask.
+A key like `ABC-123` or `DEV-42` can be Jira, Linear or a ClickUp custom id. `.grasp.md` settles
+it (`type`, or `keys` when the project uses two trackers); if it is not set, ask, then save the
+answer. A ClickUp task URL always means ClickUp, whatever the id looks like.
+
+**ClickUp in short:** task ids are short lowercase strings (`86abc123`); teams can turn on
+custom ids (`DEV-42`). Read the task, then its comments, then download each attachment before
+opening it. Writes are one task comment, like any tracker.
+
+**Confidence.** A tracker counts as working in a project only after the live test in
+[setup.md](setup.md) read a real issue there (`tested: ... ok` in `.grasp.md`). Report any
+other as "not tested in this project". When a later read fails, name the part that failed and
+offer to re-run only that test.
 
 If no reader works (tool not connected, not signed in), say which one is missing and how to
 connect it, and offer to continue from pasted text. Never handle a token yourself and never

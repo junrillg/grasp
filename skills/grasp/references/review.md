@@ -75,11 +75,19 @@ Both subcommands leave the issue page (see [notebook.md](notebook.md)) matching 
   request body and the diff. Leave out the before half and "your guess vs what happened": the
   author's predictions are not known. Add the Features row and the docs router row.
 - **Page exists:** update only the sections the pull request (`review`) or the fixes
-  (`resolve`) change: what was built, how it works, where it lives, the key decision, how to
-  check it. Add a changed decision to the decisions log.
-- **Issues met:** `review` lists its verified findings in plain words; `resolve` adds what the
-  reviewer caught and how it was fixed, and removes an earlier line only when this run fixed it.
-- **Bug:** one line under "Issues met" on the feature page it touches, or nothing.
+  (`resolve`) change: "In one line", Before and after, How it works (diagram, walkthrough, files
+  touched), Decision, and the "Check it yourself" toggle. Add a changed decision to the
+  decisions log.
+- **Findings:** `review` puts each verified finding that is still open in the Blocker section as
+  a visible `> [!WARNING]`, one line each, never folded. `resolve` moves each finding it fixed
+  into the "Plan vs actual" toggle (what the reviewer caught and how it was fixed) and removes
+  its warning; a warning goes only when this run fixed it.
+- **Bug:** one line in the "Plan vs actual" toggle of the feature page it touches, or nothing.
+- **Old page layout:** a page written before the visual layout is converted while it is being
+  patched anyway: rewrite its toggles into the one-block HTML form (no blank lines, HTML only,
+  content unchanged) as [notebook.md](notebook.md) "Toggles" says. Never convert untouched pages.
+- **Lint:** run `grasp-tools lint-page PAGE` on every page written or patched and fix each line it
+  prints before showing the page.
 - Describe only what the code does at the head commit; mark what the issue asks for but the diff
   does not build as "not built yet".
 - Where the page change is committed:

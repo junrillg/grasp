@@ -365,4 +365,23 @@ test_example_has_sections() {
   done
 }
 
+# ---- install.sh ----
+
+test_install_copy_writes_source() {
+  local p
+  p=$(new_tmp)
+  "$ROOT/install.sh" --project "$p" --copy >/dev/null
+  assert_eq "$ROOT" "$(cat "$p/.claude/skills/grasp/.source" 2>/dev/null)" ".source holds the repo path (.claude)"
+  assert_eq "$ROOT" "$(cat "$p/.agents/skills/grasp/.source" 2>/dev/null)" ".source holds the repo path (.agents)"
+  assert_eq "0.2.0" "$("$p/.claude/skills/grasp/bin/grasp-tools" version)" "copied grasp-tools runs"
+}
+
+test_install_link_writes_no_source() {
+  local p
+  p=$(new_tmp)
+  "$ROOT/install.sh" --project "$p" >/dev/null
+  [[ ! -e "$ROOT/skills/grasp/.source" ]] || _fail "link install leaves no .source in the repo"
+  assert_eq "0.2.0" "$("$p/.claude/skills/grasp/bin/grasp-tools" version)" "grasp-tools runs through the symlink"
+}
+
 run_tests "${1:-.}"

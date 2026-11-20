@@ -9,12 +9,14 @@ Usage: ./install.sh [--project DIR] [--copy] [--uninstall] [-h]
   (no flags)     link skills/grasp into ~/.claude/skills and ~/.agents/skills
                  (~/.agents/skills is read by Codex, Cursor and Gemini CLI)
   --project DIR  install into DIR/.claude/skills and DIR/.agents/skills instead
-  --copy         copy instead of linking (no updates on git pull)
+  --copy         copy instead of linking (no updates on git pull; /grasp update re-copies
+                 from this repository, recorded in the copy's .source file)
   --uninstall    remove what this script installed
 EOF
 }
 
-src="$(cd "$(dirname "$0")" && pwd)/skills/grasp"
+repo="$(cd "$(dirname "$0")" && pwd)"
+src="$repo/skills/grasp"
 base="$HOME" mode=link action=install
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -39,6 +41,11 @@ for dir in "$base/.claude/skills" "$base/.agents/skills"; do
     continue
   fi
   rm -f "$dest"
-  if [ "$mode" = copy ]; then cp -R "$src" "$dest"; else ln -s "$src" "$dest"; fi
+  if [ "$mode" = copy ]; then
+    cp -R "$src" "$dest"
+    printf '%s\n' "$repo" > "$dest/.source"   # lets /grasp update re-copy from here
+  else
+    ln -s "$src" "$dest"
+  fi
   echo "$mode $dest"
 done
