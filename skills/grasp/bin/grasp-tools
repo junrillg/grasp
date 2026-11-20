@@ -353,7 +353,7 @@ cmd_lint_page() {
         next
       }
       code = line; gsub(/`[^`]*`/, "", code)   # ignore inline code
-      opens = count(line, "<details[ >]"); closes = count(line, "</details>")
+      opens = count(code, "<details[ >]"); closes = count(code, "</details>")
       start = depth
       if (start > 0 && opens > 0) report("details-nested")
       else if (start > 0 && line !~ /^[ \t]*<\/details>[ \t]*$/) {

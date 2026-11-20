@@ -334,4 +334,35 @@ test_lint_missing_file_exits_2() {
   assert_exit 2 "missing file exits 2" -- "$TOOLS" lint-page "$FIX/pages/nope.md"
 }
 
+# ---- page template ----
+
+TEMPLATE="$ROOT/skills/grasp/templates/issue-page.md"
+
+test_example_page_lints_clean() {
+  assert_exit 0 "example page lints clean" -- "$TOOLS" lint-page "$FIX/pages/example-issue-page.md"
+}
+
+test_template_has_sections() {
+  local body sec
+  body=$(cat "$TEMPLATE")
+  for sec in "Where it fits" "Before and after" "How it works" "Decision" "Blocker" "Explain it back" "Learn more"; do
+    assert_contains "$body" "## $sec" "template has section $sec"
+  done
+}
+
+test_template_lints_clean() {
+  local out rc=0
+  out=$("$TOOLS" lint-page "$TEMPLATE") || rc=$?
+  assert_eq 0 "$rc" "template lints clean (no blank line or Markdown inside toggles)"
+  assert_eq "" "$out" "no lint output for template"
+}
+
+test_example_has_sections() {
+  local body sec
+  body=$(cat "$FIX/pages/example-issue-page.md")
+  for sec in "Where it fits" "Before and after" "How it works" "Decision" "Explain it back" "Learn more"; do
+    assert_contains "$body" "## $sec" "example has section $sec"
+  done
+}
+
 run_tests "${1:-.}"

@@ -37,7 +37,7 @@ Code walkthrough excerpt, permalinked to [src/auth.ts](https://github.com/acme/a
 if (expiresAt - now < 5 * 60_000) await refresh();
 ```
 
-Comparing `a == b` in inline code is fine, and so is `[[not a link]]`.
+Comparing `a == b` in inline code is fine, and so are `[[not a link]]` and `<details>`.
 
 ## Explain it back
 
