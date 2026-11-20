@@ -37,8 +37,12 @@ for dir in "$base/.claude/skills" "$base/.agents/skills"; do
   fi
   mkdir -p "$dir"
   if [ -e "$dest" ] && [ ! -L "$dest" ]; then
-    echo "skip $dest: a real folder is there; remove it first" >&2
-    continue
+    if [ -f "$dest/.source" ]; then
+      rm -rf "$dest"   # grasp's own earlier copy: replace it
+    else
+      echo "skip $dest: a real folder is there; remove it first" >&2
+      continue
+    fi
   fi
   rm -f "$dest"
   if [ "$mode" = copy ]; then

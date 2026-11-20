@@ -26,7 +26,7 @@ Commands:
   connect SKILL_DIR STEP   add or replace grasp's block in SKILL_DIR/SKILL.md and record it
                            STEP is one of: work, verify, review, resolve
   disconnect SKILL_DIR     remove the block and the record
-  status                   list connected skills: SKILL_DIR, STEP, ok|stale|no-block|missing
+  status                   list connected skills: SKILL_DIR, STEP, ok|stale|no-block|missing|broken
   refresh [SKILL_DIR]      rewrite stale or missing blocks (all connected skills by default)
   check-link URL           check a learning link live (YouTube, LinkedIn Learning, other)
   lint-page FILE...        check a learning page renders in Obsidian and on GitHub
@@ -74,7 +74,24 @@ block_text() {
     "<!-- grasp:end -->" "$e"
 }
 
-has_block() { grep -q '^<!-- grasp:start ' "$1"; }
+# locate_block FILE -> "START END" line numbers of grasp's block, ignoring fenced code.
+# Uses the last start marker outside a fence; END is 0 when that start has no end marker.
+# Prints nothing when there is no block.
+locate_block() {
+  awk '
+    { line = $0; sub(/\r$/, "", line); t = line; sub(/^[ ]{0,3}/, "", t) }
+    fence != "" { if (index(t, fence) == 1 && t ~ /^(`+|~+)[ \t]*$/) fence = ""; next }
+    t ~ /^```/ || t ~ /^~~~/ { match(t, /^(`+|~+)/); fence = substr(t, 1, RLENGTH); next }
+    line ~ /^<!-- grasp:start / { s = NR; e = 0; next }
+    s && !e && line ~ /^<!-- grasp:end -->[ \t]*$/ { e = NR }
+    END { if (s) print s, e }
+  ' "$1"
+}
+
+has_block() { [[ -n "$(locate_block "$1")" ]]; }
+
+# block_broken FILE: a start marker with no end marker after it
+block_broken() { local loc; loc=$(locate_block "$1"); [[ -n "$loc" && "${loc#* }" == 0 ]]; }
 
 # write_if_changed NEW TARGET: replace TARGET only when bytes differ (keeps mtime otherwise)
 write_if_changed() {
@@ -88,11 +105,12 @@ put_block() {
   tmp=$(mktemp "${TMPDIR:-/tmp}/grasp.XXXXXX")
   blk=$(mktemp "${TMPDIR:-/tmp}/grasp.XXXXXX")
   block_text "$step" "$e" > "$blk"
-  if has_block "$f"; then
-    awk -v blk="$blk" '
-      /^<!-- grasp:start / && !done { while ((getline l < blk) > 0) print l; skip = 1; next }
-      skip && /^<!-- grasp:end -->\r?$/ { skip = 0; done = 1; next }
-      !skip { print }
+  local loc; loc=$(locate_block "$f")
+  if [[ -n "$loc" ]]; then
+    awk -v blk="$blk" -v s="${loc% *}" -v e="${loc#* }" '
+      NR == s { while ((getline l < blk) > 0) print l }
+      NR >= s && NR <= e { next }
+      { print }
     ' "$f" > "$tmp"
     # awk ends every line with \n; drop it if the original had no final newline
     if ! ends_with_newline "$f"; then
@@ -111,12 +129,13 @@ put_block() {
 # drop_block FILE: remove the block and the one blank line before it
 drop_block() {
   local f=$1 tmp
-  has_block "$f" || return 0
+  local loc; loc=$(locate_block "$f")
+  [[ -n "$loc" ]] || return 0
   tmp=$(mktemp "${TMPDIR:-/tmp}/grasp.XXXXXX")
-  awk '
+  awk -v s="${loc% *}" -v e="${loc#* }" '
     function flush() { if (held) { print prev; held = 0 } }
-    /^<!-- grasp:start / { if (held && prev ~ /^\r?$/) held = 0; flush(); skip = 1; next }
-    skip { if ($0 ~ /^<!-- grasp:end -->\r?$/) skip = 0; next }
+    NR == s { if (held && prev ~ /^\r?$/) held = 0; flush(); next }
+    NR > s && NR <= e { next }
     { flush(); prev = $0; held = 1 }
     END { flush() }
   ' "$f" > "$tmp"
@@ -154,11 +173,18 @@ upsert_row() {
     printf '%s\n\n| skill | step | grasp version |\n| ----- | ---- | ------------- |\n| %s | %s | %s |\n' \
       "$SECTION" "$skill" "$step" "$v" >> "$tmp"
   else
-    awk -v sec="$SECTION" -v sk="$skill" -v st="$step" -v ver="$v" '
+    local has_table
+    has_table=$(awk -v sec="$SECTION" '
+      { sub(/\r$/, "") } /^## / { in_sec = ($0 == sec); next } in_sec && /^\|/ { print 1; exit }' "$CONFIG")
+    awk -v sec="$SECTION" -v sk="$skill" -v st="$step" -v ver="$v" -v has_table="${has_table:-0}" '
       function row() { return "| " sk " | " st " | " ver " |" }
       function emit_new() { if (st != "" && !written) { print row(); written = 1 } }
       {
         line = $0; sub(/\r$/, "", line)
+        if (line == sec && !has_table && st != "") {
+          print; print ""; print "| skill | step | grasp version |"; print "| ----- | ---- | ------------- |"
+          emit_new(); in_sec = 1; next
+        }
         if (line ~ /^## /) {
           if (in_sec && last_tbl && last_tbl == NR - 1) emit_new()
           in_sec = (line == sec)
@@ -175,6 +201,20 @@ upsert_row() {
     ' "$CONFIG" > "$tmp"
   fi
   write_if_changed "$tmp" "$CONFIG"
+  if [[ -n "$step" ]] && ! rows | grep -qxF "$skill"$'\t'"$step"; then
+    die 1 "could not record $skill in $CONFIG; add the row under '$SECTION' by hand"
+  fi
+}
+
+# norm_dir DIR -> the skill folder relative to the config's folder ("./x/", "/abs/root/x" -> "x")
+norm_dir() {
+  local d=$1 root
+  root=$(cd -P "$(dirname "$CONFIG")" && pwd)
+  [[ "$d" == /* && -d "$d" ]] && d=$(cd -P "$d" && pwd)
+  while [[ "$d" == */ ]]; do d=${d%/}; done
+  [[ "$d" == "$root"/* ]] && d=${d#"$root"/}
+  while [[ "$d" == ./* ]]; do d=${d#./}; done
+  printf '%s' "$d"
 }
 
 skill_file() { printf '%s/%s/SKILL.md' "$(cfg_dir)" "$1"; }
@@ -184,18 +224,23 @@ state_of() {
   local f b st
   f=$(skill_file "$1")
   [[ -f "$f" ]] || { echo missing; return; }
-  has_block "$f" || { echo no-block; return; }
-  b=$(sed -n 's/^<!-- grasp:start b=\([0-9]*\).*/\1/p' "$f" | head -n 1)
-  st=$(sed -n 's/^<!-- grasp:start .*step=\([a-z]*\).*/\1/p' "$f" | head -n 1)
+  local loc; loc=$(locate_block "$f")
+  [[ -n "$loc" ]] || { echo no-block; return; }
+  [[ "${loc#* }" == 0 ]] && { echo broken; return; }
+  local marker; marker=$(sed -n "${loc% *}p" "$f")
+  b=$(printf '%s' "$marker" | sed -n 's/^<!-- grasp:start b=\([0-9]*\).*/\1/p')
+  st=$(printf '%s' "$marker" | sed -n 's/^<!-- grasp:start .*step=\([a-z]*\).*/\1/p')
   if [[ -z "$b" || "$b" -lt "$BLOCK_FORMAT" || "$st" != "$2" ]]; then echo stale; else echo ok; fi
 }
 
 cmd_connect() {
   [[ $# -eq 2 ]] || die 2 "usage: connect SKILL_DIR STEP"
-  local dir=${1%/} step=$2 f
+  local dir step=$2 f
+  dir=$(norm_dir "$1")
   valid_step "$step" || die 2 "STEP must be one of: $STEPS"
   f=$(skill_file "$dir")
   [[ -f "$f" ]] || die 1 "no SKILL.md in $dir"
+  block_broken "$f" && die 1 "$dir/SKILL.md has a grasp:start line with no grasp:end after it; fix it by hand first"
   put_block "$f" "$step"
   upsert_row "$dir" "$step"
   printf 'connected %s %s\n' "$dir" "$step"
@@ -203,9 +248,14 @@ cmd_connect() {
 
 cmd_disconnect() {
   [[ $# -eq 1 ]] || die 2 "usage: disconnect SKILL_DIR"
-  local dir=${1%/} f
+  local dir f
+  dir=$(norm_dir "$1")
+  rows | cut -f1 | grep -qxF "$dir" || die 1 "$dir is not connected (grasp-tools status lists what is)"
   f=$(skill_file "$dir")
-  [[ -f "$f" ]] && drop_block "$f"
+  if [[ -f "$f" ]]; then
+    block_broken "$f" && die 1 "$dir/SKILL.md has a grasp:start line with no grasp:end after it; fix it by hand first"
+    drop_block "$f"
+  fi
   upsert_row "$dir" ""
   printf 'disconnected %s\n' "$dir"
 }
@@ -221,14 +271,14 @@ cmd_status() {
 }
 
 cmd_refresh() {
-  local only=${1:-} skill step st bad=0
-  only=${only%/}
+  local only='' skill step st bad=0
+  [[ -n "${1:-}" ]] && only=$(norm_dir "$1")
   while IFS=$'\t' read -r skill step; do
     [[ -n "$only" && "$skill" != "$only" ]] && continue
     st=$(state_of "$skill" "$step")
     case $st in
       ok) ;;
-      missing) printf 'missing %s\n' "$skill" >&2; bad=1 ;;
+      missing|broken) printf '%s %s\n' "$st" "$skill" >&2; bad=1 ;;
       *) put_block "$(skill_file "$skill")" "$step"; upsert_row "$skill" "$step"; printf 'refreshed %s %s\n' "$skill" "$step" ;;
     esac
   done < <(rows)
@@ -355,6 +405,7 @@ cmd_lint_page() {
       code = line; gsub(/`[^`]*`/, "", code)   # ignore inline code
       opens = count(code, "<details[ >]"); closes = count(code, "</details>")
       start = depth
+      if (code ~ /<details[^>]*[ \t]open([ \t=>]|$)/) report("details-open")
       if (start > 0 && opens > 0) report("details-nested")
       else if (start > 0 && line !~ /^[ \t]*<\/details>[ \t]*$/) {
         if (line ~ /^[ \t]*$/) report("details-blank-line")

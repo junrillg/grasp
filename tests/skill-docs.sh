@@ -65,4 +65,20 @@ test_review_converts_old_pages() {
   assert_contains "$r" "lint-page" "review.md runs lint-page"
 }
 
+test_description_within_1024_chars() {
+  local d
+  d=$(sed -n 's/^description: //p' "$SKILL")
+  [[ ${#d} -le 1024 ]] || _fail "description is ${#d} characters; the Agent Skills limit is 1024"
+}
+
+test_update_checks_copy_install_first() {
+  # a copy inside a project sits in the project's git repo, so .source must be checked before git
+  local u src git
+  u=$(awk '/^## `\/grasp update`/ { f = 1 } /^## Old/ { f = 0 } f' "$ROOT/skills/grasp/references/setup.md")
+  src=$(printf '%s\n' "$u" | grep -n '\.source' | head -n 1 | cut -d: -f1)
+  git=$(printf '%s\n' "$u" | grep -n 'pull --ff-only' | head -n 1 | cut -d: -f1)
+  [[ -n "$src" && -n "$git" && $src -lt $git ]] || _fail "update checks .source before any git pull (src=$src git=$git)"
+  assert_contains "$u" "symlink" "link install is identified by a symlink"
+}
+
 run_tests "${1:-.}"

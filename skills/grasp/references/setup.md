@@ -94,15 +94,19 @@ finished its own work. grasp never edits a skill outside its block.
 
 Brings grasp up to date, then refreshes the block in every connected skill.
 
-1. **Find the install.** Resolve `<skill dir>` through symlinks.
-   - It resolves into a git repository (a link install from `install.sh`): run
-     `git -C <repo> pull --ff-only` and report the old and new `grasp-tools version`. A pull
-     that is not a fast-forward: stop and show the git message.
+1. **Find the install**, checking in this order (a copy inside a project sits in the project's
+   own git repository, so never start with "is it in a git repository"):
+   - `<skill dir>` holds a `.source` file (a copy install from `install.sh --copy`): run
+     `git -C <path in .source> pull --ff-only`, then `<path in .source>/install.sh --copy`, with
+     `--project <repo root>` when the copy is inside this repository. It replaces grasp's own
+     earlier copy.
+   - `<skill dir>` is a symlink whose target is `skills/grasp` inside a checkout that also holds
+     `install.sh` (a link install): run `git -C <that checkout> pull --ff-only` and report the old
+     and new `grasp-tools version`. A pull that isn't a fast-forward: stop and show git's message.
    - It sits under Claude Code's plugin folder (`~/.claude/plugins/`): ask the user to run
      `/plugin marketplace update grasp` (an agent can't run it) and continue when they confirm.
-   - It holds a `.source` file (a copy install): run `<path in .source>/install.sh --copy`, with
-     `--project <repo root>` when the copy is inside this repository, after a `git -C <path>
-     pull --ff-only` there.
+   - None of these: say how grasp seems to be installed and ask; never pull a repository you
+     didn't identify as grasp's.
 2. **Check the connected skills:** `grasp-tools status`. Each line is
    `SKILL_DIR<TAB>STEP<TAB>STATE`.
    - `ok`: nothing to do. A grasp release that doesn't change the block text leaves every
@@ -111,6 +115,9 @@ Brings grasp up to date, then refreshes the block in every connected skill.
      on a yes (or `refresh SKILL_DIR` for just one).
    - `missing`: the skill was moved or deleted. Ask whether to point grasp at its new folder
      (`disconnect` the old path, `connect` the new) or to disconnect it.
+   - `broken`: the skill has a `grasp:start` line with no `grasp:end` after it, usually from a
+     hand edit. grasp-tools refuses to touch it, so nothing below the marker can be lost. Show
+     the user the lines and ask them to restore or delete the marker, then re-run `status`.
 3. Report the version, what was refreshed, and anything left as it was.
 
 ## Old `.grasp.md` files

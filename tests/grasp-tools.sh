@@ -170,6 +170,67 @@ test_connect_into_empty_template_table() {
   assert_exit 0 "status ok, no placeholder row" -- "$TOOLS" --config "$p/.grasp.md" status
 }
 
+test_connect_ignores_marker_in_code_fence() {
+  local p want
+  p=$(new_project)
+  gt --config "$p/.grasp.md" connect .claude/skills/quotes-marker work >/dev/null
+  want=$(mktemp)
+  { cat "$FIX/skills/quotes-marker/SKILL.md"; printf '\n'; expected_block work; } > "$want"
+  assert_file_eq "$want" "$p/.claude/skills/quotes-marker/SKILL.md" "fenced example kept, block appended"
+  gt --config "$p/.grasp.md" connect .claude/skills/quotes-marker verify >/dev/null
+  assert_contains "$(cat "$p/.claude/skills/quotes-marker/SKILL.md")" "Step 2: keep this line." "replace keeps user text"
+  gt --config "$p/.grasp.md" disconnect .claude/skills/quotes-marker >/dev/null
+  assert_file_eq "$FIX/skills/quotes-marker/SKILL.md" "$p/.claude/skills/quotes-marker/SKILL.md" "disconnect restores original"
+}
+
+test_missing_end_marker_is_refused() {
+  local p f before out rc=0
+  p=$(new_project)
+  gt --config "$p/.grasp.md" connect .claude/skills/plain work >/dev/null
+  f="$p/.claude/skills/plain/SKILL.md"
+  sed -i.bak '/grasp:end/d' "$f"; rm -f "$f.bak"
+  printf '\n## My own section\nDo not delete me.\n' >> "$f"
+  before=$(mktemp); cp "$f" "$before"
+  out=$(gt --config "$p/.grasp.md" status) || rc=$?
+  assert_eq 1 "$rc" "status exits 1"
+  assert_eq $'.claude/skills/plain\twork\tbroken' "$out" "status reports broken"
+  assert_exit 1 "disconnect refuses a block with no end marker" -- "$TOOLS" --config "$p/.grasp.md" disconnect .claude/skills/plain
+  assert_exit 1 "connect refuses a block with no end marker" -- "$TOOLS" --config "$p/.grasp.md" connect .claude/skills/plain work
+  assert_exit 1 "refresh reports the broken block" -- "$TOOLS" --config "$p/.grasp.md" refresh
+  assert_file_eq "$before" "$f" "user text untouched"
+}
+
+test_connect_section_without_table() {
+  local p want
+  p=$(new_project)
+  printf '# grasp settings\n\n## Connected skills\n\nNone yet.\n\n## Voice\n\n- plain\n' > "$p/.grasp.md"
+  gt --config "$p/.grasp.md" connect .claude/skills/plain work >/dev/null
+  want=$(mktemp)
+  printf '# grasp settings\n\n## Connected skills\n\n| skill | step | grasp version |\n| ----- | ---- | ------------- |\n| .claude/skills/plain | work | 0.2.0 |\n\nNone yet.\n\n## Voice\n\n- plain\n' > "$want"
+  assert_file_eq "$want" "$p/.grasp.md" "table added under the heading"
+  printf '# grasp settings\n\n## Connected skills\n' > "$p/.grasp.md"
+  gt --config "$p/.grasp.md" connect .claude/skills/plain work >/dev/null
+  assert_eq $'.claude/skills/plain\twork\tok' "$(gt --config "$p/.grasp.md" status)" "heading alone at end of file gets a table"
+}
+
+test_paths_are_normalised() {
+  local p
+  p=$(new_project)
+  gt --config "$p/.grasp.md" connect ./.claude/skills/plain work >/dev/null
+  gt --config "$p/.grasp.md" connect "$p/.claude/skills/crlf/" verify >/dev/null
+  assert_eq "$(printf '.claude/skills/plain\twork\tok\n.claude/skills/crlf\tverify\tok')" "$(gt --config "$p/.grasp.md" status)" "./ and absolute paths recorded relative"
+  gt --config "$p/.grasp.md" disconnect .claude/skills/plain >/dev/null
+  gt --config "$p/.grasp.md" disconnect "$p/.claude/skills/crlf" >/dev/null
+  assert_eq "" "$(gt --config "$p/.grasp.md" status)" "both rows gone"
+  assert_file_eq "$FIX/skills/plain/SKILL.md" "$p/.claude/skills/plain/SKILL.md" "block removed"
+}
+
+test_disconnect_unknown_skill_fails() {
+  local p
+  p=$(new_project)
+  assert_exit 1 "disconnect of a skill that is not connected fails" -- "$TOOLS" --config "$p/.grasp.md" disconnect .claude/skills/plain
+}
+
 test_disconnect_restores_original() {
   local p
   p=$(new_project)
@@ -249,7 +310,7 @@ test_youtube_ok_prints_title_channel() {
 test_youtube_title_with_escapes() {
   local out
   out=$(cl yt-escapes "https://youtu.be/abcdefghijk")
-  assert_eq $'ok\tHe said "hi" é a/b \\ ok\tCafé \U0001F600 TV' "$out" "escapes decoded to UTF-8"
+  assert_eq $'ok\tHe said "hi" \xc3\xa9 a/b \\ ok\tCaf\xc3\xa9 \xf0\x9f\x98\x80 TV' "$out" "escapes decoded to UTF-8"
 }
 
 test_youtube_400_fails() {
@@ -338,6 +399,10 @@ test_lint_allows_relative_assets_image() {
   _lint_expect remote-image "$(printf 'bad-remote-image.md:3: remote-image\nbad-remote-image.md:4: remote-image')"
 }
 
+test_lint_flags_details_open() {
+  _lint_expect details-open "bad-details-open.md:3: details-open"
+}
+
 test_lint_ignores_fenced_code() {
   local out rc=0
   out=$(lint fenced.md) || rc=$?
@@ -396,6 +461,24 @@ test_install_copy_writes_source() {
   assert_eq "$ROOT" "$(cat "$p/.claude/skills/grasp/.source" 2>/dev/null)" ".source holds the repo path (.claude)"
   assert_eq "$ROOT" "$(cat "$p/.agents/skills/grasp/.source" 2>/dev/null)" ".source holds the repo path (.agents)"
   assert_eq "0.2.0" "$("$p/.claude/skills/grasp/bin/grasp-tools" version)" "copied grasp-tools runs"
+}
+
+test_install_copy_twice_recopies() {
+  local p
+  p=$(new_tmp)
+  "$ROOT/install.sh" --project "$p" --copy >/dev/null
+  printf '0.0.1\n' > "$p/.claude/skills/grasp/VERSION"
+  "$ROOT/install.sh" --project "$p" --copy >/dev/null 2>&1
+  assert_eq "0.2.0" "$(cat "$p/.claude/skills/grasp/VERSION")" "second --copy replaces grasp's own copy"
+  assert_eq "$ROOT" "$(cat "$p/.claude/skills/grasp/.source")" ".source still written"
+}
+
+test_install_keeps_foreign_folder() {
+  local p
+  p=$(new_tmp)
+  mkdir -p "$p/.claude/skills/grasp"; printf 'mine\n' > "$p/.claude/skills/grasp/SKILL.md"
+  "$ROOT/install.sh" --project "$p" --copy >/dev/null 2>&1
+  assert_eq "mine" "$(cat "$p/.claude/skills/grasp/SKILL.md")" "a folder grasp did not copy is left alone"
 }
 
 test_install_link_writes_no_source() {
