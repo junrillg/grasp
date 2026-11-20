@@ -45,6 +45,198 @@ cmd_version() { tr -d '[:space:]' < "$GRASP_HOME/VERSION"; printf '\n'; }
 
 not_implemented() { die 3 "$1: not implemented"; }
 
+# ---------- connect / disconnect / status / refresh ----------
+
+cfg_dir() { cd "$(dirname "$CONFIG")" && pwd; }
+
+valid_step() { case " $STEPS " in *" $1 "*) return 0 ;; esac; return 1; }
+
+# eol_of FILE -> prints "crlf" or "lf" from the first line ending
+eol_of() {
+  if [[ -s "$1" ]] && head -n 1 "$1" | od -An -c | tr -d ' \n' | grep -q '\\r\\n$'; then
+    echo crlf
+  else
+    echo lf
+  fi
+}
+
+ends_with_newline() { [[ ! -s "$1" ]] || [[ "$(tail -c 1 "$1" | od -An -c | tr -d ' ')" == '\n' ]]; }
+
+# block_text STEP EOL_CHARS -> the exact block
+block_text() {
+  local step=$1 e=$2 v
+  v=$(cmd_version)
+  printf '%s%s' \
+    "<!-- grasp:start b=$BLOCK_FORMAT v=$v step=$step -->" "$e" \
+    "## Learning page (grasp)" "$e" \
+    "When this skill has finished its own work, run grasp's \`page\` subcommand for the same issue or" "$e" \
+    "pull request with \`--step $step\` (\`/grasp page <issue or PR> --step $step\`, or \`/grasp:grasp page ...\`" "$e" \
+    "when grasp is installed as a plugin), so the issue's learning page shows what was done." "$e" \
+    "Skip this if grasp is not installed." "$e" \
+    "<!-- grasp:end -->" "$e"
+}
+
+has_block() { grep -q '^<!-- grasp:start ' "$1"; }
+
+# write_if_changed NEW TARGET: replace TARGET only when bytes differ (keeps mtime otherwise)
+write_if_changed() {
+  if cmp -s "$1" "$2"; then rm -f "$1"; else cat "$1" > "$2"; rm -f "$1"; fi
+}
+
+# put_block FILE STEP: append the block, or replace the existing one in place
+put_block() {
+  local f=$1 step=$2 e tmp blk
+  e=$'\n'; [[ $(eol_of "$f") == crlf ]] && e=$'\r\n'
+  tmp=$(mktemp "${TMPDIR:-/tmp}/grasp.XXXXXX")
+  blk=$(mktemp "${TMPDIR:-/tmp}/grasp.XXXXXX")
+  block_text "$step" "$e" > "$blk"
+  if has_block "$f"; then
+    awk -v blk="$blk" '
+      /^<!-- grasp:start / && !done { while ((getline l < blk) > 0) print l; skip = 1; next }
+      skip && /^<!-- grasp:end -->\r?$/ { skip = 0; done = 1; next }
+      !skip { print }
+    ' "$f" > "$tmp"
+    # awk ends every line with \n; drop it if the original had no final newline
+    if ! ends_with_newline "$f"; then
+      local sz; sz=$(wc -c < "$tmp"); head -c $((sz - 1)) "$tmp" > "$tmp.2" && mv "$tmp.2" "$tmp"
+    fi
+  else
+    cat "$f" > "$tmp"
+    ends_with_newline "$f" || printf '%s' "$e" >> "$tmp"
+    [[ -s "$f" ]] && printf '%s' "$e" >> "$tmp"
+    cat "$blk" >> "$tmp"
+  fi
+  rm -f "$blk"
+  write_if_changed "$tmp" "$f"
+}
+
+# drop_block FILE: remove the block and the one blank line before it
+drop_block() {
+  local f=$1 tmp
+  has_block "$f" || return 0
+  tmp=$(mktemp "${TMPDIR:-/tmp}/grasp.XXXXXX")
+  awk '
+    function flush() { if (held) { print prev; held = 0 } }
+    /^<!-- grasp:start / { if (held && prev ~ /^\r?$/) held = 0; flush(); skip = 1; next }
+    skip { if ($0 ~ /^<!-- grasp:end -->\r?$/) skip = 0; next }
+    { flush(); prev = $0; held = 1 }
+    END { flush() }
+  ' "$f" > "$tmp"
+  write_if_changed "$tmp" "$f"
+}
+
+SECTION='## Connected skills'
+
+# rows -> "skill<TAB>step" for each row of the Connected skills table
+rows() {
+  [[ -f "$CONFIG" ]] || return 0
+  awk -v sec="$SECTION" '
+    { sub(/\r$/, "") }
+    /^## / { in_sec = ($0 == sec); next }
+    in_sec && /^\|/ {
+      n = split($0, c, "|"); if (n < 4) next
+      sk = c[2]; st = c[3]; gsub(/^[ \t]+|[ \t]+$/, "", sk); gsub(/^[ \t]+|[ \t]+$/, "", st)
+      if (sk == "skill" || sk ~ /^-+$/) next
+      print sk "\t" st
+    }
+  ' "$CONFIG"
+}
+
+# upsert_row SKILL STEP (STEP empty = delete)
+upsert_row() {
+  local skill=$1 step=$2 v tmp
+  v=$(cmd_version)
+  [[ -f "$CONFIG" ]] || : > "$CONFIG"
+  tmp=$(mktemp "${TMPDIR:-/tmp}/grasp.XXXXXX")
+  if ! grep -q "^$SECTION"$'\r\\{0,1\\}$' "$CONFIG"; then
+    [[ -z "$step" ]] && { rm -f "$tmp"; return 0; }
+    cat "$CONFIG" > "$tmp"
+    ends_with_newline "$CONFIG" || printf '\n' >> "$tmp"
+    [[ -s "$CONFIG" ]] && printf '\n' >> "$tmp"
+    printf '%s\n\n| skill | step | grasp version |\n| ----- | ---- | ------------- |\n| %s | %s | %s |\n' \
+      "$SECTION" "$skill" "$step" "$v" >> "$tmp"
+  else
+    awk -v sec="$SECTION" -v sk="$skill" -v st="$step" -v ver="$v" '
+      function row() { return "| " sk " | " st " | " ver " |" }
+      function emit_new() { if (st != "" && !written) { print row(); written = 1 } }
+      {
+        line = $0; sub(/\r$/, "", line)
+        if (line ~ /^## /) {
+          if (in_sec && last_tbl == NR - 1) emit_new()
+          in_sec = (line == sec)
+        }
+        if (in_sec && line ~ /^\|/) {
+          n = split(line, c, "|"); k = c[2]; gsub(/^[ \t]+|[ \t]+$/, "", k)
+          if (k == sk) { if (st != "" && !written) { print row(); written = 1 }; last_tbl = NR; next }
+          print; last_tbl = NR; next
+        }
+        if (in_sec && last_tbl == NR - 1) emit_new()
+        print
+      }
+      END { if (in_sec && last_tbl == NR) emit_new() }
+    ' "$CONFIG" > "$tmp"
+  fi
+  write_if_changed "$tmp" "$CONFIG"
+}
+
+skill_file() { printf '%s/%s/SKILL.md' "$(cfg_dir)" "$1"; }
+
+# state SKILL STEP -> ok | stale | no-block | missing
+state_of() {
+  local f b st
+  f=$(skill_file "$1")
+  [[ -f "$f" ]] || { echo missing; return; }
+  has_block "$f" || { echo no-block; return; }
+  b=$(sed -n 's/^<!-- grasp:start b=\([0-9]*\).*/\1/p' "$f" | head -n 1)
+  st=$(sed -n 's/^<!-- grasp:start .*step=\([a-z]*\).*/\1/p' "$f" | head -n 1)
+  if [[ -z "$b" || "$b" -lt "$BLOCK_FORMAT" || "$st" != "$2" ]]; then echo stale; else echo ok; fi
+}
+
+cmd_connect() {
+  [[ $# -eq 2 ]] || die 2 "usage: connect SKILL_DIR STEP"
+  local dir=${1%/} step=$2 f
+  valid_step "$step" || die 2 "STEP must be one of: $STEPS"
+  f=$(skill_file "$dir")
+  [[ -f "$f" ]] || die 1 "no SKILL.md in $dir"
+  put_block "$f" "$step"
+  upsert_row "$dir" "$step"
+  printf 'connected %s %s\n' "$dir" "$step"
+}
+
+cmd_disconnect() {
+  [[ $# -eq 1 ]] || die 2 "usage: disconnect SKILL_DIR"
+  local dir=${1%/} f
+  f=$(skill_file "$dir")
+  [[ -f "$f" ]] && drop_block "$f"
+  upsert_row "$dir" ""
+  printf 'disconnected %s\n' "$dir"
+}
+
+cmd_status() {
+  local skill step st bad=0
+  while IFS=$'\t' read -r skill step; do
+    st=$(state_of "$skill" "$step")
+    printf '%s\t%s\t%s\n' "$skill" "$step" "$st"
+    [[ $st == ok ]] || bad=1
+  done < <(rows)
+  return $bad
+}
+
+cmd_refresh() {
+  local only=${1:-} skill step st bad=0
+  only=${only%/}
+  while IFS=$'\t' read -r skill step; do
+    [[ -n "$only" && "$skill" != "$only" ]] && continue
+    st=$(state_of "$skill" "$step")
+    case $st in
+      ok) ;;
+      missing) printf 'missing %s\n' "$skill" >&2; bad=1 ;;
+      *) put_block "$(skill_file "$skill")" "$step"; upsert_row "$skill" "$step"; printf 'refreshed %s %s\n' "$skill" "$step" ;;
+    esac
+  done < <(rows)
+  return $bad
+}
+
 CONFIG=./.grasp.md
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -58,7 +250,8 @@ cmd=${1:-}
 case "$cmd" in
   -h|--help|help) usage ;;
   version) cmd_version ;;
-  connect|disconnect|status|refresh|check-link|lint-page) not_implemented "$cmd" ;;
+  connect|disconnect|status|refresh) "cmd_$cmd" "$@" ;;
+  check-link|lint-page) not_implemented "$cmd" ;;
   "") usage >&2; exit 2 ;;
   *) usage >&2; printf '\ngrasp-tools: unknown command: %s\n' "$cmd" >&2; exit 2 ;;
 esac
