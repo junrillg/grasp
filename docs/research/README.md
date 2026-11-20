@@ -14,6 +14,7 @@ Research done in November 2026. Each design choice below links to the notes behi
 | Superpowers-style gates (one question at a time, 2-3 approaches, approval before code, evidence before "done") keep agents honest. | Same gates, in steps 2, 4 and 5. | [packaging-and-workflow.md](packaging-and-workflow.md) |
 | Skills load cheaply when SKILL.md is short and detail sits in one-level references; the open Agent Skills format works across Claude Code, Codex, Cursor and Gemini. | SKILL.md is the router; each step reads only its own reference. Frontmatter is standard-only. | [packaging-and-workflow.md](packaging-and-workflow.md) |
 | Trackers differ, but every issue reduces to title, body, comments, attachments and acceptance criteria. | One intake contract, a reader per tracker, plain text as the fallback. | [packaging-and-workflow.md](packaging-and-workflow.md) |
+| Pages are skimmed, not read: people scan headings and pictures, folded content often goes unopened, and a diagram beside a caption beats separated text. Markdown inside HTML doesn't render in Obsidian. | Pictures with one-line captions stay visible; detail sits in single-block HTML toggles (tested in Obsidian and on GitHub) whose titles state the conclusion; blockers are never folded. | [visual-pages.md](visual-pages.md) |
 
 Open gaps: no study yet covers professionals learning from agent-built code over months, and
 nothing ranks C4 against request traces against glossaries for learning. Treat the prediction
