@@ -43,8 +43,6 @@ die() { printf 'grasp-tools: %s\n' "$2" >&2; exit "$1"; }
 
 cmd_version() { tr -d '[:space:]' < "$GRASP_HOME/VERSION"; printf '\n'; }
 
-not_implemented() { die 3 "$1: not implemented"; }
-
 # ---------- connect / disconnect / status / refresh ----------
 
 cfg_dir() { cd "$(dirname "$CONFIG")" && pwd; }
@@ -326,6 +324,61 @@ cmd_check_link() {
   esac
 }
 
+# ---------- lint-page ----------
+
+cmd_lint_page() {
+  [[ $# -ge 1 ]] || die 2 "usage: lint-page FILE..."
+  local f
+  for f in "$@"; do [[ -f "$f" ]] || die 2 "no such file: $f"; done
+  awk -v form="$TOGGLE_FORM" '
+    function report(rule) { printf "%s:%d: %s\n", FILENAME, FNR, rule; bad = 1 }
+    function count(s, re,   n) { n = 0; while (match(s, re)) { n++; s = substr(s, RSTART + RLENGTH) } return n }
+    function remote_image(s,   t) {
+      while (match(s, /!\[[^]]*\]\([^)]*\)/)) {
+        t = substr(s, RSTART, RLENGTH); sub(/^!\[[^]]*\]\(/, "", t)
+        if (t ~ /^(https?:|\/)/) return 1
+        s = substr(s, RSTART + RLENGTH)
+      }
+      return (s ~ /<img[^>]*src="(https?:|\/)/)
+    }
+    FNR == 1 { fence = ""; depth = 0; inpre = 0 }
+    {
+      line = $0; sub(/\r$/, "", line)
+      t = line; sub(/^(>[ ]?)*[ ]{0,3}/, "", t)
+      # fenced code: skip everything inside, matching the opening fence character
+      if (fence != "") { if (index(t, fence) == 1) fence = ""; next }
+      if (t ~ /^```/ || t ~ /^~~~/) {
+        fence = substr(t, 1, 3)
+        if (depth > 0) report("details-markdown")
+        next
+      }
+      code = line; gsub(/`[^`]*`/, "", code)   # ignore inline code
+      opens = count(line, "<details[ >]"); closes = count(line, "</details>")
+      start = depth
+      if (start > 0 && opens > 0) report("details-nested")
+      else if (start > 0 && line !~ /^[ \t]*<\/details>[ \t]*$/) {
+        if (line ~ /^[ \t]*$/) report("details-blank-line")
+        else if (line ~ /\[!(WARNING|CAUTION)\]/) report("warning-in-toggle")
+        else if (!inpre) {
+          m = line; sub(/^[ \t]+/, "", m)
+          if (m ~ /^(#|[-*+] |[0-9]+\. |\||>|!\[)/ || code ~ /\[[^]]*\]\([^)]*\)/ || code ~ /\*\*[^*]+\*\*/)
+            report("details-markdown")
+        }
+      }
+      if (code ~ /\[\[[^]]+\]\]/) report("wikilink")
+      if (form == "html" && t ~ /^\[![A-Za-z]+\][-+]/ && line ~ /^>/) report("foldable-callout")
+      if (code ~ /==[^= ]([^=]*[^= ])?==/) report("highlight")
+      if (remote_image(code)) report("remote-image")
+      depth += opens - closes; if (depth < 0) depth = 0
+      if (depth > 0) {
+        if (line ~ /<pre/) inpre = 1
+        if (line ~ /<\/pre>/) inpre = 0
+      } else inpre = 0
+    }
+    END { exit bad }
+  ' "$@"
+}
+
 CONFIG=./.grasp.md
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -341,7 +394,7 @@ case "$cmd" in
   version) cmd_version ;;
   connect|disconnect|status|refresh) "cmd_$cmd" "$@" ;;
   check-link) cmd_check_link "$@" ;;
-  lint-page) not_implemented "$cmd" ;;
+  lint-page) cmd_lint_page "$@" ;;
   "") usage >&2; exit 2 ;;
   *) usage >&2; printf '\ngrasp-tools: unknown command: %s\n' "$cmd" >&2; exit 2 ;;
 esac

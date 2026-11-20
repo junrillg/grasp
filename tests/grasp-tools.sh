@@ -285,4 +285,53 @@ if [[ $LIVE == 1 ]]; then
   }
 fi
 
+# ---- lint-page ----
+
+# lint FILE_IN_PAGES -> output; sets LINT_RC
+lint() { (cd "$FIX/pages" && "$TOOLS" lint-page "$@"); }
+
+test_lint_good_page_passes() {
+  local out rc=0
+  out=$(lint good.md) || rc=$?
+  assert_eq 0 "$rc" "good page exits 0"
+  assert_eq "" "$out" "good page prints nothing"
+}
+
+_lint_expect() { # RULE EXPECTED_OUTPUT
+  local out rc=0
+  out=$(lint "bad-$1.md") || rc=$?
+  assert_eq 1 "$rc" "$1 exits 1"
+  assert_eq "$2" "$out" "$1 reported"
+}
+
+test_lint_flags_details_blank_line() { _lint_expect details-blank-line "bad-details-blank-line.md:5: details-blank-line"; }
+test_lint_flags_details_markdown()   { _lint_expect details-markdown "bad-details-markdown.md:5: details-markdown"; }
+test_lint_flags_details_nested()     { _lint_expect details-nested "bad-details-nested.md:4: details-nested"; }
+test_lint_flags_wikilink()           { _lint_expect wikilink "bad-wikilink.md:3: wikilink"; }
+test_lint_flags_foldable_callout()   { _lint_expect foldable-callout "bad-foldable-callout.md:3: foldable-callout"; }
+test_lint_flags_highlight()          { _lint_expect highlight "bad-highlight.md:3: highlight"; }
+test_lint_flags_warning_in_toggle()  { _lint_expect warning-in-toggle "bad-warning-in-toggle.md:4: warning-in-toggle"; }
+
+test_lint_allows_relative_assets_image() {
+  _lint_expect remote-image "$(printf 'bad-remote-image.md:3: remote-image\nbad-remote-image.md:4: remote-image')"
+}
+
+test_lint_ignores_fenced_code() {
+  local out rc=0
+  out=$(lint fenced.md) || rc=$?
+  assert_eq 0 "$rc" "fenced code ignored"
+  assert_eq "" "$out" "no output for fenced code"
+}
+
+test_lint_several_files() {
+  local out rc=0
+  out=$(lint good.md bad-wikilink.md bad-highlight.md) || rc=$?
+  assert_eq 1 "$rc" "any violation exits 1"
+  assert_eq "$(printf 'bad-wikilink.md:3: wikilink\nbad-highlight.md:3: highlight')" "$out" "violations from every file"
+}
+
+test_lint_missing_file_exits_2() {
+  assert_exit 2 "missing file exits 2" -- "$TOOLS" lint-page "$FIX/pages/nope.md"
+}
+
 run_tests "${1:-.}"
