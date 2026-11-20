@@ -148,6 +148,28 @@ test_connect_creates_section_in_old_grasp_md() {
   assert_eq ".claude/skills/crlf" "$(tail -n 1 "$p/.grasp.md" | awk -F' [|] ' '{print $1}' | sed 's/^| //')" "second row appended last"
 }
 
+test_connect_twice_into_new_grasp_md() {
+  local p want
+  p=$(new_project)
+  rm "$p/.grasp.md"
+  gt --config "$p/.grasp.md" connect .claude/skills/plain work >/dev/null
+  gt --config "$p/.grasp.md" connect .claude/skills/crlf review >/dev/null
+  want=$(mktemp)
+  printf '## Connected skills\n\n| skill | step | grasp version |\n| ----- | ---- | ------------- |\n| .claude/skills/plain | work | 0.2.0 |\n| .claude/skills/crlf | review | 0.2.0 |\n' > "$want"
+  assert_file_eq "$want" "$p/.grasp.md" ".grasp.md created with both rows under the header"
+  assert_eq 2 "$(gt --config "$p/.grasp.md" status | grep -c $'\tok$')" "status lists both"
+}
+
+test_connect_into_empty_template_table() {
+  local p
+  p=$(new_project)
+  sed -n '/^## Connected skills/,$p' "$ROOT/skills/grasp/templates/grasp-config.md" > "$p/.grasp.md"
+  gt --config "$p/.grasp.md" connect .claude/skills/plain work >/dev/null
+  gt --config "$p/.grasp.md" connect .claude/skills/crlf review >/dev/null
+  assert_eq "$(printf '| .claude/skills/plain | work | 0.2.0 |\n| .claude/skills/crlf | review | 0.2.0 |')" "$(tail -n 2 "$p/.grasp.md")" "rows appended under the template's empty table"
+  assert_exit 0 "status ok, no placeholder row" -- "$TOOLS" --config "$p/.grasp.md" status
+}
+
 test_disconnect_restores_original() {
   local p
   p=$(new_project)

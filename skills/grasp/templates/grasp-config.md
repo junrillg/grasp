@@ -50,8 +50,8 @@
 
 ## Connected skills
 
-<!-- Written by `grasp-tools connect`; refreshed by /grasp update. Edit with connect/disconnect. -->
+<!-- Rows are written by `grasp-tools connect` (one per skill: path, step, grasp version) and
+     refreshed by /grasp update. Start with no rows; change them only with connect/disconnect. -->
 
 | skill | step | grasp version |
 | ----- | ---- | ------------- |
-| {.claude/skills/work-issue} | {work | verify | review | resolve} | {0.2.0} |

@@ -160,7 +160,7 @@ upsert_row() {
       {
         line = $0; sub(/\r$/, "", line)
         if (line ~ /^## /) {
-          if (in_sec && last_tbl == NR - 1) emit_new()
+          if (in_sec && last_tbl && last_tbl == NR - 1) emit_new()
           in_sec = (line == sec)
         }
         if (in_sec && line ~ /^\|/) {
@@ -168,7 +168,7 @@ upsert_row() {
           if (k == sk) { if (st != "" && !written) { print row(); written = 1 }; last_tbl = NR; next }
           print; last_tbl = NR; next
         }
-        if (in_sec && last_tbl == NR - 1) emit_new()
+        if (in_sec && last_tbl && last_tbl == NR - 1) emit_new()
         print
       }
       END { if (in_sec && last_tbl == NR) emit_new() }

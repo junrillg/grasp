@@ -32,7 +32,8 @@ console.log("fenced code inside details");
 ## (c) Foldable callout with Mermaid and code inside
 
 Expected in Obsidian: folded by default, opens to a diagram and code. On GitHub: an open quote
-block with a `[!info]-` marker.
+block with a `[!info]-` marker. Because GitHub shows it open, pages don't use it and `lint-page`
+flags it.
 
 > [!info]- How the refresh works (click to open)
 > The refresh runs before expiry.

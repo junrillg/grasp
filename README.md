@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-  <a href=".claude-plugin/plugin.json"><img src="https://img.shields.io/badge/version-0.1.0-f59e0b" alt="Version 0.1.0"></a>
+  <a href=".claude-plugin/plugin.json"><img src="https://img.shields.io/badge/version-0.2.0-f59e0b" alt="Version 0.2.0"></a>
   <a href="#quick-start"><img src="https://img.shields.io/badge/agents-Claude%20Code%20·%20Codex%20·%20Cursor%20·%20Gemini%20CLI-1c1917" alt="Works with Claude Code, Codex, Cursor and Gemini CLI"></a>
 </p>
 
@@ -27,11 +27,11 @@
 
 ```mermaid
 flowchart LR
-  I[Issue<br/>Jira · GitHub · Linear · GitLab · text] --> G[Grasp<br/>restate · ask why · 2-3 approaches]
+  I[Issue<br/>Jira · GitHub · ClickUp · Linear · GitLab · text] --> G[Grasp<br/>restate · ask why · 2-3 approaches]
   G -->|you pick| B[Before page<br/>plan · where it fits · predict]
   B --> D[Build<br/>test first · checks]
   D --> V[Verify<br/>fresh evidence · gate]
-  V --> A[After page<br/>what was built · issues · explain back]
+  V --> A[After page<br/>screenshot · walkthrough · decision · explain back]
   A --> M[App map<br/>patched if the shape changed]
 ```
 
@@ -42,12 +42,13 @@ BY DEFAULT
   1 Intake    read the issue, comments and attachments (read only)
   2 Grasp     restate it, ask what is unclear one question at a time, show 2-3 approaches
               with a recommendation, and wait for your pick
-  3 Before    write the "before" half of the issue's learning page (what, why, where it
-              fits, the plan, risks) and ask you one prediction question
+  3 Before    write the "before" half of the issue's learning page: diagrams first (where
+              it fits, expected flow, the decision), detail folded; one prediction question
   4 Build     branch, test first, smallest change, the project's own checks
   5 Verify    fresh evidence only: checks, the test failing without the fix, the behaviour seen
-  6 After     write the "after" half (what was built, plan vs actual, issues, how to check)
-              and ask you one explain-back question
+  6 After     write the "after" half: screenshot, how it works with a numbered code
+              walkthrough, decision, blockers, up to 3 checked learning links; then one
+              explain-back question
   7 Close     report; patch the app map if the issue changed how the app is put together
 ```
 
@@ -56,12 +57,13 @@ BY DEFAULT
 | Capability | What happens |
 | --- | --- |
 | **Understands first** | Restates the ask, asks why when the issue doesn't say, asks one question at a time and lays out two or three approaches. No code until you pick one. |
-| **Any tracker** | Jira, GitHub Issues, Linear, GitLab, a `.md` file or plain quoted text, all read through one intake contract. |
+| **Any tracker** | Jira, GitHub Issues, ClickUp, Linear, GitLab, Azure DevOps, any other tool you can connect, a `.md` file or plain quoted text, all read through one intake contract. `setup` reads one real issue to prove the tracker works in your project. |
 | **Builds test-first** | Branch per project convention, failing test first, smallest change, the project's own checks. Asks before any push, pull request or tracker write. |
 | **Verifies with evidence** | "Verified" means a check ran green in this run and its result is quoted. `verify` proves an existing fix without touching code. |
-| **Leaves a learning page** | One short page per issue in the repository's root `docs/` (Obsidian-compatible Markdown, listed in the docs router), or in Notion on request: a diagram, the plan, what was built, what went wrong, how to check, and an explain-back question with the answer folded away. |
+| **Leaves a visual learning page** | One page per issue in the repository's root `docs/` (Obsidian-compatible Markdown, listed in the docs router), or in Notion on request. You can scan it in a minute: each section is a caption and a picture (where it fits, a before/after screenshot, how it works, the decision), with the detail folded underneath: a numbered code walkthrough, files touched, how to check it. Blockers are never folded. Up to three live-checked learning links (docs, YouTube, LinkedIn Learning) and an explain-back question. |
 | **Reviews and resolves pull requests** | `review PR` checks a pull request against its issue and the project's written rules and reports verified findings; `resolve PR` works the review threads in one new commit. Both update the issue page so it says what the code does now. |
 | **Keeps an app map** | One page that explains the whole app, patched only when an issue changes how it's put together. |
+| **Plugs into your own skills** | `setup` finds this project's skills that work issues, verify, review or resolve, and lets you pick which to connect. Each picked skill keeps its own job and gains a short marked block that calls `/grasp page` for the learning page. `update` pulls the latest grasp and refreshes those blocks. |
 
 ## Quick start
 
@@ -87,9 +89,10 @@ The installer prints one line per folder it links, for example
 `link ~/code/app/.claude/skills/grasp`. Run it as `/grasp ISSUE`; `git pull` updates it.
 `--copy` copies instead of linking, and `--uninstall` removes what it installed.
 
-**First useful run.** Plan an issue without writing any code:
+**First useful run.** Set grasp up in your project, then plan an issue without writing any code:
 
 ```
+/grasp setup
 /grasp PROJ-123 --plan
 ```
 
@@ -102,20 +105,32 @@ More examples:
 /grasp verify PROJ-123          prove an existing fix works, fill the after page
 /grasp review 42                review a pull request, update its issue page
 /grasp resolve 42               work the review threads on your pull request
+/grasp page PROJ-123 --step verify   refresh the page after your own verify skill ran
 /grasp map                      map the whole app
+/grasp update                   pull the latest grasp, refresh connected skills
 ```
 
 **Trackers and notebook.** Connect whatever you use: `gh` for GitHub, the Atlassian MCP server
-for Jira, the Linear MCP server, `glab` for GitLab, or a project's own wrapper script. Pages go to
+for Jira, the ClickUp MCP server, the Linear MCP server, `glab` for GitLab, `az` or the Azure
+DevOps MCP server, or a project's own wrapper script. `setup` tests it on one real issue and
+records the result in `.grasp.md`. Pages go to
 `docs/how-it-works/` at the repository root by default, in Markdown that opens as an Obsidian
 vault and renders on GitHub; the first run confirms that folder with you. Pass
 `--notebook notion` (with the Notion MCP server connected) to use Notion instead. The first run in
-a repository asks what it can't detect and saves `.grasp.md`.
+a repository runs `setup` and saves `.grasp.md`.
+
+**Updating.** `/grasp update` works out how grasp was installed. For a linked install it runs
+`git pull --ff-only` in the grasp repository. For the plugin it asks you to run
+`/plugin marketplace update grasp`. For a `--copy` install it re-copies from the repository
+recorded in the copy's `.source` file. It then refreshes grasp's block in every connected skill,
+after showing you the change. A grasp release that doesn't change the block leaves your skills
+untouched.
 
 ## How it is built
 
-grasp is plain Markdown in the open Agent Skills format: there's no runtime and nothing to
-compile. `SKILL.md` is a short router, and each workflow step loads only its own reference, so
+grasp is plain Markdown in the open Agent Skills format, plus one small bash helper for the
+steps that must be exact (editing your skills, checking links, checking pages render). There's
+nothing to compile. `SKILL.md` is a short router, and each workflow step loads only its own reference, so
 an agent reads the detail a step needs and nothing else.
 
 ```mermaid
@@ -124,8 +139,11 @@ flowchart LR
   S --> U[understand.md<br/>2 grasp · 3 before]
   S --> B[build.md<br/>4 build]
   S --> V[verify.md<br/>5 verify · verify subcommand]
-  S --> N[notebook.md<br/>3 · 6 · 7 · map]
+  S --> N[notebook.md<br/>3 · 6 · 7 · page · map]
+  S --> SU[setup.md<br/>setup · update]
   N --> P[templates<br/>issue page · app map · .grasp.md]
+  SU --> G[bin/grasp-tools<br/>connect · status · refresh · check-link · lint-page]
+  N --> G
 ```
 
 | Path | What it holds |
@@ -133,6 +151,8 @@ flowchart LR
 | [`skills/grasp/SKILL.md`](skills/grasp/SKILL.md) | Arguments, help, the rules for every run and the seven-step workflow |
 | [`skills/grasp/references/`](skills/grasp/references/) | One file per step, loaded only when that step runs |
 | [`skills/grasp/templates/`](skills/grasp/templates/) | The issue page, the app map and the `.grasp.md` project settings |
+| [`skills/grasp/bin/grasp-tools`](skills/grasp/bin/grasp-tools) | The exact, testable steps: connect, disconnect, status, refresh, check-link, lint-page, version. Needs only bash, sed, awk and curl |
+| [`tests/`](tests/) | Plain-bash tests for `grasp-tools` and the skill docs, plus the Obsidian render check |
 | [`.claude-plugin/`](.claude-plugin/) | Plugin and marketplace manifests for Claude Code |
 | [`install.sh`](install.sh) | Links or copies the skill into each agent's skills folder |
 
@@ -146,9 +166,18 @@ same notes list the open gaps: treat the prediction question as a cheap bet, not
 - [Learning pages](docs/research/learning-pages.md)
 - [Comprehension before the build, and the app map](docs/research/comprehension-before-and-app-map.md)
 - [Packaging and workflow](docs/research/packaging-and-workflow.md)
+- [Visual pages](docs/research/visual-pages.md), including the Obsidian and GitHub render test
 
 ## Status
 
-Version 0.1.0, private. There's no license file yet, so no rights are granted beyond the
+Version 0.2.0, private. There's no license file yet, so no rights are granted beyond the
 repository's access settings. To change the skill, edit `skills/grasp/` and try it from a linked
 install (`./install.sh --project <a test repo>`) with `/grasp <issue> --plan`.
+
+Run the tests (bash only, no installs):
+
+```bash
+tests/grasp-tools.sh          # the helper, with a stand-in for curl
+tests/grasp-tools.sh --live   # also checks real YouTube links over the network
+tests/skill-docs.sh           # help block, argument-hint and references agree
+```
