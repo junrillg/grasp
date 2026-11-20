@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# grasp-tools: the exact, mechanical steps of the grasp skill.
+# Needs only bash, sed, awk and curl. Run `grasp-tools -h` for usage.
+set -u
+
+# Resolve this script's real location (following symlinks) to find the skill directory.
+_src=${BASH_SOURCE[0]}
+while [[ -L "$_src" ]]; do
+  _dir=$(cd -P "$(dirname "$_src")" && pwd)
+  _src=$(readlink "$_src")
+  [[ "$_src" != /* ]] && _src="$_dir/$_src"
+done
+GRASP_HOME=$(cd -P "$(dirname "$_src")/.." && pwd)
+
+BLOCK_FORMAT=1
+TOGGLE_FORM=html   # set by the Obsidian render test (docs/research/visual-pages.md)
+STEPS="work verify review resolve"
+
+usage() {
+  cat <<'EOF'
+grasp-tools: exact steps for the grasp skill
+
+Usage: grasp-tools [--config PATH] <command> [args]
+
+Commands:
+  connect SKILL_DIR STEP   add or replace grasp's block in SKILL_DIR/SKILL.md and record it
+                           STEP is one of: work, verify, review, resolve
+  disconnect SKILL_DIR     remove the block and the record
+  status                   list connected skills: SKILL_DIR, STEP, ok|stale|no-block|missing
+  refresh [SKILL_DIR]      rewrite stale or missing blocks (all connected skills by default)
+  check-link URL           check a learning link live (YouTube, LinkedIn Learning, other)
+  lint-page FILE...        check a learning page renders in Obsidian and on GitHub
+  version                  print the grasp version
+
+Options:
+  --config PATH            the project's .grasp.md (default: ./.grasp.md); skill dirs are
+                           relative to its folder
+  -h, --help, help         show this help
+EOF
+}
+
+die() { printf 'grasp-tools: %s\n' "$2" >&2; exit "$1"; }
+
+cmd_version() { tr -d '[:space:]' < "$GRASP_HOME/VERSION"; printf '\n'; }
+
+not_implemented() { die 3 "$1: not implemented"; }
+
+CONFIG=./.grasp.md
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --config) [[ $# -ge 2 ]] || die 2 "--config needs a path"; CONFIG=$2; shift 2 ;;
+    *) break ;;
+  esac
+done
+
+cmd=${1:-}
+[[ $# -gt 0 ]] && shift
+case "$cmd" in
+  -h|--help|help) usage ;;
+  version) cmd_version ;;
+  connect|disconnect|status|refresh|check-link|lint-page) not_implemented "$cmd" ;;
+  "") usage >&2; exit 2 ;;
+  *) usage >&2; printf '\ngrasp-tools: unknown command: %s\n' "$cmd" >&2; exit 2 ;;
+esac
