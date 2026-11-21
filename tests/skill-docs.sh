@@ -16,7 +16,7 @@ subs_of_hint() { arg_hint | awk -F' [|] ' '{ for (i = 1; i <= NF; i++) { split($
 test_help_lists_subcommands() {
   local h s
   h=$(help_block)
-  for s in setup update page --step; do assert_contains "$h" "$s" "help block mentions $s"; done
+  for s in setup update page record map --step; do assert_contains "$h" "$s" "help block mentions $s"; done
 }
 
 test_argument_hint_matches_help() {
@@ -56,7 +56,7 @@ test_trackers_cover_clickup() {
 test_config_template_sections() {
   local c s
   c=$(cat "$ROOT/skills/grasp/templates/grasp-config.md")
-  for s in "## Connected skills" "## App" "## Learning" "tested:"; do assert_contains "$c" "$s" "config template has $s"; done
+  for s in "## Connected skills" "## App" "## Learning" "tested:" "## Projects" "- run records:" "- stop hook:"; do assert_contains "$c" "$s" "config template has $s"; done
 }
 
 test_review_converts_old_pages() {
@@ -79,6 +79,56 @@ test_update_checks_copy_install_first() {
   git=$(printf '%s\n' "$u" | grep -n 'pull --ff-only' | head -n 1 | cut -d: -f1)
   [[ -n "$src" && -n "$git" && $src -lt $git ]] || _fail "update checks .source before any git pull (src=$src git=$git)"
   assert_contains "$u" "symlink" "link install is identified by a symlink"
+}
+
+test_setup_records_runs_and_writes_overview() {
+  local u s
+  u=$(cat "$ROOT/skills/grasp/references/setup.md")
+  for s in "### 0. Scope" "grasp-tools projects" "### 6. Run records" "grasp-tools connect AGENTS.md record" \
+           "@AGENTS.md" "### 8. Overview" "workspace map" '/grasp record "grasp set up"'; do
+    assert_contains "$u" "$s" "setup.md covers: $s"
+  done
+}
+
+test_settings_come_only_from_grasp_md() {
+  # grasp's block in AGENTS.md is an instruction, never a stand-in for .grasp.md (it would skip setup)
+  local body
+  body=$(cat "$SKILL")
+  [[ "$body" != *'section in `CLAUDE.md`'* ]] || _fail "SKILL.md no longer treats a section in CLAUDE.md/AGENTS.md as settings"
+  assert_contains "$body" 'never stands in for' "SKILL.md says the block is not the settings"
+}
+
+test_links_inside_the_skill_resolve() {
+  # a copy or plugin install ships only skills/grasp, so every relative link must stay inside it
+  local f dir link n=0
+  while IFS=$'\t' read -r f link; do
+    n=$((n + 1))
+    dir=$(dirname "$f")
+    [[ -f "$dir/$link" ]] || _fail "$(basename "$f") links a missing file: $link"
+    case "$(cd "$dir/$(dirname "$link")" 2>/dev/null && pwd)" in
+      "$ROOT/skills/grasp"*) ;;
+      *) _fail "$(basename "$f") links outside the skill folder: $link" ;;
+    esac
+  done < <(grep -oE '\]\((\.\./)*(references|templates)/[a-z-]+\.md\)|\]\([a-z-]+\.md\)' -H \
+             "$ROOT"/skills/grasp/SKILL.md "$ROOT"/skills/grasp/references/*.md "$ROOT"/skills/grasp/templates/*.md |
+           grep -v '{' | sed -E 's/:\]\(/\t/; s/\)$//')
+  [[ $n -gt 20 ]] || _fail "found links to check (got $n)"
+  if grep -n '\](\.\./\.\./' "$ROOT"/skills/grasp/references/*.md "$ROOT"/skills/grasp/templates/*.md >/dev/null; then
+    _fail "no link climbs out of skills/grasp"
+  fi
+}
+
+test_run_record_fields_agree_everywhere() {
+  local f blk p rec tpl
+  p=$(new_tmp); "$ROOT/skills/grasp/bin/grasp-tools" --config "$p/.grasp.md" connect AGENTS.md record >/dev/null
+  blk=$(cat "$p/AGENTS.md")
+  rec=$(cat "$ROOT/skills/grasp/references/records.md"); tpl=$(cat "$ROOT/skills/grasp/templates/run-record.md")
+  for f in Asked Changed Checked Problems Next; do
+    assert_contains "$rec" "**$f**" "records.md explains $f"
+    assert_contains "$tpl" "- **$f:**" "template has the $f line"
+    assert_contains "$blk" "- **$f:**" "the AGENTS.md block has the $f line"
+  done
+  for f in done partial blocked failed; do assert_contains "$rec" "\`$f\`" "records.md defines status $f"; done
 }
 
 run_tests "${1:-.}"

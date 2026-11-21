@@ -1,7 +1,7 @@
 {
   "name": "grasp",
   "description": "Work one issue from any tracker so the team understands it before and after it is built: grasp the ask, build test-first, verify with evidence, and leave a short visual learning page.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": { "name": "Junrill" },
   "repository": "https://github.com/junrillg/grasp",
   "keywords": ["issues", "jira", "github", "linear", "notion", "learning", "verification"]

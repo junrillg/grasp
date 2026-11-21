@@ -11,12 +11,14 @@
 - project or repo: {e.g. PROJ, owner/repo, ClickUp space or list}
 - keys: {only when a key like DEV-42 could be two trackers: which one it means}
 - comments: {ask | never}
-- tested: {YYYY-MM-DD ok | YYYY-MM-DD failed (title | body | comments | attachments | write)}
+- tested: {YYYY-MM-DD ok | YYYY-MM-DD failed (title | body | comments | attachments | write) | not tested (why)}
 
 ## Notebook
 
 - target: {markdown | notion | off}
 - markdown folder: {docs/how-it-works, confirmed with the user on the first run}
+- run records: {docs/how-it-works/runs; read by grasp-tools, relative to this file}
+- stop hook: {the settings file holding the Stop hook, e.g. .claude/settings.local.json; or none}
 - docs router: {docs/README.md, or none}
 - docs repo: {same | path of a separate docs repository, e.g. a workspace wrapper}
 - notion parent: {page id, only for target notion}
@@ -48,10 +50,21 @@
 
 - linkedin learning: {yes | no}
 
+## Projects
+
+<!-- Only at the top of a workspace (a folder holding several projects). One row per sub-project
+     covered: its path, repo or package, where its pages go, and the commit its app map was
+     verified at. Delete this section in a single project. -->
+
+| project | kind | notebook folder | mapped at |
+| ------- | ---- | --------------- | --------- |
+
 ## Connected skills
 
-<!-- Rows are written by `grasp-tools connect` (one per skill: path, step, grasp version) and
-     refreshed by /grasp update. Start with no rows; change them only with connect/disconnect. -->
+<!-- Rows are written by `grasp-tools connect` (one per target: path, step, grasp version) and
+     refreshed by /grasp update. A row with step `record` is an agent instructions file
+     (AGENTS.md or CLAUDE.md) holding the run-record block, not a skill. Start with no rows;
+     change them only with connect/disconnect. -->
 
 | skill | step | grasp version |
 | ----- | ---- | ------------- |

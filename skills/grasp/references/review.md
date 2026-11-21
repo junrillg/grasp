@@ -61,7 +61,9 @@ The pull request is the user's own (or they asked to work it).
    it. Run the project's checks one at a time. Never weaken a check to pass it.
 8. **Commit** one new commit on the same branch in the project's format. Never amend,
    force-push, rebase or squash.
-9. **Page.** See "The issue page" below.
+9. **Page and record.** See "The issue page" below, then update the task's run record
+   ([records.md](records.md)): what the review caught goes in its Problems line, what this run
+   fixed in Changed.
 10. **Replies.** Draft one per thread; show the diff summary, check results and every reply word
     for word, and ask once. Then push, reply, and resolve only the threads that are the author's
     to close. Fetch again to confirm each reply and thread state, and report the checks.
@@ -82,7 +84,8 @@ Both subcommands leave the issue page (see [notebook.md](notebook.md)) matching 
   a visible `> [!WARNING]`, one line each, never folded. `resolve` moves each finding it fixed
   into the "Plan vs actual" toggle (what the reviewer caught and how it was fixed) and removes
   its warning; a warning goes only when this run fixed it.
-- **Bug:** one line in the "Plan vs actual" toggle of the feature page it touches, or nothing.
+- **Bug:** one line in the "Plan vs actual" toggle of the feature page it touches, or nothing on
+  a page. Its run record ([records.md](records.md)) is where it is written down either way.
 - **Old page layout:** a page written before the visual layout is converted while it is being
   patched anyway: rewrite its toggles into the one-block HTML form (no blank lines, HTML only,
   content unchanged) as [notebook.md](notebook.md) "Toggles" says. Never convert untouched pages.

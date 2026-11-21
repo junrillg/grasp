@@ -1,20 +1,22 @@
 ---
 name: grasp
-description: Works one issue from any tracker (Jira, GitHub, ClickUp, Linear, GitLab, Azure DevOps, or plain text) so the team understands it before and after it is built. Understand first: restate the ask, ask one question at a time, lay out two or three approaches and wait for a pick. Then build test-first, verify with fresh evidence, and write a visual-first learning page (diagrams, screenshots, a code walkthrough, detail folded; Obsidian-compatible Markdown in the repository's docs/, or Notion) with a before half, an after half and an explain-back question, plus a living map of the whole app. `setup` live-tests the tracker and connects the project's own workflow skills to grasp's learning page; `update` pulls the latest grasp and refreshes them. Use when given an issue key, URL or description to build, fix or investigate, to verify an issue is fixed, to review a pull request or resolve its comments, to map an app, or to set up or update grasp.
-argument-hint: "ISSUE [--plan] [--notebook markdown|notion|off] [--no-comment] | verify ISSUE|PR | review PR [--post] | resolve PR | page ISSUE|PR [--step work|verify|review|resolve] | map | setup | update | help"
+description: Works one issue from any tracker (Jira, GitHub, ClickUp, Linear, GitLab, Azure DevOps, or plain text) so the team understands it before and after it is built, and keeps a record of what agents do in a repository. Understand first: restate the ask, one question at a time, two or three approaches, wait for a pick. Then build test-first, verify with fresh evidence, and write a visual-first learning page (diagrams, a code walkthrough, detail folded; Obsidian-compatible Markdown in docs/, or Notion). `setup` live-tests the tracker, makes every agent run leave a short run record (a block in AGENTS.md or CLAUDE.md), and writes an overview of the app: core features, how they connect, the architecture, and each sub-project of a workspace. Use when given an issue key, URL or description to build, fix or investigate; to verify a fix; to review a pull request or resolve its comments; to record what a run did; to map or explain an app; or to set up or update grasp.
+argument-hint: "ISSUE [--plan] [--notebook markdown|notion|off] [--no-comment] | verify ISSUE|PR | review PR [--post] | resolve PR | page ISSUE|PR [--step work|verify|review|resolve] | record [\"NAME\"] | map | setup | update | help"
 ---
 
 # grasp
 
 Build it, and grasp it. AI can write the code; this skill makes sure the people who own the code
 understand what is being built before it starts, what was built after it ends, what went wrong,
-and how it fits the whole app.
+and how it fits the whole app. It leaves three kinds of page: an overview of the app (what it
+does, how the features connect), a learning page per issue, and a run record for every agent
+task.
 
 ## Arguments
 
 | Argument | Type | Required | Default | Meaning |
 | -------- | ---- | -------- | ------- | ------- |
-| `ISSUE` | key, URL, file path or quoted text | yes, except for `map`, `setup`, `update` and `help` | none | `PROJ-123`, `#42`, `owner/repo#42`, `86abc123` (ClickUp), `LIN-7`, `AB#1234` (Azure DevOps), a tracker URL, a `.md` file, or `"text"` |
+| `ISSUE` | key, URL, file path or quoted text | yes, except for `record`, `map`, `setup`, `update` and `help` | none | `PROJ-123`, `#42`, `owner/repo#42`, `86abc123` (ClickUp), `LIN-7`, `AB#1234` (Azure DevOps), a tracker URL, a `.md` file, or `"text"` |
 | `--plan` | flag | no | off | Stop after the approach is picked and the "before" page is written. No code. |
 | `--notebook` | `markdown`, `notion`, `off` | no | the `.grasp.md` setting, else `markdown` | Where the learning page goes. `markdown` writes `docs/how-it-works/` at the repository root (the folder is confirmed with you on the first run), in Markdown that renders in Obsidian, GitHub and static doc sites. `notion` needs a Notion tool. |
 | `--no-comment` | flag | no | off | Write nothing back to the tracker. |
@@ -24,12 +26,14 @@ and how it fits the whole app.
 | `resolve` | subcommand | no | none | Work the unresolved review threads on a pull request: verify, fix, one new commit, reply and resolve after approval, update the issue page. |
 | `page` | subcommand | no | none | Write or patch the issue's learning page from the current state (issue, branch diff, pull request). Nothing else: no code, commits or tracker writes. Connected skills call this. |
 | `--step` | `work`, `verify`, `review`, `resolve`, with `page` | no | `work` | Which skill is calling, so `page` knows which part of the page to write. |
-| `map` | subcommand | no | none | Build or refresh the app map page only. |
-| `setup` | subcommand | no | none | Set grasp up in this project: tracker (live-tested), checks, app, docs folder, learning links, and connect the project's own workflow skills. Runs by itself when `.grasp.md` is missing. |
+| `record` | subcommand | no | none | Write or update the run record for the task in this conversation: asked, changed, checked, problems, next. Nothing else: no code, commits or tracker writes. The block that `setup` adds to `AGENTS.md` makes every agent run do this. |
+| `"NAME"` | quoted text, with `record` | no | named after what changed | The record's short name. |
+| `map` | subcommand | no | none | Build or refresh the overview only: the app map, a page for each core feature that needs one and, at the top of a workspace, the workspace map and each sub-project's app map. |
+| `setup` | subcommand | no | none | Set grasp up in this project: tracker (live-tested), checks, app, docs folder, learning links, the run-record block in `AGENTS.md` or `CLAUDE.md`, the project's own workflow skills, and the overview of the app. In a top folder with sub-projects it covers each one. Runs by itself when `.grasp.md` is missing. |
 | `update` | subcommand | no | none | Pull the latest grasp for this install, then refresh the block in every connected skill. |
 | `help` | first word | no | none | Also `--help`, `-h`. Print usage and stop. |
 
-No issue and no subcommand: ask for one and stop. `review` and `resolve` take a pull request number or URL; `page` takes either.
+No issue and no subcommand: ask for one and stop. `review` and `resolve` take a pull request number or URL; `page` takes either; `record` takes neither.
 
 ## Help: handle before anything else
 
@@ -45,6 +49,7 @@ USAGE
   /grasp review PR [--post]
   /grasp resolve PR
   /grasp page ISSUE|PR [--step work|verify|review|resolve]
+  /grasp record ["NAME"]
   /grasp map
   /grasp setup
   /grasp update
@@ -77,12 +82,22 @@ SUBCOMMANDS
   page ISSUE|PR     write or patch the issue's learning page from the current state, and
                     nothing else (no code, commits or tracker writes). The before half when
                     there is no branch diff and no pull request yet, otherwise the after half.
-  map               build or refresh the one-page map of the whole app.
+  record ["NAME"]   write or update the run record for the task in this conversation: five
+                    lines (asked, changed, checked, problems, next), a diagram when the
+                    change has a shape, then rebuild the table of all runs. Nothing else.
+  map               build or refresh the overview: the app map (what the app is for, core
+                    features, how they connect, the pieces, one traced request), a page for
+                    each core feature that needs one, and in a workspace each sub-project
+                    plus how they fit. Small apps get fewer pages, not thinner ones.
   setup             tracker (read live to prove it works), checks, app run command, docs
-                    folder, LinkedIn Learning yes/no, then pick which of this project's own
-                    skills (work an issue, verify, review, resolve) should call grasp for the
-                    learning page. Saved to .grasp.md. Runs by itself on the first run.
-  update            pull the latest grasp, then refresh grasp's block in connected skills.
+                    folder, LinkedIn Learning yes/no; then the run-record block in AGENTS.md
+                    or CLAUDE.md so every agent run records itself (Stop hook optional); then
+                    which of this project's own skills should call grasp for the learning
+                    page; then the overview of the app. Covers each sub-project when run in a
+                    top folder that holds several. Saved to .grasp.md. Runs by itself on the
+                    first run.
+  update            pull the latest grasp, then refresh grasp's block in connected skills
+                    and in AGENTS.md or CLAUDE.md.
 
 BY DEFAULT
   1 Intake    read the issue, comments and attachments (read only)
@@ -95,7 +110,8 @@ BY DEFAULT
   6 After     write the "after" half: screenshot, how it works with a numbered code
               walkthrough, decision, blockers, up to 3 checked learning links; then one
               explain-back question
-  7 Close     report; patch the app map if the issue changed how the app is put together
+  7 Close     write the run record; patch the app map and the feature page if the issue
+              changed how the app is put together; report
 
 EXAMPLES
   /grasp PROJ-123 --plan          safe first run: understand and plan, no code, no writes
@@ -105,8 +121,9 @@ EXAMPLES
   /grasp review 42                review pull request 42, report only, update the page
   /grasp resolve 42               work the review threads on your pull request 42
   /grasp page PROJ-123 --step verify   refresh the page after your own verify skill ran
-  /grasp map                      first time in a repo: map the whole app
-  /grasp setup                    connect your own skills and test the tracker
+  /grasp record                   what did this session do? write it down in five lines
+  /grasp map                      refresh the overview of the app and its features
+  /grasp setup                    first time in a repo: settings, run records, the overview
   /grasp update                   new grasp version: pull it and refresh connected skills
 
 IT WILL ASK YOU
@@ -119,6 +136,11 @@ IT WILL ASK YOU
     check commands, how to start the app, where the docs go (default docs/how-it-works/),
     LinkedIn Learning yes/no, and which of your skills to connect (multi-select), all
     saved to .grasp.md. A test tracker comment is posted only on a yes.
+  - setup, run records: before adding the block to AGENTS.md or CLAUDE.md (exact text
+    shown), before adding @AGENTS.md to an existing CLAUDE.md, and whether to add the
+    Stop hook (off unless you say yes)
+  - setup and map, overview: to confirm the list of core features before pages are
+    written; in a workspace, which sub-projects to cover and where their pages go
   - update: to refresh stale blocks in connected skills (diff shown first), and what to do
     with a connected skill that moved; plugin installs ask you to run the plugin update
   - before installing Playwright for a screenshot, or signing in to a protected screen
@@ -128,14 +150,20 @@ REFERENCES
   references/understand.md   restating, questions, approaches, the "before" half
   references/build.md        branch, test first, checks, commit, pull request
   references/verify.md       evidence rules and the gate
-  references/notebook.md     page layout, toggles, diagrams, screenshots, links, app map
+  references/notebook.md     page layout, toggles, diagrams, screenshots, links
+  references/records.md      run records, the AGENTS.md block, the Stop hook
+  references/overview.md     app map, feature pages, workspaces with sub-projects
   references/setup.md        setup, update, connecting skills
   references/review.md       review and resolve: pull requests, and the page they update
   templates/issue-page.md    the learning page, both halves
   templates/app-map.md       the app map page
+  templates/feature-page.md  one core feature
+  templates/workspace-map.md how the projects of a workspace fit
+  templates/run-record.md    one agent task
   templates/grasp-config.md  the .grasp.md project settings file
-  bin/grasp-tools            helper: connect, disconnect, status, refresh, check-link,
-                             lint-page, version (grasp-tools -h)
+  bin/grasp-tools            helper: connect, disconnect, status, refresh, record-index,
+                             record-check, projects, check-link, lint-page, version
+                             (grasp-tools -h)
 ```
 
 ## Rules for the whole run
@@ -155,14 +183,18 @@ REFERENCES
   on a subagent's claim. Never run two heavy commands (test, build, typecheck) at once.
 - **Pages teach, they do not narrate.** Short, visual, plain words. Link to code and the pull
   request; never paste secrets, personal data or client documents into a page.
+- **Every task that changes files leaves a run record.** Big or small, finished or failed, with
+  every problem met written down ([references/records.md](references/records.md)). A record says
+  only what happened in this run.
 - **Cheap by default.** Follow the token budget in [references/notebook.md](references/notebook.md).
 
 ## Setup (first run in a repository)
 
-Look for `.grasp.md` at the repository root, then a "grasp" section in `CLAUDE.md` or
-`AGENTS.md`. If neither exists, run `setup` first ([references/setup.md](references/setup.md)),
-then carry on with the run. An older `.grasp.md` that lacks a section is filled in when a run
-first needs it; setup is not forced.
+Look for `.grasp.md` at the repository root. If it is missing, run `setup` first
+([references/setup.md](references/setup.md)), then carry on with the run. grasp's block in
+`AGENTS.md` or `CLAUDE.md` is an instruction to agents, not the settings: it never stands in for
+`.grasp.md`. An older `.grasp.md` that lacks a section is filled in when a run first needs it;
+setup is not forced.
 
 The helper for exact steps is `bin/grasp-tools` inside this skill's folder (`grasp-tools -h`).
 
@@ -217,19 +249,25 @@ section that answers it.
 
 ### 7. Close out
 
-- Patch the app map only if the issue added or changed a container, module, external service,
-  data store, or a step of the main request path. One line in its decisions log for a new
-  decision; one glossary line for a new domain word.
+- Write the run record ([references/records.md](references/records.md)): the five lines, linked
+  to the issue page, then `grasp-tools record-index`. Always, also when the run failed or stopped
+  early; every blocker met goes in its Problems line.
+- Patch the app map only if the issue added or changed a core feature, a connection between
+  features, a container, module, external service, data store, or a step of the main request
+  path ([references/overview.md](references/overview.md)). A changed core feature also gets its
+  feature page patched. One line in `decisions.md` for a new decision; one glossary line for a
+  new domain word.
 - Unless `--no-comment`, draft one short tracker comment (verdict first, link to the pull
   request, what to re-test), show it, and post only on yes.
 - Report: what the user can do now, what remains, the pull request and checks with results,
-  the page path or link, and anything blocked with what unblocks it.
+  the page and run record paths or links, and anything blocked with what unblocks it.
 
 ## `verify` subcommand
 
 Run steps 1, 5, 6 and 7 only. Find the pull request from the issue (branch name or title holds
 the key) or take it as given. Never edit, commit, push or merge. If there is no page for the
-issue yet, write the "after" half alone.
+issue yet, write the "after" half alone. Step 7's run record says what was verified or what
+failed; its Changed line is "nothing".
 
 ## `review` and `resolve` subcommands
 
@@ -238,7 +276,9 @@ and the project's written standard, reviews with parallel read-only subagents, v
 finding against the code itself, reports, and writes or updates the issue page with what the
 pull request implements. It posts nothing unless `--post` and a yes. `resolve` fetches every
 unresolved thread verbatim, verifies each claim, fixes what is right in one new commit, updates
-the issue page to match the fixes, and pushes, replies and resolves only after a yes.
+the issue page to match the fixes, and pushes, replies and resolves only after a yes. Both end
+with a run record: the findings and whether anything was posted for `review`, what was fixed for
+`resolve`.
 
 ## `page` subcommand
 
@@ -258,23 +298,35 @@ from the current state and do nothing else: no code, no commits, no pushes, no t
 4. Run `grasp-tools lint-page`, then report the page path in one line. Questions (prediction,
    explain-back) are asked only when a person is in the conversation; never block on them.
 
+## `record` subcommand
+
+Follow "`/grasp record`" in [references/records.md](references/records.md): write or update the
+run record for the task in this conversation from what the conversation and `git` show, lint it,
+rebuild the index with `grasp-tools record-index`, and report its path. No code, no commits, no
+tracker writes. This is what the block in `AGENTS.md` asks every agent run to do; an agent
+without grasp writes the same five lines by hand.
+
 ## `setup` subcommand
 
-Follow [references/setup.md](references/setup.md): tracker, a live tracker test, checks and app,
-docs location, learning links, and connecting this project's own skills. One question at a
-time. Writes `.grasp.md` and, for each skill picked, grasp's marked block at the end of that
-skill's `SKILL.md`. Nothing else in a connected skill changes.
+Follow [references/setup.md](references/setup.md): scope (one project or a workspace of
+sub-projects), tracker, a live tracker test, checks and app, docs location, learning links, the
+run-record block, connecting this project's own skills, and the overview. One question at a
+time. Writes `.grasp.md`; grasp's marked block in `AGENTS.md` or `CLAUDE.md` and at the end of
+each picked skill's `SKILL.md` (nothing else in those files changes); the app map, a page for
+each core feature that needs one and, in a workspace, the workspace map; and its own run record.
 
 ## `update` subcommand
 
 Follow "/grasp update" in [references/setup.md](references/setup.md): pull the latest grasp for
-this install (link, plugin or copy), then `grasp-tools status`, and refresh stale blocks after a
-yes.
+this install (link, plugin or copy), then `grasp-tools status`, and refresh stale blocks (in
+connected skills and in `AGENTS.md` or `CLAUDE.md`) after a yes.
 
 ## `map` subcommand
 
-Build or refresh the app map as "App map" in [references/notebook.md](references/notebook.md)
-describes, then stop.
+Build or refresh the overview as [references/overview.md](references/overview.md) describes,
+then stop: the app map, a page for each core feature that needs one, and at the top of a
+workspace the workspace map and each sub-project's app map. Show the feature list for
+confirmation before writing pages.
 
 ## References
 
@@ -282,6 +334,8 @@ describes, then stop.
 - [references/understand.md](references/understand.md): steps 2 and 3.
 - [references/build.md](references/build.md): step 4.
 - [references/verify.md](references/verify.md): step 5 and `verify`.
-- [references/notebook.md](references/notebook.md): steps 3, 6, 7, `page` and `map`.
+- [references/notebook.md](references/notebook.md): steps 3, 6, 7 and `page`.
+- [references/records.md](references/records.md): step 7, `record`, the block in `AGENTS.md`.
+- [references/overview.md](references/overview.md): `map`, setup's overview, workspaces.
 - [references/setup.md](references/setup.md): `setup`, `update` and the first run.
 - [references/review.md](references/review.md): `review` and `resolve`.

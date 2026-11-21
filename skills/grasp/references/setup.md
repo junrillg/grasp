@@ -11,9 +11,27 @@ lists its commands.
 
 Runs by itself the first time grasp is used in a repository without `.grasp.md`. Running it
 again edits the existing file: show the current value for each step and keep it unless the user
-changes it. One question at a time, in plain words. Write `.grasp.md` from
-[templates/grasp-config.md](../templates/grasp-config.md) at the end and tell the user to commit
-it.
+changes it. One question at a time, in plain words.
+
+Setup does three things a team needs before the first task: it makes the settings file
+(steps 1 to 5), it makes every later agent run leave a record (step 6), and it writes the
+overview of the app so there is something to read on day one (step 8).
+
+| Step | Asks | Writes |
+| ---- | ---- | ------ |
+| 0 Scope | which sub-projects, where their pages go (workspaces only) | nothing yet |
+| 1-5 Settings | tracker, one real issue, checks, app, docs folder, LinkedIn Learning | `.grasp.md` |
+| 6 Run records | which instructions file, Stop hook yes/no | the block in `AGENTS.md` or `CLAUDE.md`, the `runs/` folder |
+| 7 Connect skills | which of the project's skills | the block in each picked skill |
+| 8 Overview | to confirm the feature list | the app map, feature pages, the workspace map |
+
+### 0. Scope
+
+Run `grasp-tools projects` from the folder setup was started in. No output: this is one project;
+go to step 1. Any output: this is a workspace. Follow "Workspaces" in [overview.md](overview.md):
+show the list, ask which sub-projects to cover and where their pages go, then run steps 1 to 7
+for the top folder first and for each sub-repository after it, asking a sub-repository only what
+differs from the top (its tracker project, its checks, its branch). Step 8 covers them all.
 
 ### 1. Tracker
 
@@ -25,6 +43,8 @@ you would use ([trackers.md](trackers.md)) and ask the user to confirm or pick a
 
 ### 2. Tracker test (live)
 
+No tracker ("none, I paste issues"): skip this step and save `tested: not tested (no tracker)`.
+
 Ask for one real issue key or URL. Read it with the chosen reader and show the user what came
 back, in a few lines: title, the first lines of the body, the comment count with the newest
 comment's author, and one attachment opened (or "no attachments"). Ask whether that matches
@@ -35,29 +55,66 @@ what they see in the tracker.
   separate question, show its exact text, and post only on a yes.
 - Save `type`, `reader`, `project or repo` and `tested: YYYY-MM-DD ok`, or
   `tested: YYYY-MM-DD failed (title | body | comments | attachments | write)` naming the part that
-  failed. A failed test is saved too, and said plainly; never report a tracker as working when
+  failed, or `tested: not tested (why)` when the user gives no issue to read. A failed test is saved too, and said plainly; never report a tracker as working when
   this read did not succeed.
 - Never ask for, handle or print a token. A reader that needs signing in: say how to sign in and
   re-run only this step.
 
-### 3. Checks and app
+### 3. Checks, app and code
 
 Detect lint, test and build commands from `package.json` scripts, `pyproject.toml`, `Makefile`
 or CI files, and confirm them. Ask for the command that starts the app and the URL it serves
 (for screenshots, [notebook.md](notebook.md)); "no UI" is a valid answer.
 
+Detect the rest of `## Code` and `## Voice` and confirm it in the same message, never as four
+questions: the integration branch (the remote's default branch; with no remote, the current
+branch), the branch pattern (from recent branch names), the pull request command (`gh`, `glab`,
+a project wrapper, or "none"), and the project's rules on voice and attribution (from the
+project's own `AGENTS.md` or `CLAUDE.md`, not a personal one; "none written" is fine). With no
+tracker, `comments:` is `never`.
+
 ### 4. Docs location
 
 Always confirm, even when detected: propose `docs/how-it-works/` at the repository root (or the
-folder an existing `docs/` router already uses for this kind of page), show the files the first
-page will create, and wait for a yes or another path.
+folder an existing `docs/` router already uses for this kind of page), show the files setup will
+create there (in a workspace, the folder per sub-project), and wait for a yes or another path.
+Then make sure git will keep the pages, as "Not git-ignored" in [overview.md](overview.md) says:
+test the path of a page about to be written, one per sub-project folder.
 
 ### 5. Learning links
 
 Ask whether the team has LinkedIn Learning. Save `linkedin learning: yes` or `no`. With `no`,
 "Learn more" lists only free material.
 
-### 6. Connect this project's skills
+Now write `.grasp.md` from [templates/grasp-config.md](../templates/grasp-config.md), with
+`run records:` set to `<docs folder>/runs`. The steps below read it.
+
+### 6. Run records
+
+Follow "The block in AGENTS.md and CLAUDE.md" in [records.md](records.md). This is what makes
+every agent task leave a record, including the ones that never go through `/grasp`.
+
+1. Look at what the project has: `AGENTS.md`, `CLAUDE.md`, both or neither, and whether
+   `CLAUDE.md` holds the line `@AGENTS.md`.
+2. Propose the file (`AGENTS.md`, created when missing; `CLAUDE.md` only when the user wants no
+   `AGENTS.md`), show the exact block that will be written (`grasp-tools block record` prints
+   it), and say nothing else in the file changes. On a yes: `grasp-tools connect AGENTS.md record`.
+3. A `CLAUDE.md` that exists without the import: Claude Code then does not read `AGENTS.md`, so
+   offer `grasp-tools connect CLAUDE.md import` (it adds the one line `@AGENTS.md` in a marked
+   block; `grasp-tools block import` prints it). Run it only on a yes. No `CLAUDE.md`: nothing
+   to add, unless the user says someone runs a Claude Code older than 2.1.277.
+4. Create the run records folder and its index: `grasp-tools record-index` (after `mkdir -p` of
+   the folder). Offer one line for `.gitattributes`, `<run records folder>/README.md merge=union`,
+   so two branches that both rebuild the index merge without a conflict. The line goes in the
+   repository that holds the folder, once.
+5. Ask whether to add the Stop hook ("The Stop hook" in [records.md](records.md)): off by
+   default; explain in one line that the instruction file is advice and the hook is the reminder
+   that can't be forgotten. On a yes, merge the entry and save `stop hook: FILE` in `.grasp.md`.
+
+To undo: `grasp-tools disconnect AGENTS.md`, and `grasp-tools disconnect CLAUDE.md` for the
+import.
+
+### 7. Connect this project's skills
 
 Find skills in this project that do grasp's kinds of work, so they can call grasp for the
 learning page while keeping their own job.
@@ -81,7 +138,7 @@ learning page while keeping their own job.
    end to end`). At most 4 options per question; put the rest in a follow-up question. None
    picked is fine.
 4. Show the block that will be added to the end of each picked skill's `SKILL.md` (the exact
-   text `connect` writes, between `<!-- grasp:start ... -->` and `<!-- grasp:end -->`), and say
+   text `connect` writes, printed by `grasp-tools block STEP`), and say
    nothing else in their file changes. On a yes, for each:
    `grasp-tools connect .claude/skills/NAME STEP`. It records the skill in `.grasp.md` under
    "Connected skills".
@@ -89,6 +146,34 @@ learning page while keeping their own job.
 
 The block makes the connected skill run `/grasp page <issue or PR> --step STEP` when it has
 finished its own work. grasp never edits a skill outside its block.
+
+### 8. Overview
+
+Follow [overview.md](overview.md). Skip only when the app map already exists and the user does
+not want it refreshed. When setup started by itself in front of another run (the first
+`/grasp ISSUE` in a repository), ask first: write the overview now, or later with `/grasp map`?
+The issue the user came for should not wait on it unless they choose so.
+
+1. Explore as "Exploring the code" describes, one subagent per app (per sub-project in a
+   workspace, in parallel).
+2. Show the user the feature list (at most 9 core features, in their words) and let them rename
+   or drop rows. Say which features will get a page of their own ("Scale with the app" in
+   overview.md decides; a small project gets none) and ask whether to write those now
+   (recommended) or only the app map. When an image tool is available, ask whether the app map
+   should open with one illustration.
+3. Write the app map, the feature pages that earn one and, in a workspace, the workspace map.
+   Create the notebook's `README.md` (the pages in reading order: the app map, Features once
+   that table exists, Run records) and add the same rows to the docs router. In a workspace the
+   README and the router follow "Settings in a workspace" in overview.md instead. Feature pages
+   are reached from the app map, not from the router. Run `grasp-tools lint-page` on each page.
+
+### Finish
+
+- Write setup's own run record with `/grasp record "grasp set up"` ([records.md](records.md)): it
+  is the first row of the table and proves the folder, the index and the block work. One record,
+  also in a workspace.
+- Tell the user what to open first (the app map, or the workspace map), what was written, and to
+  commit `.grasp.md`, the instruction file and the new pages.
 
 ## `/grasp update`
 
@@ -107,18 +192,24 @@ Brings grasp up to date, then refreshes the block in every connected skill.
      `/plugin marketplace update grasp` (an agent can't run it) and continue when they confirm.
    - None of these: say how grasp seems to be installed and ask; never pull a repository you
      didn't identify as grasp's.
-2. **Check the connected skills:** `grasp-tools status`. Each line is
-   `SKILL_DIR<TAB>STEP<TAB>STATE`.
+2. **Check what is connected:** `grasp-tools status`. Each line is
+   `TARGET<TAB>STEP<TAB>STATE`: a skill folder, or an instructions file (`AGENTS.md`, `CLAUDE.md`)
+   with step `record`.
    - `ok`: nothing to do. A grasp release that doesn't change the block text leaves every
      connected skill untouched.
    - `stale` or `no-block`: show the block that will be written and run `grasp-tools refresh`
-     on a yes (or `refresh SKILL_DIR` for just one).
+     on a yes (or `refresh TARGET` for just one). The run-record block is also `stale` when
+     `run records:` in `.grasp.md` moved.
    - `missing`: the skill was moved or deleted. Ask whether to point grasp at its new folder
      (`disconnect` the old path, `connect` the new) or to disconnect it.
    - `broken`: the skill has a `grasp:start` line with no `grasp:end` after it, usually from a
      hand edit. grasp-tools refuses to touch it, so nothing below the marker can be lost. Show
      the user the lines and ask them to restore or delete the marker, then re-run `status`.
-3. Report the version, what was refreshed, and anything left as it was.
+3. **Check the Stop hook**, when `.grasp.md` has a `stop hook:` line: the helper path inside that
+   file must still exist (a plugin update moves it). Rewrite the path to this skill's current
+   `bin/grasp-tools` when it does not, and say so.
+4. **Rebuild the run records index:** `grasp-tools record-index`, when the folder exists.
+5. Report the version, what was refreshed, and anything left as it was.
 
 ## Old `.grasp.md` files
 
@@ -126,6 +217,11 @@ A file written by grasp 0.1.0 has no `tested:` line, no `## App`, no `## Learnin
 `## Connected skills`. Never force a full setup for that. Ask for a missing part the first time a
 run needs it (the app command when a screenshot is due, LinkedIn Learning when writing "Learn
 more"), save it, and carry on. `grasp-tools connect` adds the Connected skills section itself.
+
+A file written before 0.3.0 has no `run records:` line, no run-record block in the instruction
+files and usually no app map. Runs still work: records go to the default
+`docs/how-it-works/runs`. The first run in such a project says once, in one line, that
+`/grasp setup` will add the run-record block and the overview (steps 6 and 8), and carries on.
 
 ## Later runs
 

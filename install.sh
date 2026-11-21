@@ -32,7 +32,11 @@ done
 for dir in "$base/.claude/skills" "$base/.agents/skills"; do
   dest="$dir/grasp"
   if [ "$action" = uninstall ]; then
-    if [ -L "$dest" ] || [ -f "$dest/SKILL.md" ]; then rm -rf "$dest"; echo "removed $dest"; fi
+    # only what this script made: its symlink, or its copy (marked by .source)
+    if [ -L "$dest" ]; then rm -f "$dest"; echo "removed $dest"
+    elif [ -f "$dest/.source" ]; then rm -rf "$dest"; echo "removed $dest"
+    elif [ -e "$dest" ]; then echo "skip $dest: not installed by this script" >&2
+    fi
     continue
   fi
   mkdir -p "$dir"

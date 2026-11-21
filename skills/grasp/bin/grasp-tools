@@ -2,6 +2,10 @@
 # grasp-tools: the exact, mechanical steps of the grasp skill.
 # Needs only bash, sed, awk and curl. Run `grasp-tools -h` for usage.
 set -u
+# Bytes, not characters: BSD awk and sed stop on a byte that is not valid UTF-8, which would hide
+# a block that is already in the file. CDPATH would send a relative cd somewhere else.
+export LC_ALL=C
+unset CDPATH
 
 # Resolve this script's real location (following symlinks) to find the skill directory.
 _src=${BASH_SOURCE[0]}
@@ -14,7 +18,8 @@ GRASP_HOME=$(cd -P "$(dirname "$_src")/.." && pwd)
 
 BLOCK_FORMAT=1
 TOGGLE_FORM=html   # set by the Obsidian render test (docs/research/visual-pages.md)
-STEPS="work verify review resolve"
+STEPS="work verify review resolve record import"   # record, import: blocks in AGENTS.md / CLAUDE.md
+RUNS_DEFAULT=docs/how-it-works/runs
 
 usage() {
   cat <<'EOF'
@@ -23,18 +28,37 @@ grasp-tools: exact steps for the grasp skill
 Usage: grasp-tools [--config PATH] <command> [args]
 
 Commands:
-  connect SKILL_DIR STEP   add or replace grasp's block in SKILL_DIR/SKILL.md and record it
-                           STEP is one of: work, verify, review, resolve
-  disconnect SKILL_DIR     remove the block and the record
-  status                   list connected skills: SKILL_DIR, STEP, ok|stale|no-block|missing|broken
-  refresh [SKILL_DIR]      rewrite stale or missing blocks (all connected skills by default)
+  connect SKILL_DIR STEP   add or replace grasp's block in SKILL_DIR/SKILL.md and list it in
+                           .grasp.md. STEP is one of: work, verify, review, resolve
+  connect FILE record      the same for an agent instructions file (AGENTS.md, CLAUDE.md): the
+                           block tells every agent run to leave a run record. Creates FILE
+                           when it is missing
+  connect CLAUDE.md import make CLAUDE.md load AGENTS.md (one line, @AGENTS.md, in a marked
+                           block). Needed when the project has a CLAUDE.md: Claude Code
+                           then stops reading AGENTS.md by itself
+  disconnect TARGET        remove the block and its row (TARGET: a SKILL_DIR or a FILE)
+  block STEP               print the block connect would write, to show before writing it
+  status                   list what is connected: TARGET, STEP, ok|stale|no-block|missing|broken
+  refresh [TARGET]         rewrite stale or missing blocks (everything connected by default)
+  record-index [DIR]       rebuild DIR/README.md, the table of run records, newest first
+                           (DIR defaults to "run records:" in .grasp.md)
+  record-check [--base REF] [--hook]
+                           exit 1 when files changed and no run record was written. Looks at
+                           uncommitted changes plus commits since REF (default: where this
+                           branch left the integration branch, else the upstream)
+                           --hook: for an agent's Stop hook. Reads the hook's JSON on stdin,
+                           blocks once with exit 2 and the reason on stderr, never loops
+  projects [DIR]           list sub-projects under DIR (default .): PATH, repo|package, markers,
+                           and a repository's origin remote when it has one
   check-link URL           check a learning link live (YouTube, LinkedIn Learning, other)
-  lint-page FILE...        check a learning page renders in Obsidian and on GitHub
+  lint-page FILE...        check a page renders in Obsidian and on GitHub: toggles, links to
+                           files that are missing, diagram type and quotes, prose wrapped
+                           by hand, and that git does not ignore the page
   version                  print the grasp version
 
 Options:
-  --config PATH            the project's .grasp.md (default: ./.grasp.md); skill dirs are
-                           relative to its folder
+  --config PATH            the project's .grasp.md (default: ./.grasp.md); every SKILL_DIR,
+                           FILE and the run records folder are relative to its folder
   -h, --help, help         show this help
 EOF
 }
@@ -60,9 +84,52 @@ eol_of() {
 
 ends_with_newline() { [[ ! -s "$1" ]] || [[ "$(tail -c 1 "$1" | od -An -c | tr -d ' ')" == '\n' ]]; }
 
+# runs_dir -> the run records folder: "- run records:" in .grasp.md, relative to its folder
+runs_dir() {
+  local d=''
+  [[ -f "$CONFIG" ]] && d=$(sed -n 's/^- run records:[[:space:]]*//p' "$CONFIG" | head -n 1 | tr -d '\r')
+  d=${d%"${d##*[![:space:]]}"}   # trailing spaces
+  while [[ "$d" == */ ]]; do d=${d%/}; done
+  printf '%s' "${d:-$RUNS_DEFAULT}"
+}
+
+# record_block_text EOL_CHARS -> the block for AGENTS.md / CLAUDE.md. It loads into every agent
+# session, so it stays short: direct commands, five fixed fields, nothing else.
+record_block_text() {
+  local e=$1 v d shared=()
+  v=$(cmd_version); d=$(runs_dir)
+  # a folder outside this repository is a workspace's shared one: records name their project
+  if [[ "$d" == ../* || "$d" == /* ]]; then
+    shared=("That folder is shared by several projects: start the short name with \`$(basename "$(cfg_dir)")-\`." "$e")
+  fi
+  printf '%s%s' \
+    "<!-- grasp:start b=$BLOCK_FORMAT v=$v step=record dir=$d -->" "$e" \
+    "## Run records (grasp)" "$e" \
+    "Before your final message on any task that changed files in this repository, write one run record:" "$e" \
+    "\`$d/YYYY-MM-DD-short-name.md\`. It is part of the task, also when you were told to change only" "$e" \
+    "certain files. One file per task; the same task continued updates its file." "$e" \
+    ${shared[@]+"${shared[@]}"} \
+    "Start it with \`# YYYY-MM-DD: short name\` and \`Status: done\` (or \`partial\`, \`blocked\`, \`failed\`), then" "$e" \
+    "exactly these five lines, one short plain sentence each:" "$e" \
+    "- **Asked:** the request." "$e" \
+    "- **Changed:** what behaves differently now." "$e" \
+    "- **Checked:** the command you ran and its result line, or \"not checked\"." "$e" \
+    "- **Problems:** what failed, was worked around or is uncertain, or \"none\"." "$e" \
+    "- **Next:** what a person should do or decide next, or \"nothing\"." "$e" \
+    "Write only what happened: never claim a change or a check you did not make. No secrets, tokens," "$e" \
+    "env values or raw command output. Skip it for questions and for runs that changed no files." "$e" \
+    "With the grasp skill installed, \`/grasp record\` writes it, adds a diagram and rebuilds the index." "$e" \
+    "<!-- grasp:end -->" "$e"
+}
+
 # block_text STEP EOL_CHARS -> the exact block
 block_text() {
   local step=$1 e=$2 v
+  [[ $step == record ]] && { record_block_text "$e"; return; }
+  if [[ $step == import ]]; then
+    printf '%s%s' "<!-- grasp:start b=$BLOCK_FORMAT v=$(cmd_version) step=import -->" "$e" "@AGENTS.md" "$e" "<!-- grasp:end -->" "$e"
+    return
+  fi
   v=$(cmd_version)
   printf '%s%s' \
     "<!-- grasp:start b=$BLOCK_FORMAT v=$v step=$step -->" "$e" \
@@ -80,11 +147,17 @@ block_text() {
 locate_block() {
   awk '
     { line = $0; sub(/\r$/, "", line); t = line; sub(/^[ ]{0,3}/, "", t) }
-    fence != "" { if (index(t, fence) == 1 && t ~ /^(`+|~+)[ \t]*$/) fence = ""; next }
+    fence != "" {
+      if (index(t, fence) == 1 && t ~ /^(`+|~+)[ \t]*$/) { fence = ""; hid = 0 }
+      else if (line ~ /^<!-- grasp:start /) hid = NR
+      next
+    }
     t ~ /^```/ || t ~ /^~~~/ { match(t, /^(`+|~+)/); fence = substr(t, 1, RLENGTH); next }
     line ~ /^<!-- grasp:start / { s = NR; e = 0; next }
     s && !e && line ~ /^<!-- grasp:end -->[ \t]*$/ { e = NR }
-    END { if (s) print s, e }
+    # a code fence still open at the end of the file hides a marker: report it as broken (END 0)
+    # so nothing appends a second block under it
+    END { if (fence != "" && hid) print hid, 0; else if (s) print s, e }
   ' "$1"
 }
 
@@ -95,15 +168,18 @@ block_broken() { local loc; loc=$(locate_block "$1"); [[ -n "$loc" && "${loc#* }
 
 # write_if_changed NEW TARGET: replace TARGET only when bytes differ (keeps mtime otherwise)
 write_if_changed() {
-  if cmp -s "$1" "$2"; then rm -f "$1"; else cat "$1" > "$2"; rm -f "$1"; fi
+  [[ -n "$1" && -f "$1" ]] || die 1 "temporary file missing; $2 was left as it was"
+  if cmp -s "$1" "$2"; then rm -f "$1"; return 0; fi
+  if ! cat "$1" > "$2"; then rm -f "$1"; die 1 "cannot write $2"; fi
+  rm -f "$1"
 }
 
 # put_block FILE STEP: append the block, or replace the existing one in place
 put_block() {
   local f=$1 step=$2 e tmp blk
   e=$'\n'; [[ $(eol_of "$f") == crlf ]] && e=$'\r\n'
-  tmp=$(mktemp "${TMPDIR:-/tmp}/grasp.XXXXXX")
-  blk=$(mktemp "${TMPDIR:-/tmp}/grasp.XXXXXX")
+  tmp=$(mktemp "${TMPDIR:-/tmp}/grasp.XXXXXX") || die 1 "cannot create a temporary file in ${TMPDIR:-/tmp}; nothing was changed"
+  blk=$(mktemp "${TMPDIR:-/tmp}/grasp.XXXXXX") || die 1 "cannot create a temporary file in ${TMPDIR:-/tmp}; nothing was changed"
   block_text "$step" "$e" > "$blk"
   local loc; loc=$(locate_block "$f")
   if [[ -n "$loc" ]]; then
@@ -131,7 +207,7 @@ drop_block() {
   local f=$1 tmp
   local loc; loc=$(locate_block "$f")
   [[ -n "$loc" ]] || return 0
-  tmp=$(mktemp "${TMPDIR:-/tmp}/grasp.XXXXXX")
+  tmp=$(mktemp "${TMPDIR:-/tmp}/grasp.XXXXXX") || die 1 "cannot create a temporary file in ${TMPDIR:-/tmp}; nothing was changed"
   awk -v s="${loc% *}" -v e="${loc#* }" '
     function flush() { if (held) { print prev; held = 0 } }
     NR == s { if (held && prev ~ /^\r?$/) held = 0; flush(); next }
@@ -164,7 +240,7 @@ upsert_row() {
   local skill=$1 step=$2 v tmp
   v=$(cmd_version)
   [[ -f "$CONFIG" ]] || : > "$CONFIG"
-  tmp=$(mktemp "${TMPDIR:-/tmp}/grasp.XXXXXX")
+  tmp=$(mktemp "${TMPDIR:-/tmp}/grasp.XXXXXX") || die 1 "cannot create a temporary file in ${TMPDIR:-/tmp}; nothing was changed"
   if ! grep -q "^$SECTION"$'\r\\{0,1\\}$' "$CONFIG"; then
     [[ -z "$step" ]] && { rm -f "$tmp"; return 0; }
     cat "$CONFIG" > "$tmp"
@@ -206,23 +282,31 @@ upsert_row() {
   fi
 }
 
-# norm_dir DIR -> the skill folder relative to the config's folder ("./x/", "/abs/root/x" -> "x")
+# norm_dir PATH -> the skill folder or file relative to the config's folder ("./x/", "/abs/root/x" -> "x")
 norm_dir() {
   local d=$1 root
   root=$(cd -P "$(dirname "$CONFIG")" && pwd)
   [[ "$d" == /* && -d "$d" ]] && d=$(cd -P "$d" && pwd)
+  [[ "$d" == /* && -f "$d" ]] && d=$(cd -P "$(dirname "$d")" && pwd)/$(basename "$d")
   while [[ "$d" == */ ]]; do d=${d%/}; done
   [[ "$d" == "$root"/* ]] && d=${d#"$root"/}
   while [[ "$d" == ./* ]]; do d=${d#./}; done
   printf '%s' "$d"
 }
 
-skill_file() { printf '%s/%s/SKILL.md' "$(cfg_dir)" "$1"; }
+# target_file TARGET STEP -> the file holding the block: TARGET itself for step record
+# (AGENTS.md, CLAUDE.md), otherwise TARGET/SKILL.md
+target_file() {
+  if [[ $2 == record || $2 == import ]]; then printf '%s/%s' "$(cfg_dir)" "$1"; else printf '%s/%s/SKILL.md' "$(cfg_dir)" "$1"; fi
+}
 
-# state SKILL STEP -> ok | stale | no-block | missing
+# step_of TARGET -> the step recorded for it in .grasp.md, or nothing
+step_of() { rows | awk -F'\t' -v d="$1" '$1 == d { print $2; exit }'; }
+
+# state TARGET STEP -> ok | stale | no-block | missing | broken
 state_of() {
   local f b st
-  f=$(skill_file "$1")
+  f=$(target_file "$1" "$2")
   [[ -f "$f" ]] || { echo missing; return; }
   local loc; loc=$(locate_block "$f")
   [[ -n "$loc" ]] || { echo no-block; return; }
@@ -230,30 +314,53 @@ state_of() {
   local marker; marker=$(sed -n "${loc% *}p" "$f")
   b=$(printf '%s' "$marker" | sed -n 's/^<!-- grasp:start b=\([0-9]*\).*/\1/p')
   st=$(printf '%s' "$marker" | sed -n 's/^<!-- grasp:start .*step=\([a-z]*\).*/\1/p')
-  if [[ -z "$b" || "$b" -lt "$BLOCK_FORMAT" || "$st" != "$2" ]]; then echo stale; else echo ok; fi
+  if [[ -z "$b" || "$b" -lt "$BLOCK_FORMAT" || "$st" != "$2" ]]; then echo stale; return; fi
+  if [[ $2 == record ]]; then   # the block names the run records folder: stale when that moved
+    local d; d=$(printf '%s' "$marker" | sed -n 's/^<!-- grasp:start .* dir=\(.*\) -->.*$/\1/p')
+    [[ "$d" == "$(runs_dir)" ]] || { echo stale; return; }
+  fi
+  # stale also when the text itself differs from what this grasp writes (a reworded block, a
+  # hand edit). The version in the marker is left out: a release that keeps the wording must
+  # leave every file untouched.
+  local cur want
+  cur=$(sed -n "${loc% *},${loc#* }p" "$f" | tr -d '\r' | sed '1s/ v=[^ ]*//')
+  want=$(block_text "$2" $'\n' | sed '1s/ v=[^ ]*//')
+  [[ "$cur" == "$want" ]] || { echo stale; return; }
+  echo ok
 }
 
 cmd_connect() {
-  [[ $# -eq 2 ]] || die 2 "usage: connect SKILL_DIR STEP"
+  [[ $# -eq 2 ]] || die 2 "usage: connect SKILL_DIR STEP | connect FILE record | connect CLAUDE.md import"
   local dir step=$2 f
   dir=$(norm_dir "$1")
   valid_step "$step" || die 2 "STEP must be one of: $STEPS"
-  f=$(skill_file "$dir")
-  [[ -f "$f" ]] || die 1 "no SKILL.md in $dir"
-  block_broken "$f" && die 1 "$dir/SKILL.md has a grasp:start line with no grasp:end after it; fix it by hand first"
+  f=$(target_file "$dir" "$step")
+  if [[ $step == record || $step == import ]]; then
+    [[ -d "$f" ]] && die 1 "$dir is a folder; give the instructions file (AGENTS.md or CLAUDE.md)"
+    [[ -f "$f" ]] || : > "$f" || die 1 "cannot create $dir"
+  else
+    [[ -f "$f" ]] || die 1 "no SKILL.md in $dir"
+  fi
+  block_broken "$f" && die 1 "${f#"$(cfg_dir)"/} has a grasp:start line with no grasp:end after it; fix it by hand first"
   put_block "$f" "$step"
   upsert_row "$dir" "$step"
   printf 'connected %s %s\n' "$dir" "$step"
 }
 
+cmd_block() {
+  [[ $# -eq 1 ]] || die 2 "usage: block STEP"
+  valid_step "$1" || die 2 "STEP must be one of: $STEPS"
+  block_text "$1" $'\n'
+}
+
 cmd_disconnect() {
-  [[ $# -eq 1 ]] || die 2 "usage: disconnect SKILL_DIR"
+  [[ $# -eq 1 ]] || die 2 "usage: disconnect TARGET"
   local dir f
   dir=$(norm_dir "$1")
   rows | cut -f1 | grep -qxF "$dir" || die 1 "$dir is not connected (grasp-tools status lists what is)"
-  f=$(skill_file "$dir")
+  f=$(target_file "$dir" "$(step_of "$dir")")
   if [[ -f "$f" ]]; then
-    block_broken "$f" && die 1 "$dir/SKILL.md has a grasp:start line with no grasp:end after it; fix it by hand first"
+    block_broken "$f" && die 1 "${f#"$(cfg_dir)"/} has a grasp:start line with no grasp:end after it; fix it by hand first"
     drop_block "$f"
   fi
   upsert_row "$dir" ""
@@ -273,16 +380,202 @@ cmd_status() {
 cmd_refresh() {
   local only='' skill step st bad=0
   [[ -n "${1:-}" ]] && only=$(norm_dir "$1")
+  [[ -z "$only" || -n "$(step_of "$only")" ]] || die 1 "$only is not connected (grasp-tools status lists what is)"
   while IFS=$'\t' read -r skill step; do
     [[ -n "$only" && "$skill" != "$only" ]] && continue
     st=$(state_of "$skill" "$step")
     case $st in
       ok) ;;
       missing|broken) printf '%s %s\n' "$st" "$skill" >&2; bad=1 ;;
-      *) put_block "$(skill_file "$skill")" "$step"; upsert_row "$skill" "$step"; printf 'refreshed %s %s\n' "$skill" "$step" ;;
+      *) put_block "$(target_file "$skill" "$step")" "$step"; upsert_row "$skill" "$step"; printf 'refreshed %s %s\n' "$skill" "$step" ;;
     esac
   done < <(rows)
   return $bad
+}
+
+# ---------- run records ----------
+
+# cmd_record_index [DIR]: rebuild DIR/README.md from the records in DIR. The table is built, never
+# hand-edited, so two branches that both add a record settle a conflict by running this again.
+cmd_record_index() {
+  [[ $# -le 1 ]] || die 2 "usage: record-index [DIR]"
+  local dir=${1:-} f n=0 tmp
+  if [[ -z "$dir" ]]; then
+    dir=$(runs_dir); [[ "$dir" == /* ]] || dir="$(cfg_dir)/$dir"
+    [[ -d "$dir" ]] && dir=$(cd "$dir" && pwd)
+  fi
+  [[ -d "$dir" ]] || die 1 "no such folder: $dir"
+  tmp=$(mktemp "${TMPDIR:-/tmp}/grasp.XXXXXX") || die 1 "cannot create a temporary file in ${TMPDIR:-/tmp}; nothing was changed"
+  cat > "$tmp" <<'EOF'
+# Run records
+
+What agents did here, newest first. One row per task; open it for the detail.
+
+This table is built by `grasp-tools record-index`. Don't edit it by hand: run that again, also to settle a merge conflict here.
+
+| Date | Task | Status | What changed | Problems |
+| ---- | ---- | ------ | ------------ | -------- |
+EOF
+  while IFS= read -r f; do
+    case "$f" in README.md|_*) continue ;; *.md) ;; *) continue ;; esac
+    [[ -f "$dir/$f" ]] || continue
+    n=$((n + 1))
+    awk -v file="$f" '
+      function cell(s) { gsub(/^[ \t]+|[ \t]+$/, "", s); gsub(/\|/, "\\|", s); return s == "" ? "?" : s }
+      function field(line, name,   re) {
+        re = "^(- )?\\*\\*" name ":\\*\\*[ \t]*"
+        if (line !~ re) return ""
+        sub(re, "", line); return line
+      }
+      {
+        line = $0; sub(/\r$/, "", line); t = line; sub(/^[ ]+/, "", t)
+        if (fence != "") { if (index(t, fence) == 1) fence = ""; next }
+        if (t ~ /^```/ || t ~ /^~~~/) { fence = substr(t, 1, 3); next }
+        if (title == "" && line ~ /^# /) {
+          title = substr(line, 3); sub(/^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]:[ \t]*/, "", title)
+        }
+        if (status == "" && line ~ /^Status:[ \t]*/) { s = line; sub(/^Status:[ \t]*/, "", s); split(s, w, " "); status = w[1] }
+        if (changed == "") changed = field(line, "Changed")
+        if (problems == "") problems = field(line, "Problems")
+      }
+      END {
+        date = (file ~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/) ? substr(file, 1, 10) : "?"
+        if (title == "") { title = file; sub(/\.md$/, "", title) }
+        link = file; gsub(/ /, "%20", link); gsub(/\(/, "%28", link); gsub(/\)/, "%29", link)
+        title = cell(title); gsub(/\[/, "\\[", title); gsub(/\]/, "\\]", title)
+        printf "| %s | [%s](%s) | %s | %s | %s |\n", date, title, link, cell(status), cell(changed), cell(problems)
+      }
+    ' "$dir/$f" >> "$tmp"
+  done < <(ls "$dir" | LC_ALL=C sort -r)
+  write_if_changed "$tmp" "$dir/README.md"
+  printf 'indexed %s %s/README.md\n' "$n" "$dir"
+}
+
+# record_state BASE -> one line, exit 1 when files changed and no run record was written.
+# "Changed" is the uncommitted tree plus the commits since BASE; pages in the notebook folder
+# (the parent of the run records folder) are not work that needs a record.
+record_state() {
+  local base=$1 cfg root runs absruns relruns='' relnb='' integ cur changed work n s
+  cfg=$(cd -P "$(dirname "$CONFIG")" 2>/dev/null && pwd) || { echo "ok no-config-folder"; return 0; }
+  root=$(git -C "$cfg" rev-parse --show-toplevel 2>/dev/null) || { echo "ok not-a-git-repo"; return 0; }
+  runs=$(runs_dir)
+  if [[ "$runs" == /* ]]; then absruns=$runs; else absruns="$cfg/$runs"; fi
+  [[ -d "$absruns" ]] && absruns=$(cd -P "$absruns" && pwd)
+  if [[ "$absruns" == "$root"/* ]]; then
+    relruns=${absruns#"$root"/}
+    relnb=$(dirname "$relruns"); [[ "$relnb" == . ]] && relnb=$relruns
+  fi
+  if [[ -z "$base" ]]; then
+    integ=$(sed -n 's/^- integration branch:[[:space:]]*//p' "$CONFIG" 2>/dev/null | head -n 1 | tr -d '\r')
+    cur=$(git -C "$root" symbolic-ref --short -q HEAD)
+    if [[ -n "$integ" && "$cur" != "$integ" ]]; then
+      base=$(git -C "$root" merge-base HEAD "$integ" 2>/dev/null) ||
+        base=$(git -C "$root" merge-base HEAD "origin/$integ" 2>/dev/null) || base=''
+    fi
+    [[ -n "$base" ]] || base=$(git -C "$root" rev-parse -q --verify '@{upstream}' 2>/dev/null) || base=''
+  elif ! git -C "$root" rev-parse -q --verify "$base^{commit}" >/dev/null 2>&1; then
+    echo "no such ref: $base" >&2; return 2
+  fi
+  changed=$({
+    [[ -n "$base" ]] && git -C "$root" -c core.quotePath=false diff --name-only "$base"...HEAD 2>/dev/null
+    git -C "$root" -c core.quotePath=false diff --name-only HEAD 2>/dev/null
+    git -C "$root" -c core.quotePath=false diff --name-only --cached 2>/dev/null   # before a first commit
+    git -C "$root" -c core.quotePath=false ls-files --others --exclude-standard 2>/dev/null
+  } | LC_ALL=C sort -u)
+  work=$(printf '%s\n' "$changed" | awk -v nb="$relnb" 'NF && !(nb != "" && index($0, nb "/") == 1)')
+  if [[ -z "$work" ]]; then
+    if [[ -n "$base" ]]; then echo "ok nothing-changed"
+    else echo "ok nothing-changed (uncommitted only: no base to compare commits with)"; fi
+    return 0
+  fi
+  n=$(printf '%s\n' "$work" | wc -l | tr -d ' '); s=s; [[ $n == 1 ]] && s=''
+  # is_record: a changed .md file directly in the runs folder that still exists (a deleted
+  # record records nothing), not the index and not a _template
+  local is_record='{ f = $0; if (r != "") { if (index(f, r) != 1) next; f = substr(f, length(r) + 1) }
+                     if (f ~ /\.md$/ && f !~ /\// && f != "README.md" && f !~ /^_/ && (getline x < (d "/" f)) >= 0) found = 1 }
+                   END { exit !found }'
+  if [[ -n "$relruns" ]]; then
+    printf '%s\n' "$changed" | awk -v r="$relruns/" -v d="$absruns" "$is_record" && { echo "ok recorded"; return 0; }
+  elif [[ -d "$absruns" ]]; then
+    # the records live in another repository (a workspace wrapper's docs)
+    git -C "$absruns" rev-parse --show-toplevel >/dev/null 2>&1 || { echo "ok records-outside-git"; return 0; }
+    { git -C "$absruns" -c core.quotePath=false diff --name-only --relative HEAD -- . 2>/dev/null
+      git -C "$absruns" -c core.quotePath=false ls-files --others --exclude-standard -- . 2>/dev/null
+    } | awk -v r="" -v d="$absruns" "$is_record" && { echo "ok recorded"; return 0; }
+    # ponytail: for committed records only commit times are compared across the two repositories
+    # (a record commit newer than BASE passes); match record to commit by name if this misfires
+    local rt ref
+    rt=$(git -C "$absruns" log -1 --format=%ct -- . 2>/dev/null)
+    ref=$(git -C "$root" log -1 --format=%ct "${base:-HEAD}" 2>/dev/null)
+    [[ -n "$rt" && -n "$ref" && "$rt" -gt "$ref" ]] && { echo "ok recorded"; return 0; }
+  fi
+  echo "missing $n changed file$s, no run record in $runs"
+  return 1
+}
+
+cmd_record_check() {
+  local base='' hook=0 out rc=0 a input sid state mark root
+  for a in "$@"; do [[ "$a" == --hook ]] && hook=1; done
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --base) [[ $# -ge 2 ]] || { [[ $hook == 1 ]] && return 0; die 2 "--base needs a ref"; }; base=$2; shift 2 ;;
+      --hook) shift ;;
+      *) [[ $hook == 1 ]] && return 0; die 2 "usage: record-check [--base REF] [--hook]" ;;
+    esac
+  done
+  [[ $hook == 1 ]] || { record_state "$base"; return; }
+  # A Stop hook must never loop or break a session: let the stop through on the second ask, when
+  # grasp is not set up here, and on anything unexpected. Only exit 2 (the reminder) blocks.
+  input=$(cat)
+  printf '%s' "$input" | grep -q '"stop_hook_active"[[:space:]]*:[[:space:]]*true' && return 0
+  [[ -f "$CONFIG" ]] || return 0
+  out=$(record_state "$base" 2>/dev/null) || rc=$?
+  [[ $rc == 1 ]] || return 0
+  # Remind once per state, not once per turn: a session that only answers questions in a tree
+  # someone else left dirty hears this one time. The mark holds a checksum of what is changed.
+  # ponytail: marks are small files left in TMPDIR, one per session; the OS clears them
+  sid=$(printf '%s' "$input" | sed -n 's/.*"session_id"[[:space:]]*:[[:space:]]*"\([A-Za-z0-9_-]*\)".*/\1/p' | head -n 1)
+  if [[ -n "$sid" ]] && root=$(git -C "$(dirname "$CONFIG")" rev-parse --show-toplevel 2>/dev/null); then
+    state=$({ git -C "$root" rev-parse HEAD; git -C "$root" diff HEAD; git -C "$root" ls-files --others --exclude-standard; } 2>/dev/null | cksum)
+    mark="${TMPDIR:-/tmp}/grasp-reminded-$sid"
+    [[ -f "$mark" && "$(cat "$mark" 2>/dev/null)" == "$state" ]] && return 0
+    printf '%s' "$state" > "$mark" 2>/dev/null
+  fi
+  # the reminder carries the shape, so it still works when the block in AGENTS.md is gone
+  printf 'grasp: %s.\nIf this session changed those files, write the run record now, then finish: %s/YYYY-MM-DD-short-name.md, starting "# YYYY-MM-DD: short name" and "Status: done" (or partial, blocked, failed), then one short sentence each for "- **Asked:**", "- **Changed:**", "- **Checked:**", "- **Problems:**", "- **Next:**". Only what happened; no secrets. "Run records" in AGENTS.md and /grasp record say more.\nIf this session changed nothing, finish again: this reminder does not repeat until the files change.\n' "${out#missing }" "$(runs_dir)" >&2
+  return 2
+}
+
+# ---------- projects ----------
+
+MANIFESTS="package.json pyproject.toml go.mod Cargo.toml pom.xml build.gradle build.gradle.kts Gemfile composer.json pubspec.yaml mix.exs Package.swift Dockerfile main.tf"
+
+# cmd_projects [DIR]: sub-projects under DIR, up to three folders deep: a folder with its own
+# .git (repo) or its own manifest (package). Nothing inside a nested repo is listed: that repo
+# gets its own setup. DIR itself is never listed.
+cmd_projects() {
+  [[ $# -le 1 ]] || die 2 "usage: projects [DIR]"
+  local top=${1:-.} m names=() path kind marks url
+  [[ -d "$top" ]] || die 2 "no such folder: $top"
+  for m in $MANIFESTS '*.csproj'; do names+=(-o -name "$m"); done
+  (cd "$top" && find . -maxdepth 4 \
+      \( -name node_modules -o -name vendor -o -name dist -o -name build -o -name target -o -name venv -o -name __pycache__ \) -prune \
+      -o -name .git -print -prune \
+      -o -name '.?*' -prune \
+      -o \( -name ' ' "${names[@]}" \) -print) | sed 's|^\./||' | LC_ALL=C sort | awk '
+    split($0, p, "/") < 2 { next }   # a marker in DIR itself
+    { n = split($0, p, "/"); m = p[n]; d = substr($0, 1, length($0) - length(m) - 1)
+      if (d in marks) marks[d] = marks[d] "," m; else { order[++k] = d; marks[d] = m }
+      if (m == ".git") repo[d] = 1 }
+    END { for (i = 1; i <= k; i++) {
+            d = order[i]; skip = 0; n = split(d, p, "/"); a = ""
+            for (j = 1; j < n; j++) { a = (j == 1 ? p[1] : a "/" p[j]); if (a in repo) skip = 1 }
+            if (!skip) printf "%s\t%s\t%s\n", d, (d in repo ? "repo" : "package"), marks[d] } }
+  ' | LC_ALL=C sort | while IFS=$'\t' read -r path kind marks; do
+    # a repository also shows its origin, so two checkouts of one repository can be told apart
+    url=''; [[ $kind == repo ]] && url=$(git -C "$top/$path" remote get-url origin 2>/dev/null)
+    printf '%s\t%s\t%s%s\n' "$path" "$kind" "$marks" "${url:+$'\t'$url}"
+  done
 }
 
 # ---------- check-link ----------
@@ -378,8 +671,9 @@ cmd_check_link() {
 
 cmd_lint_page() {
   [[ $# -ge 1 ]] || die 2 "usage: lint-page FILE..."
-  local f
+  local f out rc=0 line file ln target
   for f in "$@"; do [[ -f "$f" ]] || die 2 "no such file: $f"; done
+  out=$(mktemp "${TMPDIR:-/tmp}/grasp.XXXXXX") || die 1 "cannot create a temporary file in ${TMPDIR:-/tmp}; nothing was changed"
   awk -v form="$TOGGLE_FORM" '
     function report(rule) { printf "%s:%d: %s\n", FILENAME, FNR, rule; bad = 1 }
     function count(s, re,   n) { n = 0; while (match(s, re)) { n++; s = substr(s, RSTART + RLENGTH) } return n }
@@ -391,27 +685,68 @@ cmd_lint_page() {
       }
       return (s ~ /<img[^>]*src="(https?:|\/)/)
     }
-    FNR == 1 { fence = ""; depth = 0; inpre = 0 }
+    # links(s): hand every link target on the line to the shell, which checks the file exists
+    function links(s,   t) {
+      while (match(s, /\]\([^)]*\)|href="[^"]*"/)) {
+        t = substr(s, RSTART, RLENGTH); s = substr(s, RSTART + RLENGTH)
+        sub(/^\]\(/, "", t); sub(/\)$/, "", t); sub(/^href="/, "", t); sub(/"$/, "", t)
+        if (t ~ /^</) { sub(/^</, "", t); sub(/>.*$/, "", t) }   # <a path with spaces> "title"
+        else sub(/[ \t].*$/, "", t)                             # path "title", path (title)
+        sub(/[#?].*$/, "", t)
+        if (t == "" || t ~ /^[a-zA-Z][a-zA-Z0-9+.-]*:/ || t ~ /^\// || t ~ /[{}]/) continue
+        gsub(/%20/, " ", t)
+        printf "\001%s\t%d\t%s\n", FILENAME, FNR, t
+      }
+    }
+    # strip_pre(s): the line without what sits inside <pre>...</pre>, across lines. Quoted code
+    # is never Markdown, so no rule below reads it.
+    function strip_pre(s,   out, i, j) {
+      out = ""
+      while (1) {
+        if (inpre) {
+          j = index(s, "</pre>")
+          if (!j) return out
+          s = substr(s, j + 6); inpre = 0
+        }
+        i = match(s, /<pre[ >]/)
+        if (!i) return out s
+        out = out substr(s, 1, i - 1); s = substr(s, i + 4); inpre = 1
+      }
+    }
+    FNR == 1 { fence = ""; depth = 0; inpre = 0; mm = 0; prev = "blank"; wrapped = 0 }
     {
       line = $0; sub(/\r$/, "", line)
       t = line; sub(/^(>[ ]?)*[ ]{0,3}/, "", t)
       # fenced code: skip everything inside, matching the opening fence character
-      if (fence != "") { if (index(t, fence) == 1) fence = ""; next }
+      if (fence != "") {
+        prev = "other"
+        if (index(t, fence) == 1) { fence = ""; mm = 0; next }
+        sub(/^[ \t]+/, "", t)
+        if (mm && t != "" && t !~ /^%%/) {
+          # only the diagram types the pages use and that were render-tested
+          if (mm == 1) { mm = 2; if (t !~ /^(flowchart|graph|sequenceDiagram|erDiagram|classDiagram)([ \t]|$)/) report("mermaid-type") }
+          if (count(t, "\"") % 2) report("mermaid-quote")
+        }
+        next
+      }
       if (t ~ /^```/ || t ~ /^~~~/) {
         fence = substr(t, 1, 3)
+        mm = (t ~ /^(```+|~~~+)[ \t]*mermaid[ \t]*$/)
         if (depth > 0) report("details-markdown")
         next
       }
-      code = line; gsub(/`[^`]*`/, "", code)   # ignore inline code
+      # ignore inline code first (a `<pre>` named in prose opens nothing), then quoted code
+      code = line; gsub(/`[^`]*`/, "", code); code = strip_pre(code); gsub(/<code>[^<]*<\/code>/, "", code)
+      links(code)
       opens = count(code, "<details[ >]"); closes = count(code, "</details>")
       start = depth
       if (code ~ /<details[^>]*[ \t]open([ \t=>]|$)/) report("details-open")
       if (start > 0 && opens > 0) report("details-nested")
       else if (start > 0 && line !~ /^[ \t]*<\/details>[ \t]*$/) {
         if (line ~ /^[ \t]*$/) report("details-blank-line")
-        else if (line ~ /\[!(WARNING|CAUTION)\]/) report("warning-in-toggle")
-        else if (!inpre) {
-          m = line; sub(/^[ \t]+/, "", m)
+        else if (code ~ /\[!(WARNING|CAUTION)\]/) report("warning-in-toggle")
+        else {
+          m = code; sub(/^[ \t]+/, "", m)
           if (m ~ /^(#|[-*+] |[0-9]+\. |\||>|!\[)/ || code ~ /\[[^]]*\]\([^)]*\)/ || code ~ /\*\*[^*]+\*\*/)
             report("details-markdown")
         }
@@ -420,14 +755,43 @@ cmd_lint_page() {
       if (form == "html" && t ~ /^\[![A-Za-z]+\][-+]/ && line ~ /^>/) report("foldable-callout")
       if (code ~ /==[^= ]([^=]*[^= ])?==/) report("highlight")
       if (remote_image(code)) report("remote-image")
+      # hard-wrap: Obsidian shows every newline inside a paragraph or list item as a line
+      # break, so prose wrapped at a fixed width reads as ragged short lines. One paragraph, one line.
+      # ponytail: a heuristic. A wrap is a prose line right under a prose or list line of 60 or
+      # more characters; a line that opens with a bold label is a deliberate new line.
+      k = line; ind = match(k, /[^ \t]/) - 1; sub(/^[ \t]+/, "", k)
+      if (start > 0 || depth + opens > 0) kind = "other"
+      else if (k == "") kind = "blank"
+      else if (k ~ /^(#|\||>|<|!\[)/ || k ~ /^(---+|\*\*\*+)[ \t]*$/) kind = "other"
+      else if (k ~ /^([-*+]|[0-9]+\.)[ \t]/) kind = "list"
+      else if (ind >= 4 && prev != "list" && prev != "para") kind = "other"   # an indented code block
+      else kind = "para"
+      if (kind == "para" && (prev == "para" || prev == "list")) {
+        if (!wrapped && prevlen >= 60 && k !~ /^\*\*/) { report("hard-wrap"); wrapped = 1 }
+        kind = prev
+      } else wrapped = 0
+      prev = kind; prevlen = length(line)
       depth += opens - closes; if (depth < 0) depth = 0
-      if (depth > 0) {
-        if (line ~ /<pre/) inpre = 1
-        if (line ~ /<\/pre>/) inpre = 0
-      } else inpre = 0
     }
     END { exit bad }
-  ' "$@"
+  ' "$@" > "$out" || rc=$?
+  while IFS= read -r line; do
+    if [[ "$line" == $'\001'* ]]; then
+      IFS=$'\t' read -r file ln target <<< "${line#?}"
+      [[ -e "$(dirname "$file")/$target" ]] && continue
+      printf '%s:%s: dead-link %s\n' "$file" "$ln" "$target"; rc=1
+    else
+      printf '%s\n' "$line"
+    fi
+  done < "$out"
+  rm -f "$out"
+  # a page under a git-ignored folder is never committed, and nothing else would say so
+  for f in "$@"; do
+    if git -C "$(dirname "$f")" check-ignore -q "$(basename "$f")" 2>/dev/null; then
+      printf '%s:1: git-ignored\n' "$f"; rc=1
+    fi
+  done
+  return $rc
 }
 
 CONFIG=./.grasp.md
@@ -443,7 +807,9 @@ cmd=${1:-}
 case "$cmd" in
   -h|--help|help) usage ;;
   version) cmd_version ;;
-  connect|disconnect|status|refresh) "cmd_$cmd" "$@" ;;
+  connect|disconnect|block|status|refresh|projects) "cmd_$cmd" "$@" ;;
+  record-index) cmd_record_index "$@" ;;
+  record-check) cmd_record_check "$@" ;;
   check-link) cmd_check_link "$@" ;;
   lint-page) cmd_lint_page "$@" ;;
   "") usage >&2; exit 2 ;;

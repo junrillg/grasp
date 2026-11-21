@@ -11,14 +11,10 @@
             "id": "0ae181c279450be7",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "obsidian-check.md",
-                "mode": "source",
-                "source": false
-              },
+              "type": "empty",
+              "state": {},
               "icon": "lucide-file",
-              "title": "obsidian-check"
+              "title": "New tab"
             }
           }
         ]
@@ -190,6 +186,34 @@
   },
   "active": "0ae181c279450be7",
   "lastOpenFiles": [
-    "obsidian-check.md"
+    "tmp-check/r2.md",
+    "tmp-check/r1.md",
+    "tmp-check/assets/app-map.png",
+    "tmp-check/assets",
+    "tmp-check",
+    "tmp-check/z-final.md",
+    "tmp-check/z-app-map.md",
+    "tmp-check/z-table.md",
+    "tmp-check/z-alerts.md",
+    "tmp-check/check-tb.md",
+    "tmp-check/z-connect.md",
+    "tmp-check/check-toggle.md",
+    "tmp-check/page-run-table.md",
+    "tmp-check/check-alerts.md",
+    "tmp-check/page-feature.md",
+    "tmp-check/page-run-record.md",
+    "tmp-check/check-15.md",
+    "tmp-check/check-14.md",
+    "tmp-check/check-13.md",
+    "tmp-check/check-12.md",
+    "tmp-check/check-11.md",
+    "tmp-check/check-10.md",
+    "tmp-check/check-09.md",
+    "tmp-check/check-08.md",
+    "tmp-check/check-07.md",
+    "tmp-check/check-06.md",
+    "tmp-check/check-05.md",
+    "tmp-check/check-04.md",
+    "tmp-check/check-03.md"
   ]
 }

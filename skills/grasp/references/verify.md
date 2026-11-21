@@ -45,4 +45,6 @@ confidence percentage with what would raise it; it goes to the user, never onto 
 
 Whatever went wrong on the way (a failed check, a wrong first approach, a surprise in the code)
 goes on the page: a blocker as a visible `> [!WARNING]` under Blocker, anything else in the
-"Plan vs actual" toggle. That is where the team learns the most.
+"Plan vs actual" toggle. That is where the team learns the most. The same problems go, one
+sentence each, in the Problems line of the run record ([records.md](records.md)), and a failed
+gate makes the record's status `partial` or `failed`, never `done`.
