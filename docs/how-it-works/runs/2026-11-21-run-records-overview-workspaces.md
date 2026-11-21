@@ -30,6 +30,9 @@ flowchart LR
 > Not run live, by the owner's decision on 2026-11-21 to do it later: the Stop hook inside Codex. Codex wants each hook approved by a person through `/hooks`, and nothing here bypassed or forged that. What is checked: the hook command with the Stop payload Codex documents (`test_record_check_hook_reads_the_codex_stop_payload`), and the same command live in Claude Code. Reading view is now checked by `tests/obsidian-render.sh`, after the owner switched on Obsidian's command line.
 
 > [!WARNING]
+> Setup with all its writes then ran on local clones of that real workspace, leaving the owner's working copies untouched (fingerprints identical before and after). Running it in the working copies themselves is the owner's to do; they chose not now, because the repositories were mid-work.
+
+> [!WARNING]
 > Tried on a real workspace, read-only, pages written to a scratch folder: two repositories of about 3,000 files each. The pages came out grounded and lint clean, and the wrapper's `.gitignore` really does swallow the sub-project page folders, as the scratch trial predicted. It also showed gaps now fixed: two checkouts of one repository, a docs site listed as a project, a feature that starts in one project and ends in another.
 
 > [!WARNING]

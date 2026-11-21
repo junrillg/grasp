@@ -106,11 +106,17 @@ by trial runs, which is evidence it can be followed, not a guarantee every agent
   a project where setup added the hook to `.codex/hooks.json`, start `codex`, approve the hook
   with `/hooks`, ask for a small code change, and let it finish. Expected: Codex is sent back
   once with "no run record in ...", then writes the record.
-- Run the real setup, with its writes, on a real top project. Deferred by the owner on
-  2026-11-21: the sub-repositories were mid-work. What is evidenced: the full setup on a scratch
-  workspace of two repositories, twice, and the overview on a real workspace read-only with the
-  pages written elsewhere. What is not: setup's own writes (`.grasp.md`, the blocks, the anchored
-  `.gitignore` lines) landing in real repositories that hold other people's work.
+- Run setup in the owner's own working copies of a real top project. Deferred by the owner on
+  2026-11-21: the sub-repositories were mid-work. Everything short of that is done: setup with
+  all its writes ran on local clones of that workspace (the wrapper and both sub-repositories,
+  about 3,000 files each). The two real instruction files (756 and 838 lines) kept every byte and
+  gained the block; the wrapper's `.gitignore` rules were anchored and the page folders stopped
+  being ignored while the sub-repositories stayed ignored; 12 pages lint clean and would be
+  added by git; `record-check` went from `missing` to `ok recorded` in all three repositories;
+  the pages drew 16 of 16 diagrams in Obsidian's Reading view. The originals were fingerprinted
+  before and after and did not change. In the scratch workspace, a live Codex session started
+  inside a sub-repository wrote its record, named after the project, into the wrapper's shared
+  folder.
 - Claude Code loads no project instructions in a folder the user has never trusted, so a block
   in a brand-new clone does nothing until the project has been opened and trusted once.
 - Known limits of the helper, left as they are: where several repositories share one run

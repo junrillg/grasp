@@ -172,6 +172,11 @@ go:
 
 A `package` always uses the top repository's notebook: `<top>/docs/how-it-works/<package>/`.
 
+With one vault at the top, an agent started inside a sub-repository writes its run record
+outside that repository, into the wrapper's folder. An agent sandbox that only lets writes into
+the working folder will stop it or ask each time. Say so when the user picks this layout: start
+agents at the top folder, or let the wrapper's docs folder be written in the agent's settings.
+
 With one vault at the top, a wrapper that git-ignores its sub-repositories by name (`shop-web/`)
 also ignores `docs/how-it-works/shop-web/`: the "Not git-ignored" check above is not optional
 here.
