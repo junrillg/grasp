@@ -74,7 +74,7 @@ by trial runs, which is evidence it can be followed, not a guarantee every agent
 
 ## How it was checked
 
-- `tests/grasp-tools.sh`: 113 tests (55 before), `tests/skill-docs.sh`: 13 (9 before). Both pass
+- `tests/grasp-tools.sh`: 114 tests (55 before), `tests/skill-docs.sh`: 13 (9 before). Both pass
   under bash 5.3 and macOS `/bin/bash` 3.2 with BSD awk, and in a Debian container (bash 5.2,
   GNU sed) with both mawk and gawk.
 - Two trial setups: a fresh agent, given only the installed skill and a scratch workspace of two
@@ -100,8 +100,12 @@ by trial runs, which is evidence it can be followed, not a guarantee every agent
 
 ## Open
 
-- Run the Stop hook live in Codex once. It needs the hook approved through `/hooks` in an
-  interactive session.
+- Run the Stop hook live in Codex once. Deferred by the owner on 2026-11-21. Codex makes a
+  person approve each hook through `/hooks`, so an agent can't do this for them. The command is
+  tested with the Stop payload Codex documents, and it ran live in Claude Code. To check it: in
+  a project where setup added the hook to `.codex/hooks.json`, start `codex`, approve the hook
+  with `/hooks`, ask for a small code change, and let it finish. Expected: Codex is sent back
+  once with "no run record in ...", then writes the record.
 - Claude Code loads no project instructions in a folder the user has never trusted, so a block
   in a brand-new clone does nothing until the project has been opened and trusted once.
 - Known limits of the helper, left as they are: where several repositories share one run

@@ -904,6 +904,22 @@ test_record_check_hook_never_loops() {
   assert_eq 0 "$rc" "stop_hook_active lets the stop through"
 }
 
+test_record_check_hook_reads_the_codex_stop_payload() {
+  # the fields Codex documents for a Stop hook; the config is found from a sub-folder the way the
+  # documented Codex command does it, with git rev-parse --show-toplevel
+  local p t rc=0 err
+  p=$(new_repo); t=$(new_tmp); mkdir -p "$p/src/deep"
+  printf 'two\n' >> "$p/src/app.txt"
+  err=$(cd "$p/src/deep" && printf '{"session_id":"019a-cx","transcript_path":"/x/rollout.jsonl","cwd":"%s","hook_event_name":"Stop","model":"gpt-5","turn_id":"t1","stop_hook_active":false,"last_assistant_message":"Done."}' "$p/src/deep" |
+        TMPDIR=$t "$TOOLS" --config "$(git rev-parse --show-toplevel)/.grasp.md" record-check --hook 2>&1 >/dev/null) || rc=$?
+  assert_eq 2 "$rc" "exit 2 with the Codex payload"
+  assert_contains "$err" "no run record in docs/how-it-works/runs" "reason on stderr, the continuation Codex shows the model"
+  rc=0
+  (cd "$p/src/deep" && printf '{"session_id":"019a-cx","hook_event_name":"Stop","turn_id":"t2","stop_hook_active":true,"last_assistant_message":"Done."}' |
+        TMPDIR=$t "$TOOLS" --config "$(git rev-parse --show-toplevel)/.grasp.md" record-check --hook >/dev/null 2>&1) || rc=$?
+  assert_eq 0 "$rc" "the turn Codex already continued is let through"
+}
+
 test_record_check_hook_silent_when_ok() {
   local p out rc=0
   p=$(new_repo)
