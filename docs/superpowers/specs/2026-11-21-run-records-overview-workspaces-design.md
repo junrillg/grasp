@@ -54,7 +54,7 @@ flowchart LR
 | 12 | A page that won't be kept or won't render is caught: git-ignored, a link to a missing file, an untested diagram type, an unclosed quote | `lint-page` rules `git-ignored`, `dead-link`, `mermaid-type`, `mermaid-quote` | verified | `test_lint_flags_*`; caught the first trial's ignored pages |
 | 13 | The overview scales with the code and never repeats a picture | "Scale with the app" in `overview.md` | implemented (instructions) | trial 1: 15 pages, 4,300 words; trial 2 after the rule: 9 pages, 2,259 words |
 | 14 | The helper never damages a user's file | temp-file failures stop before any write; bytes, not characters; a block hidden by an unclosed code fence is refused | verified | `test_unusable_tmpdir_never_empties_a_file`, `test_non_utf8_byte_does_not_duplicate_the_block`, `test_unclosed_fence_above_the_block_is_refused`, `test_read_only_file_is_reported` |
-| 16 | Pages render in Obsidian and stay readable | `flowchart TB` unless a short chain; one paragraph per line (`hard-wrap`); plain sentences instead of HTML comments; quoted code lines under about 70 characters; one optional illustration on the app map | verified in Obsidian 1.15.1, Live Preview | 20 diagrams, a run record, a feature page, the table of runs, alerts and a toggle captured from the app |
+| 16 | Pages render in Obsidian and stay readable | `flowchart TB` unless a short chain; one paragraph per line (`hard-wrap`); plain sentences instead of HTML comments; quoted code lines under about 70 characters; one optional illustration on the app map | verified in Obsidian 1.15.1, Live Preview and Reading view | `tests/obsidian-render.sh`: 24 pages, 34 diagrams, all drawn in Reading view, with a broken diagram as the control; screenshots of each kind of page in Live Preview |
 | 17 | The block really makes an agent write the record | the 16-line block; `connect CLAUDE.md import` when a `CLAUDE.md` exists | verified live | Codex CLI 0.169 wrote the record from the block alone; a Claude Code 2.1.330 session in this repository wrote `runs/2026-11-21-uninstall-own-installs-only.md` after a real task |
 | 15 | The Stop hook is quiet enough to leave on | reminds once per state, never on a bad argument, never twice in a row | verified for the command | `test_record_check_hook_*` |
 
@@ -88,8 +88,10 @@ by trial runs, which is evidence it can be followed, not a guarantee every agent
   written into the workspace. It confirmed the git-ignore trap on a real wrapper and added the
   rules for a duplicate checkout, a docs site, a sub-repository holding several apps, and a
   feature split across two projects.
-- Rendered in Obsidian 1.15.1: every diagram and each kind of page, captured from the app. That
-  is where the wide-diagram problem was found and fixed.
+- Rendered in Obsidian 1.15.1: every diagram and each kind of page, captured from the app in
+  Live Preview. That is where the wide-diagram problem was found and fixed. Reading view is
+  checked by `tests/obsidian-render.sh`, which opens each page through Obsidian's command line
+  and counts drawn diagrams, parse errors and broken images: 24 pages, 34 diagrams, all drawn.
 - Live agents, each given a small task with no mention of records: Codex wrote the record from
   the block; Claude Code with only the Stop hook was sent back and wrote it; Claude Code in this
   repository, with only the block, wrote the record for a real fix to `install.sh`.
@@ -100,8 +102,6 @@ by trial runs, which is evidence it can be followed, not a guarantee every agent
 
 - Run the Stop hook live in Codex once. It needs the hook approved through `/hooks` in an
   interactive session.
-- Look at the pages in Obsidian's Reading view. Only Live Preview was captured: switching view
-  needs a click, or Obsidian's command line, which is off in its settings.
 - Claude Code loads no project instructions in a folder the user has never trusted, so a block
   in a brand-new clone does nothing until the project has been opened and trusted once.
 - Known limits of the helper, left as they are: where several repositories share one run

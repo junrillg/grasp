@@ -178,7 +178,14 @@ in Obsidian.
 
 Obsidian's changelog reports that 1.15 replaced the bundled Mermaid with its own renderer
 ([changelog](https://obsidian.md/changelog/2026-11-02-desktop-v1.15.0/)); these results are on
-that renderer. Reading view was not captured in this pass.
+that renderer, and a broken diagram does show its `pele-error` box.
+
+Reading view is checked by a script, `tests/obsidian-render.sh`. It copies pages into the render
+vault, opens each one through Obsidian's command line, switches to Reading view, scrolls through
+it and counts drawn diagrams, parse errors and broken images. A page with a broken diagram runs
+first as the control. On 2026-11-21: 24 pages (grasp's own and the ones written for a real
+workspace), 34 diagrams, all drawn. It opens pages in the background, so it does not take the
+keyboard.
 
 ## Not found
 

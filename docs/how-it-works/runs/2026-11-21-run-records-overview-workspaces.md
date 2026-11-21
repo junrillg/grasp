@@ -4,9 +4,9 @@ Status: partial · Claude Code · branch `main` · [design and status](../../sup
 
 - **Asked:** Review grasp for gaps, make every agent run record itself through `AGENTS.md`, and make setup explain the app and each sub-project.
 - **Changed:** `setup` now adds a run-record block to `AGENTS.md`, writes an app map with feature pages, and covers each sub-project of a workspace.
-- **Checked:** `tests/grasp-tools.sh`: `113 passed, 0 failed` (macOS, and Linux with gawk and mawk); pages rendered in Obsidian 1.15.1; live Claude Code and Codex sessions wrote their own records.
+- **Checked:** `tests/grasp-tools.sh`: `113 passed, 0 failed` (macOS, and Linux with gawk and mawk); `tests/obsidian-render.sh`: `24 pages, 34 diagrams, Reading view: all drawn`; live Claude Code and Codex sessions wrote their own records.
 - **Problems:** A review found the helper could empty `AGENTS.md`, a trial found pages git ignored, and Obsidian shrank one wide diagram to unreadable; all three fixed.
-- **Next:** Approve the Codex Stop hook through `/hooks` and switch on Obsidian's command line, so the last two checks can run.
+- **Next:** Approve the Codex Stop hook through `/hooks` in the scratch repository, the one check still open.
 
 What was added, and what now feeds what. New parts are highlighted.
 
@@ -27,7 +27,7 @@ flowchart LR
 ```
 
 > [!WARNING]
-> Still not verified, and each needs the owner: the Stop hook inside Codex (Codex wants the hook approved through `/hooks`; the test did not bypass that), and Obsidian's Reading view (only Live Preview was captured; switching views needs a click, or Obsidian's command line, which is switched off in its settings).
+> Still not verified, and it needs the owner: the Stop hook inside Codex. Codex wants the hook approved through `/hooks`, and the test did not bypass that. Reading view is now checked by `tests/obsidian-render.sh`, after the owner switched on Obsidian's command line.
 
 > [!WARNING]
 > Tried on a real workspace, read-only, pages written to a scratch folder: two repositories of about 3,000 files each. The pages came out grounded and lint clean, and the wrapper's `.gitignore` really does swallow the sub-project page folders, as the scratch trial predicted. It also showed gaps now fixed: two checkouts of one repository, a docs site listed as a project, a feature that starts in one project and ends in another.

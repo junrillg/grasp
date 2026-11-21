@@ -224,4 +224,6 @@ Run the tests (bash only, no installs):
 tests/grasp-tools.sh          # the helper, with a stand-in for curl
 tests/grasp-tools.sh --live   # also checks real YouTube links over the network
 tests/skill-docs.sh           # help block, argument-hint and references agree
+tests/obsidian-render.sh      # opens the pages in the real Obsidian app, Reading view, and
+                              # checks every diagram was drawn (needs Obsidian's command line on)
 ```
