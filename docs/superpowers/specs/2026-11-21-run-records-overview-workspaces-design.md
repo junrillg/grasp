@@ -106,6 +106,11 @@ by trial runs, which is evidence it can be followed, not a guarantee every agent
   a project where setup added the hook to `.codex/hooks.json`, start `codex`, approve the hook
   with `/hooks`, ask for a small code change, and let it finish. Expected: Codex is sent back
   once with "no run record in ...", then writes the record.
+- Run the real setup, with its writes, on a real top project. Deferred by the owner on
+  2026-11-21: the sub-repositories were mid-work. What is evidenced: the full setup on a scratch
+  workspace of two repositories, twice, and the overview on a real workspace read-only with the
+  pages written elsewhere. What is not: setup's own writes (`.grasp.md`, the blocks, the anchored
+  `.gitignore` lines) landing in real repositories that hold other people's work.
 - Claude Code loads no project instructions in a folder the user has never trusted, so a block
   in a brand-new clone does nothing until the project has been opened and trusted once.
 - Known limits of the helper, left as they are: where several repositories share one run
