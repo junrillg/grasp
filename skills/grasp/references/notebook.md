@@ -258,9 +258,12 @@ means ask once, then save it).
   that shows the idea as an everyday scene, directly under "What it is for" or "In one line".
   Feature pages and run records never get one.
 - **no**: diagrams only.
-- Generate it with whatever image tool is available (for example `codex exec` with image
-  generation; a command-line tool that reads stdin must have it closed, `< /dev/null`, or it
-  waits forever), read the PNG before linking it, regenerate once if the text is garbled or the idea
+- Generate it with whatever image tool is available. With the Codex CLI, the form that worked in
+  grasp's own trial, run from the `assets/` folder: `codex exec --skip-git-repo-check -s
+  workspace-write -C "$PWD" --enable image_generation "PROMPT" < /dev/null`, where the prompt
+  names the file to save and says "short labels, spelled exactly, no other text". The
+  `< /dev/null` matters: without it the command waits on stdin forever. Read the PNG before
+  linking it, regenerate once if the text is garbled or the idea
   wrong, otherwise go without. Save it to the page's `assets/` folder (`KEY-idea.png`,
   `app-map.png`, `workspace-map.png`); the alt text says what the picture shows.
 - **No image tool**: write the page with its diagrams, and say once in the report that the
