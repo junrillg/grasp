@@ -90,9 +90,9 @@ SUBCOMMANDS
                     150 visible words at most; longer detail is folded.
   map               build or refresh the overview: the app map (what the app is for, core
                     features, the concepts to know, how the features connect, the pieces,
-                    one traced request), a page for
-                    each core feature that needs one, and in a workspace each sub-project
-                    plus how they fit. Small apps get fewer pages, not thinner ones.
+                    one traced request), a page for each core feature that needs one,
+                    and in a workspace how the projects fit plus each sub-project that
+                    is new or stale. Small apps get fewer pages, not thinner ones.
   setup             tracker (read live to prove it works), checks, app run command, docs
                     folder, LinkedIn Learning yes/no, illustrations yes/no; then the
                     run-record block in AGENTS.md
