@@ -160,7 +160,8 @@ vocabulary.
   row, an edge in "How the features connect", a piece, a step of the main request path, a rule,
   a glossary word. A new core feature gets its feature page; a changed one gets its picture
   patched and a row under "Changes".
-- `/grasp map` refreshes in full: explore again, patch what differs, restamp. Do it when the map
+- `/grasp map` refreshes in full: explore again, patch what differs, restamp (at the top of a
+  workspace it does this only for sub-projects that are new or stale: "Workspaces" below). Do it when the map
   feels wrong, about monthly, and after a big refactor.
 - To see what moved since a page was verified: `git diff --name-only <its sha>..HEAD`, compared
   with the files the page names.
@@ -267,6 +268,6 @@ A top folder that is not a git repository can still hold the workspace map and a
 say plainly that those pages are not under version control, and suggest the one place they would
 be (a wrapper repository, or the main sub-repository's docs).
 
-Later, `/grasp map` at the top refreshes the workspace map and any sub-project that is stale
-since "mapped at" (a source file changed, as "Keeping it current" defines it; a commit of
+Later, `/grasp map` at the top refreshes the workspace map and any sub-project that is new (no
+"mapped at" yet) or stale since "mapped at" (a source file changed, as "Keeping it current" defines it; a commit of
 grasp's own files alone is not stale); `/grasp map` inside a sub-project refreshes only that project.
