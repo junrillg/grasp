@@ -124,7 +124,9 @@ the index reads, picture included.
   `CLAUDE.md` instead. Never the block in both: the same text loaded twice is wasted context.
 - **Checked live** (Claude Code 2.1.330, Codex CLI 0.169, November 2026): Codex wrote the record
   from the block alone; Claude Code loaded the block from `AGENTS.md` alone and through the
-  import; the Stop hook sent Claude Code back to write the record. One thing to know: Claude
+  import; the Stop hook sent Claude Code back to write the record. The Stop hook in Codex was
+  checked on 2026-11-23 (Codex CLI 0.171), in a project with no block, after the owner approved
+  it through `/hooks`: Codex was sent back with "no run record in ..." and wrote the record. One thing to know: Claude
   Code loads no project instructions in a folder the user has not trusted yet, so the block
   starts working once the project has been opened and trusted.
 - **How.** `grasp-tools connect AGENTS.md record`. It appends the block, or replaces grasp's own

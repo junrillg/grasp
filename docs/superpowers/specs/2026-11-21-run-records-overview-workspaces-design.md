@@ -100,7 +100,10 @@ by trial runs, which is evidence it can be followed, not a guarantee every agent
 
 ## Open
 
-- Run the Stop hook live in Codex once. Deferred by the owner on 2026-11-21. Codex makes a
+- Done on 2026-11-23: the Stop hook ran live in Codex (CLI 0.171). The owner approved it through
+  `/hooks` in a scratch project with no `AGENTS.md` block; Codex was sent back with "no run record
+  in docs/how-it-works/runs" (seen in Codex's own session log) and wrote the record. What was
+  open until then: run the Stop hook live in Codex once. Deferred by the owner on 2026-11-21. Codex makes a
   person approve each hook through `/hooks`, so an agent can't do this for them. The command is
   tested with the Stop payload Codex documents, and it ran live in Claude Code. To check it: in
   a project where setup added the hook to `.codex/hooks.json`, start `codex`, approve the hook

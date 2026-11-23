@@ -195,10 +195,6 @@ sequenceDiagram
 | The block | The marked text the helper writes into a skill or into `AGENTS.md` |
 | The gate | The five conditions that must hold before a change is called done |
 
-## Not sure yet
-
-- Does the Stop hook work inside Codex? It was run live in Claude Code only (`skills/grasp/references/records.md`); the Codex run is deferred by the owner.
-
 ## Features built
 
 See the [Features table](features/README.md): one row per issue, each linking to its page. What agents did, task by task, is in [Run records](runs/README.md).
