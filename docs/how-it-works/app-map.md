@@ -22,6 +22,61 @@ What a developer can do with grasp.
 | Connect your own skills | Have your own skills call grasp for the learning page | setup step 7, `/grasp page`, `skills/grasp/references/setup.md` | [Connect your own skills](features/connect-your-skills.md) |
 | Set up and update | Install grasp, save a project's settings, pull a new version | `install.sh`, `/grasp setup`, `/grasp update`, `skills/grasp/references/setup.md` | [Set up and update](features/set-up-and-update.md) |
 
+## Concepts
+
+Five ideas to know before the pictures below make sense.
+
+- **Agent skill:** a folder with a `SKILL.md` that a coding agent loads when a task matches its description; all of grasp is one skill (`skills/grasp/SKILL.md`).
+- **Agent instructions file:** a Markdown file an agent reads at the start of every session; grasp puts its run-record block in `AGENTS.md` or `CLAUDE.md` (`skills/grasp/references/records.md`).
+- **Agent hook:** a command the agent's program runs by itself at a fixed moment, such as when the agent stops; grasp's optional Stop hook asks for a missing run record (`skills/grasp/bin/grasp-tools`).
+- **Diagrams as text (Mermaid):** a picture written as a few lines of text that the viewer draws; every grasp page uses it and `lint-page` checks it (`skills/grasp/references/notebook.md`).
+- **Test-first development:** write a test that fails for the right reason, then the code that makes it pass; step 4 builds every change this way (`skills/grasp/references/build.md`).
+
+<details><summary>Agent skill: instructions an agent loads only when it needs them</summary>
+<p>A skill is a folder, not a program. Its <code>SKILL.md</code> opens with a short header (front matter) holding a <code>name</code> and a <code>description</code>. The agent keeps only that header in mind and reads the rest when a task matches it or someone types <code>/grasp</code>.</p>
+<p>grasp's header is the first lines of <code>skills/grasp/SKILL.md</code>. The body under it is the router: the rules, the seven steps and each subcommand.</p>
+<p>The long detail lives in <code>skills/grasp/references/</code>, and a reference file is read only when its step starts, so a run never pays for text it does not use (<code>skills/grasp/references/notebook.md</code>, "Token budget").</p>
+<p><code>install.sh</code> links the folder into <code>~/.claude/skills</code> and <code>~/.agents/skills</code>, where Claude Code, Codex, Cursor and Gemini CLI look for skills.</p>
+<ul><li><a href="https://agentskills.io/specification">Specification - Agent Skills</a>, agentskills.io, official docs, free</li><li><a href="https://www.youtube.com/watch?v=mPjTZviv23s">Agent Skills Explained in 5 Minutes | Ep 3 of 8</a>, Visual Studio Code, YouTube, free</li></ul>
+<p>Links checked 2026-11-23.</p>
+</details>
+
+<details><summary>Agent instructions file: the one place every session reads, with or without grasp</summary>
+<p>Most agent work never goes through <code>/grasp</code>, so a rule that lives only in the skill would be missed. The instructions file is read by every session.</p>
+<p>Setup step 6 puts a short marked block there. It holds the records folder, the title and status form and the five lines, so an agent with no grasp installed can still write a record the index reads (<code>skills/grasp/bin/grasp-tools</code>, <code>record_block_text</code>).</p>
+<p><code>AGENTS.md</code> is the one file Codex, Cursor, Gemini CLI and Claude Code can all read. A project that has a <code>CLAUDE.md</code> needs the line <code>@AGENTS.md</code> in it; <code>grasp-tools connect CLAUDE.md import</code> adds that line.</p>
+<p>The overview pages never go into this file. They stay in the notebook (<code>skills/grasp/references/overview.md</code>).</p>
+<ul><li><a href="https://agents.md/">AGENTS.md</a>, agents.md, the format's own site, free</li></ul>
+<p>Links checked 2026-11-23.</p>
+</details>
+
+<details><summary>Agent hook: the reminder that cannot be forgotten and cannot loop</summary>
+<p>An instructions file is advice, and agents follow it less reliably late in a long session. A hook is a command the agent's program runs itself, so it does not depend on the agent remembering.</p>
+<p>A Stop hook runs when the agent tries to finish. <code>grasp-tools record-check --hook</code> reads the hook's JSON on stdin. When files changed and no run record exists, it exits 2 with the reason on stderr and the agent is sent back once to write the record.</p>
+<p>It lets the stop through when <code>stop_hook_active</code> is true, when <code>.grasp.md</code> is missing and on any error, so it can never loop and never blocks a project grasp is not set up in (<code>skills/grasp/references/records.md</code>, "The Stop hook").</p>
+<p>The hook is optional and setup step 6 asks about it. This repository runs without one (<code>.grasp.md</code>, <code>stop hook: none</code>).</p>
+<ul><li><a href="https://code.claude.com/docs/en/hooks">Hooks reference</a>, Claude Code Docs, official docs, free</li></ul>
+<p>Links checked 2026-11-23.</p>
+</details>
+
+<details><summary>Diagrams as text: a picture that is patched and checked like code</summary>
+<p>A Mermaid diagram is a fenced block of text that names boxes and arrows. Obsidian and GitHub draw it when the page is shown, so there is no image file to keep in step with the code.</p>
+<p>Because it is text, a later issue changes one line of the diagram, and the change shows up in code review with the rest of the page.</p>
+<p><code>grasp-tools lint-page</code> reads the same text. It accepts only <code>flowchart</code>, <code>graph</code>, <code>sequenceDiagram</code>, <code>erDiagram</code> and <code>classDiagram</code>, and it reports an unclosed quote or a diagram with more than 20 boxes.</p>
+<p>The linter does not draw the picture. A Mermaid validator or the project's doc build does that, and a report must say so when neither was run (<code>skills/grasp/references/notebook.md</code>).</p>
+<ul><li><a href="https://mermaid.js.org/intro/">About Mermaid</a>, mermaid.js.org, official docs, free</li></ul>
+<p>Links checked 2026-11-23.</p>
+</details>
+
+<details><summary>Test-first development: a test seen failing first proves the change did something</summary>
+<p>A test written after the code can pass with or without the change. A test that was seen to fail and then to pass shows the change is what made the difference.</p>
+<p>Step 4 follows that order: write the test that fails for the issue's reason, run it and watch it fail, then change the code (<code>skills/grasp/references/build.md</code>, "Implement").</p>
+<p>Verify checks the same thing from the other side. Its control runs the new test on the code before the change, where it must fail (<code>skills/grasp/references/verify.md</code>, "Evidence").</p>
+<p>A bug fix without a test that fails without it is not done.</p>
+<ul><li><a href="https://www.linkedin.com/learning/programming-foundations-test-driven-development-3">Programming Foundations: Test-Driven Development</a>, LinkedIn Learning, paid</li></ul>
+<p>Links checked 2026-11-23.</p>
+</details>
+
 ## How the features connect
 
 Setup hands every feature its settings; a worked issue feeds the two things you can open.
@@ -66,7 +121,7 @@ flowchart TB
 Markdown the agent reads, one bash helper, and the files they act on in your project.
 
 ```mermaid
-flowchart LR
+flowchart TB
   dev(["Developer"]) --> agent["Coding agent"]
   inst["install.sh"] -->|"links or copies the skill"| skill["SKILL.md, the router"]
   agent --> skill
@@ -142,7 +197,7 @@ sequenceDiagram
 
 ## Not sure yet
 
-- Does the Stop hook work in a live session? `docs/research/README.md` says it has not been run live.
+- Does the Stop hook work inside Codex? It was run live in Claude Code only (`skills/grasp/references/records.md`); the Codex run is deferred by the owner.
 
 ## Features built
 

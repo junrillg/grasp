@@ -35,27 +35,31 @@ sequenceDiagram
 
 <details><summary>Code walkthrough: 4 steps, numbered like the diagram</summary>
 <p><b>1.</b> <code>verify</code> is a full run with the build left out (<code>skills/grasp/SKILL.md</code>, "verify subcommand")</p>
-<pre><code>Run steps 1, 5, 6 and 7 only. Find the pull request from the issue (branch name or title holds
-the key) or take it as given. Never edit, commit, push or merge. If there is no page for the
-issue yet, write the "after" half alone. Step 7's run record says what was verified or what
+<pre><code>Run steps 1, 5, 6 and 7 only. Find the pull request from the issue...
+the key) or take it as given. Never edit, commit, push or merge. If...
+issue yet, write the "after" half alone. Step 7's run record says w...
 failed; its Changed line is "nothing".</code></pre>
 <p><b>2.</b> Which commit is verified depends on where the fix is (<code>skills/grasp/references/verify.md</code>, "Which code")</p>
 <pre><code>| Situation | Verify | Record |
 | --------- | ------ | ------ |
 | Just built in this run | the branch tip | `git rev-parse HEAD` |
-| Open pull request | its head commit, detached | the head SHA from the pull request |</code></pre>
+| Open pull request | its head commit, detached | the head SHA from...</code></pre>
 <p><b>3.</b> The control proves the new test fails on the old code (<code>skills/grasp/references/verify.md</code>, "Evidence")</p>
 <pre><code>1. The project's checks from `.grasp.md`.
-2. **The control**: the new test must fail on the code before the change
-   (`git stash` the source change, or check out the parent commit in a worktree, run the one test,
-   restore). When the control cannot run cleanly, skip it and say so. Do not improvise one.</code></pre>
+2. **The control**: the new test must fail on the code before the c...
+   (`git stash` the source change, or check out the parent commit i...
+   restore). When the control cannot run cleanly, skip it and say s...</code></pre>
 <p><b>4.</b> Done is claimed only when all five hold (<code>skills/grasp/references/verify.md</code>, "The gate")</p>
-<pre><code>1. The issue's expected behaviour is understood and each criterion has a row.
+<pre><code>1. The issue's expected behaviour is understood and each criterion...
 2. Every check run exited 0, with the result lines shown.
-3. The control failed on the old code, or the user accepted going without it.
-4. The behaviour was seen correct, or the user accepted that it cannot be exercised locally.
-5. CI passed for the commit verified (or there is no CI, said plainly).</code></pre>
+3. The control failed on the old code, or the user accepted going w...
+4. The behaviour was seen correct, or the user accepted that it can...
+5. CI passed for the commit verified (or there is no CI, said plain...</code></pre>
 </details>
+
+## Concepts
+
+Explained on the app map: [Concepts](../app-map.md#concepts). Test-first development applies here: the control is its failing test, run after the fact.
 
 ## Connects to
 

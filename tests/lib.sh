@@ -38,7 +38,13 @@ assert_file_eq() { # PATH_A PATH_B MSG
   fi
 }
 
-new_tmp() { mktemp -d "${TMPDIR:-/tmp}/grasp-test.XXXXXX"; }
+# One temp folder per suite run: every new_tmp and bare mktemp lands in it, and it goes when the
+# suite ends. (A test's own subshell does not inherit the trap, so only the suite removes it.)
+SUITE_TMP=$(mktemp -d "${TMPDIR:-/tmp}/grasp-suite.XXXXXX") || exit 1
+export TMPDIR=$SUITE_TMP
+trap 'rm -rf "$SUITE_TMP"' EXIT
+
+new_tmp() { mktemp -d "$TMPDIR/grasp-test.XXXXXX"; }
 
 run_tests() { # optional filter regex as $1
   local filter=${1:-.} t rc

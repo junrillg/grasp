@@ -43,29 +43,44 @@ sequenceDiagram
    | reviews a pull or merge request | `review` |
    | resolves or addresses review comments | `resolve` |</code></pre>
 <p><b>2.</b> <code>connect</code> refuses a broken block, writes the block, then lists the skill in <code>.grasp.md</code> (<code>skills/grasp/bin/grasp-tools</code>, <code>cmd_connect</code>)</p>
-<pre><code>  block_broken "$f" &amp;&amp; die 1 "${f#"$(cfg_dir)"/} has a grasp:start line with no grasp:end after it; fix it by hand first"
+<pre><code>  block_broken "$f" &amp;&amp; die 1 "${f#"$(cfg_dir)"/} has a grasp:start...
   put_block "$f" "$step"
   upsert_row "$dir" "$step"
   printf 'connected %s %s\n' "$dir" "$step"</code></pre>
 <p><b>3.</b> The block is seven lines between two markers (<code>skills/grasp/bin/grasp-tools</code>, <code>block_text</code>)</p>
 <pre><code>    "&lt;!-- grasp:start b=$BLOCK_FORMAT v=$v step=$step -->" "$e" \
     "## Learning page (grasp)" "$e" \
-    "When this skill has finished its own work, run grasp's \`page\` subcommand for the same issue or" "$e" \
-    "pull request with \`--step $step\` (\`/grasp page &lt;issue or PR> --step $step\`, or \`/grasp:grasp page ...\`" "$e" \
-    "when grasp is installed as a plugin), so the issue's learning page shows what was done." "$e" \
+    "When this skill has finished its own work, run grasp's \`page\...
+    "pull request with \`--step $step\` (\`/grasp page &lt;issue or PR...
+    "when grasp is installed as a plugin), so the issue's learning...
     "Skip this if grasp is not installed." "$e" \
     "&lt;!-- grasp:end -->" "$e"</code></pre>
 <p><b>4.</b> <code>page</code> decides which half to write from the state of the work (<code>skills/grasp/SKILL.md</code>, "page subcommand")</p>
-<pre><code>2. Decide the half from state, never from `--step` alone. No diff against the integration branch
-   and no pull request: the before half (step 3, without the approaches discussion: use the plan
-   the calling skill made, or the issue). Otherwise the after half (step 6), writing the before
+<pre><code>2. Decide the half from state, never from `--step` alone. No diff a...
+   and no pull request: the before half (step 3, without the approa...
+   the calling skill made, or the issue). Otherwise the after half...
    half first if the page has none.</code></pre>
 <p><b>5.</b> <code>refresh</code> rewrites stale blocks and leaves good, missing and broken ones alone (<code>skills/grasp/bin/grasp-tools</code>, <code>cmd_refresh</code>)</p>
 <pre><code>    case $st in
       ok) ;;
       missing|broken) printf '%s %s\n' "$st" "$skill" >&amp;2; bad=1 ;;
-      *) put_block "$(target_file "$skill" "$step")" "$step"; upsert_row "$skill" "$step"; printf 'refreshed %s %s\n' "$skill" "$step" ;;
+      *) put_block "$(target_file "$skill" "$step")" "$step"; upser...
     esac</code></pre>
+</details>
+
+## Concepts
+
+One idea of its own. Explained on the app map: [Concepts](../app-map.md#concepts). Agent skill and the agent instructions file apply here.
+
+- **Marked block:** a stretch of text between a start marker and an end marker that a tool owns inside a file someone else wrote; `connect` writes one at the end of your skill (`skills/grasp/bin/grasp-tools`).
+
+<details><summary>Marked block: two markers let the helper rewrite its own lines and never yours</summary>
+<p>Your skill file is yours, yet grasp has to add a few lines to it and update them later. Two HTML comments, <code>&lt;!-- grasp:start ... --></code> and <code>&lt;!-- grasp:end --></code>, fence those lines off.</p>
+<p>Running <code>connect</code> twice is safe. With no block it appends one; with a block it replaces only the lines from the start marker to the end marker (<code>put_block</code>).</p>
+<p>The start marker carries the block format and the step. <code>status</code> also compares the lines between the markers with what this grasp would write, and calls a block that differs stale; <code>refresh</code> rewrites only those (<code>state_of</code>).</p>
+<p>A start marker with no end marker after it is broken. The helper refuses to write there until a person fixes it by hand.</p>
+<ul><li><a href="https://docs.ansible.com/projects/ansible/latest/collections/ansible/builtin/blockinfile_module.html">ansible.builtin.blockinfile module – Insert/update/remove a text block surrounded by marker lines</a>, Ansible Community Documentation, the docs of another tool built on the same idea, free</li></ul>
+<p>Links checked 2026-11-23.</p>
 </details>
 
 ## Connects to

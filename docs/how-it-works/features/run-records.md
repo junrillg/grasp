@@ -39,38 +39,42 @@ sequenceDiagram
 <pre><code>    "exactly these five lines, one short plain sentence each:" "$e" \
     "- **Asked:** the request." "$e" \
     "- **Changed:** what behaves differently now." "$e" \
-    "- **Checked:** the command you ran and its result line, or \"not checked\"." "$e" \
-    "- **Problems:** what failed, was worked around or is uncertain, or \"none\"." "$e" \
-    "- **Next:** what a person should do or decide next, or \"nothing\"." "$e" \</code></pre>
+    "- **Checked:** the command you ran and its result line, or \"n...
+    "- **Problems:** what failed, was worked around or is uncertain...
+    "- **Next:** what a person should do or decide next, or \"nothi...</code></pre>
 <p><b>2.</b> <code>/grasp record</code> patches the task's record or creates one, then rebuilds the index (<code>skills/grasp/references/records.md</code>, "/grasp record")</p>
-<pre><code>3. Find an existing record for the same task (its status line names this branch or issue). Patch
-   it if there is one; otherwise create `YYYY-MM-DD-short-name.md` with today's date. An argument
-   in quotes is the short name; without one, name it after what changed.
-4. Write it in the template's shape. Link the pull request and the issue page when they exist.
+<pre><code>3. Find an existing record for the same task (its status line names...
+   it if there is one; otherwise create `YYYY-MM-DD-short-name.md`...
+   in quotes is the short name; without one, name it after what cha...
+4. Write it in the template's shape. Link the pull request and the...
 5. Run `grasp-tools lint-page FILE`, then `grasp-tools record-index`.</code></pre>
 <p><b>3.</b> Each record becomes one table row, read from its title, status, Changed and Problems lines (<code>skills/grasp/bin/grasp-tools</code>, <code>cmd_record_index</code>)</p>
 <pre><code>      END {
-        date = (file ~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/) ? substr(file, 1, 10) : "?"
+        date = (file ~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]...
         if (title == "") { title = file; sub(/\.md$/, "", title) }
-        link = file; gsub(/ /, "%20", link); gsub(/\(/, "%28", link); gsub(/\)/, "%29", link)
-        title = cell(title); gsub(/\[/, "\\[", title); gsub(/\]/, "\\]", title)
-        printf "| %s | [%s](%s) | %s | ...", date, title, link, cell(status)
+        link = file; gsub(/ /, "%20", link); gsub(/\(/, "%28", link...
+        title = cell(title); gsub(/\[/, "\\[", title); gsub(/\]/, "...
+        printf "| %s | [%s](%s) | %s | %s | %s |\n", date, title, l...
       }</code></pre>
 <p><b>4.</b> The check looks at uncommitted changes plus this branch's commits (<code>skills/grasp/bin/grasp-tools</code>, <code>usage</code>)</p>
 <pre><code>  record-check [--base REF] [--hook]
-                           exit 1 when files changed and no run record was written. Looks at
-                           uncommitted changes plus commits since REF (default: where this
-                           branch left the integration branch, else the upstream)
-                           --hook: for an agent's Stop hook. Reads the hook's JSON on stdin,
-                           blocks once with exit 2 and the reason on stderr, never loops</code></pre>
+                           exit 1 when files changed and no run rec...
+                           uncommitted changes plus commits since R...
+                           branch left the integration branch, else...
+                           --hook: for an agent's Stop hook. Reads...
+                           blocks once with exit 2 and the reason o...</code></pre>
 <p><b>5.</b> As a Stop hook it reminds once and can never loop (<code>skills/grasp/references/records.md</code>, "The Stop hook")</p>
-<pre><code>`grasp-tools record-check --hook` is built for it. It reads the hook's JSON on stdin, lets the
-stop through when `stop_hook_active` is true (so it can never loop), when `.grasp.md` is missing,
-and on any error, a bad argument included; otherwise it exits 2 with the reason on stderr. It
-reminds once per state, not once per turn: after a reminder it stays quiet in that session until
-the changed files change again, so a session that only answers questions in a tree someone else
-left dirty hears it one time. It proves a record exists, not that the record is true.</code></pre>
+<pre><code>`grasp-tools record-check --hook` is built for it. It reads the hoo...
+stop through when `stop_hook_active` is true (so it can never loop)...
+and on any error, a bad argument included; otherwise it exits 2 wit...
+reminds once per state, not once per turn: after a reminder it stay...
+the changed files change again, so a session that only answers ques...
+left dirty hears it one time. It proves a record exists, not that t...</code></pre>
 </details>
+
+## Concepts
+
+Explained on the app map: [Concepts](../app-map.md#concepts). The agent instructions file and the agent hook apply here.
 
 ## Connects to
 

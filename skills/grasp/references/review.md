@@ -82,9 +82,9 @@ Both subcommands leave the issue page (see [notebook.md](notebook.md)) matching 
   decisions log.
 - **Findings:** `review` puts each verified finding that is still open in the Blocker section as
   a visible `> [!WARNING]`, one line each, never folded. `resolve` moves each finding it fixed
-  into the "Plan vs actual" toggle (what the reviewer caught and how it was fixed) and removes
+  into the "Planned and built" table as a row (what the reviewer caught and how it was fixed) and removes
   its warning; a warning goes only when this run fixed it.
-- **Bug:** one line in the "Plan vs actual" toggle of the feature page it touches, or nothing on
+- **Bug:** one row in the "Changes" table of the feature page it touches, or nothing on
   a page. Its run record ([records.md](records.md)) is where it is written down either way.
 - **Old page layout:** a page written before the visual layout is converted while it is being
   patched anyway: rewrite its toggles into the one-block HTML form (no blank lines, HTML only,

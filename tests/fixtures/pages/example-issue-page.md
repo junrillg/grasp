@@ -4,6 +4,15 @@ Status: verified · [issue](https://example.atlassian.net/browse/PROJ-42) · [pu
 
 **In one line:** signed-in shoppers stay signed in all day instead of being logged out after an hour.
 
+## Steps
+
+The plan in four steps, ticked as the build finished each one.
+
+- [x] A test that fails when the token is one hour old
+- [x] Refresh the token five minutes before it expires
+- [x] Sign out when the refresh itself fails
+- [x] Parallel calls share one refresh (added: found in review)
+
 ## Where it fits
 
 The token cache sits between every API call and the auth server.
@@ -17,6 +26,18 @@ flowchart LR
 <details><summary>Shoppers lost their carts at the one-hour mark, so we refresh tokens early</summary>
 <p>Support saw 40 tickets a week about carts emptying mid-checkout. The access token lasts one hour and nothing refreshed it.</p>
 <p><b>Not doing:</b> refresh for service accounts (PROJ-51) or "remember me" across browser restarts.</p>
+</details>
+
+## Concepts
+
+The one idea this change leans on.
+
+- **Token refresh:** swapping an old login token for a new one before it expires; used by the token cache.
+
+<details><summary>Token refresh: renewing early avoids a failed request</summary>
+<p>The access token is a pass the API checks on every call, and it lasts one hour. The refresh token is the longer-lived one that buys a new pass. The cache swaps the pass five minutes before it runs out, so no request ever carries an expired one.</p>
+<ul><li><a href="https://datatracker.ietf.org/doc/html/rfc6749#section-1.5">RFC 6749, section 1.5: Refresh Token</a>, official spec, free</li><li><a href="https://www.linkedin.com/learning/web-security-oauth-and-openid-connect-23016424">Web Security: OAuth and OpenID Connect</a>, LinkedIn Learning, paid</li></ul>
+<p>Links checked 2026-11-20.</p>
 </details>
 
 ## Before and after
@@ -83,9 +104,14 @@ flowchart LR
 <details><summary>Refreshing early avoids a failed request, at the cost of one timer per tab</summary>
 <p>A retry still fails the first request after expiry and doubles its latency. <b>Costs:</b> each open tab refreshes on its own. <b>Biggest risk:</b> two tabs refreshing at once, covered by the single-flight rule.</p>
 </details>
-<details><summary>Plan vs actual: added the single-flight rule</summary>
-<p>The review found parallel calls each starting a refresh, so step 4 was added.</p>
-</details>
+
+## Planned and built
+
+3 of 3 planned steps built as planned; one step was added.
+
+| Planned | Built instead | Why |
+| ------- | ------------- | --- |
+| Nothing about parallel calls | Parallel calls share one refresh | The review found each call starting its own refresh |
 
 ## Blocker
 
@@ -96,12 +122,6 @@ flowchart LR
 
 <details><summary>Your guess vs what happened: right about the cache, missed the race</summary>
 <p>Guessed "the API client changes" and "logout breaks". The client did change; logout was fine, but parallel refreshes raced.</p>
-</details>
-
-## Learn more
-
-<details><summary>2 links on OAuth refresh tokens, checked 2026-11-20</summary>
-<ul><li><a href="https://datatracker.ietf.org/doc/html/rfc6749#section-1.5">RFC 6749, section 1.5: Refresh Token</a>, official spec, free</li><li><a href="https://www.linkedin.com/learning/web-security-oauth-and-openid-connect-23016424">Web Security: OAuth and OpenID Connect</a>, LinkedIn Learning, paid</li></ul>
 </details>
 
 ## Explain it back

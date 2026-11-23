@@ -20,6 +20,7 @@
 - run records: {docs/how-it-works/runs; read by grasp-tools, relative to this file}
 - stop hook: {the settings file holding the Stop hook, e.g. .claude/settings.local.json; or none}
 - docs router: {docs/README.md, or none}
+- obsidian: {yes | no; yes means setup wrote .obsidian/app.json in the docs root}
 - docs repo: {same | path of a separate docs repository, e.g. a workspace wrapper}
 - notion parent: {page id, only for target notion}
 - notion features: {page id, only for target notion}
@@ -49,6 +50,7 @@
 ## Learning
 
 - linkedin learning: {yes | no}
+- illustrations: {yes | no}
 
 ## Projects
 

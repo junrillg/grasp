@@ -26,7 +26,11 @@ one click away. Never grow the app map to explain a feature; write or patch its 
   starts and where it ends.
 - **A small workspace gets the workspace map alone.** When all its projects together are under
   about 15 source files, add a "Core features" table to the workspace map (feature, project,
-  where it starts) and write no app maps.
+  where it starts) and a "Concepts" section, and write no app maps. The workspace map then stands
+  in for the app map everywhere this skill says "the app map": it is what a run reads before
+  restating an issue, what step 7 patches, what setup shows the concepts for, and the way into
+  each project. `mapped at` in the Projects table still holds each project's commit. This rule
+  wins over every line that says "write the app map".
 - **Never draw the same arrows twice.** In a workspace, the workspace map owns the pictures that
   cross projects ("How they connect", "One journey"). A sub-project's app map then draws only its
   own inside: its "One request" stops at its own edge, and "The pieces" is dropped when the
@@ -47,8 +51,15 @@ agent success. The agent instruction files get the short run-record block and no
   that show it; a search hit whose matching lines you read is enough, the whole file is not
   needed. Something guessed from a name or a convention alone is marked "(inferred)". Open
   questions go under "Not sure yet".
-- **Small pictures.** About 10 boxes per diagram, never more than 20. Past that, split by area
-  and give each area its own picture. A picture nobody can take in at a glance teaches nothing.
+- **Small pictures.** About 10 boxes per diagram, never more than 20 (`lint-page` reports
+  `too-many-boxes`). Past that, split by area and give each area its own picture. A picture
+  nobody can take in at a glance teaches nothing.
+- **Concepts, short on the page, long in the toggle.** The app map names at most 5 ideas a
+  newcomer must know to follow this app, a feature page one or two (or a link to the app map's).
+  Each is one visible line and one toggle with the longer explanation and its checked links, as
+  "Concepts" in [notebook.md](notebook.md) describes. Pick them from what the code actually does
+  (the traces), never from a list of its libraries. Every one of these pages keeps the section:
+  `lint-page` reports `no-concepts`.
 - **Top to bottom unless it is a short chain.** Obsidian shrinks a diagram to the width of the
   page, so a wide one ends up with text too small to read. Use `flowchart LR` only for a chain of
   up to about 5 boxes in a row with no `subgraph`. Anything with a `subgraph`, or more boxes, is
@@ -68,7 +79,8 @@ agent success. The agent instruction files get the short run-record block and no
   constraint, a test or a comment in the code states. An observation ("today only X writes this
   table") is not a rule; leave it out or put it under "Not sure yet" as a question.
 - **Word limits count what a reader sees:** prose, captions, table cells. Not diagram source, not
-  folded text.
+  folded text. `lint-page` reports `too-long` past 1,100 words on an app map or a workspace map
+  and past 350 on a feature page: fold or cut, never raise the limit.
 - **Walkthroughs stay short.** At most 7 steps, each up to 8 lines of real code, never a whole
   file. A quoted line longer than about 70 characters is cut off on screen: end it with `...`
   where it is cut. Nothing else about the code is changed. A short function is quoted whole. One step may cover several arrows ("Arrows 2 to 4")
@@ -80,12 +92,15 @@ agent success. The agent instruction files get the short run-record block and no
   not exist yet prints nothing even when it would be ignored. Any output means git will silently
   skip the pages: stop, show the user the rule that matched, and fix it together (anchor the
   rule, `/shop-web/` instead of `shop-web/`, or pick another folder). `lint-page` reports the
-  same thing as `git-ignored` on any page it is given.
-- **One illustration, on request.** Diagrams carry the structure. The app map may also open with
-  one picture of the app as an everyday scene (who uses it, what goes in, what comes out) when
-  the user says yes and an image tool is available, as "Illustrations" in
-  [notebook.md](notebook.md) describes: saved to `assets/app-map.png`, read before it is linked,
-  regenerated once if its text is garbled, dropped otherwise. Never one per feature page.
+  same thing as `git-ignored` on any page it is given. A folder that is not inside any git
+  repository (a plain top folder) cannot ignore anything: skip the test there and say the pages
+  are not under version control.
+- **One illustration per map, when the project wants them.** Diagrams carry the structure. With
+  `illustrations: yes` in `.grasp.md` and an image tool available, the app map and the workspace
+  map each open with one picture of the app as an everyday scene (who uses it, what goes in, what
+  comes out), as "Illustrations" in [notebook.md](notebook.md) describes: saved to
+  `assets/app-map.png` or `assets/workspace-map.png`, read before it is linked, regenerated once
+  if its text is garbled, dropped otherwise. Never one per feature page.
 - Everything in "Markdown that renders everywhere" and "Toggles" in [notebook.md](notebook.md)
   applies. Run `grasp-tools lint-page` on every page written.
 
@@ -148,7 +163,11 @@ nested (`frontend/`, `backend/`, `infra/`), git submodules, or apps and packages
 **Detect.** `grasp-tools projects` (from the top folder) lists each sub-project as
 `PATH<TAB>repo|package<TAB>markers`, plus a repository's origin remote when it has one: `repo`
 has its own `.git`, `package` has its own manifest inside the top repository. Nothing inside a
-nested repository is listed; that repository gets its own setup. Check the list against workspace
+nested repository is listed; that repository gets its own setup. It finds a repository up to
+eight folders deep and a package up to three, and never looks inside `node_modules`, `vendor`,
+`dist`, `build`, `target`, `venv` or hidden folders: say so to the user with the list, and ask
+whether any project is missing, so one outside those limits is added by hand rather than missed.
+Check the list against workspace
 manifests (`workspaces` in `package.json`, `pnpm-workspace.yaml`, `turbo.json`, `nx.json`,
 `[workspace]` in `Cargo.toml`, `go.work`, `.gitmodules`) and drop what isn't a project in its
 own right:
@@ -171,6 +190,11 @@ go:
 | Each repository its own | `<project>/docs/how-it-works/` | Sub-repositories are worked on and reviewed separately, and their docs should travel with their code |
 
 A `package` always uses the top repository's notebook: `<top>/docs/how-it-works/<package>/`.
+
+`<project>` in these paths is the sub-project's own folder name (`reporter` for
+`tools/internal/reports/daily/reporter`); when two sub-projects share a name, join the path with
+`-` (`tools-reporter`). Links between pages are relative paths worked out from the two real
+locations, never copied from an example: a project five folders down is not one `../` away.
 
 With one vault at the top, an agent started inside a sub-repository writes its run record
 outside that repository, into the wrapper's folder. An agent sandbox that only lets writes into

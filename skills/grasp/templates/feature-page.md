@@ -7,7 +7,8 @@ patch the picture here and add a row under "Changes". File name: `{feature-name}
 `features/` folder, lowercase joined with `-`. Rules are in
 [overview.md](../references/overview.md) and [notebook.md](../references/notebook.md). About 250
 words a reader sees, tables included (not diagram source, not folded text). Fill every `{...}`; delete a
-section that has nothing true to say: most pages need "Where it fits", "How it works" and
+section that has nothing true to say, except "Concepts", which every page keeps (`lint-page`
+reports `no-concepts`): most pages need "Where it fits", "How it works", "Concepts" and
 "Connects to", and nothing else.
 
 Write this page only when the feature has a path worth tracing: three or more files or steps. A
@@ -49,6 +50,18 @@ sequenceDiagram
 <pre><code>{up to 8 lines of the real code, never a whole file, no highlighting}</code></pre>
 <p><b>2.</b> {next step} (<code>{path}</code>, <code>{name}</code>)</p>
 <pre><code>{excerpt}</code></pre>
+</details>
+
+## Concepts
+
+{Caption: the one or two ideas this feature leans on, one line. When the app map already explains them: "Explained on the app map", linked to `../app-map.md#concepts`, and nothing else.}
+
+- **{Concept name}:** {what it is in one plain sentence, and where this feature uses it}
+
+<details><summary>{Concept name}: {its point as a conclusion}</summary>
+<p>{the longer explanation, 3 to 8 lines, plain words, tied to this feature's code}</p>
+<ul><li><a href="{official docs url}">{page title}</a>, official docs, free</li><li><a href="{video url}">{title from check-link}</a>, {channel from check-link}, YouTube, free</li></ul>
+<p>Links checked {YYYY-MM-DD}.</p>
 </details>
 
 ## Connects to

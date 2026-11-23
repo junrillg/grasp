@@ -25,6 +25,17 @@ flowchart LR
 + const ttl = 3300;</code></pre>
 </details>
 
+## Concepts
+
+The one idea this page leans on.
+
+- **Token refresh:** swapping an old login token for a new one before it expires; used by the token cache.
+
+<details><summary>Token refresh: renewing early avoids a failed request</summary>
+<p>A longer plain-words explanation, three to eight lines, tied to this code.</p>
+<ul><li><a href="https://www.youtube.com/watch?v=abc">Title from check-link</a>, Channel, YouTube, free, checked 2026-11-23</li></ul>
+</details>
+
 ## Before and after
 
 | Before | After |

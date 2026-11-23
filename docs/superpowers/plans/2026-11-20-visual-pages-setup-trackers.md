@@ -41,7 +41,7 @@ Decides the toggle form (`html` or `callout`) used by Tasks 3 and 6. Nothing els
 
 **Files:**
 - Create: `tests/render/obsidian-check.md`
-- Create: `docs/research/visual-pages.md` (from `/private/tmp/claude-501/-Users-junrillg-Projects-grasp/a3d07c4d-1b28-4054-b8f2-fff039022c06/scratchpad/visual-docs-research.md`, plus a "Render test results" section)
+- Create: `docs/research/visual-pages.md` (from a scratch research note, plus a "Render test results" section)
 - Modify: `docs/research/README.md` (one row linking `visual-pages.md`)
 
 **Interfaces:**

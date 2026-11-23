@@ -22,7 +22,8 @@
 </p>
 
 <p align="center">
-  <a href=".claude-plugin/plugin.json"><img src="https://img.shields.io/badge/version-0.3.0-f59e0b" alt="Version 0.3.0"></a>
+  <a href=".claude-plugin/plugin.json"><img src="https://img.shields.io/badge/version-0.4.0-f59e0b" alt="Version 0.4.0"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-16a34a" alt="MIT license"></a>
   <a href="#quick-start"><img src="https://img.shields.io/badge/agents-Claude%20Code%20·%20Codex%20·%20Cursor%20·%20Gemini%20CLI-1c1917" alt="Works with Claude Code, Codex, Cursor and Gemini CLI"></a>
 </p>
 
@@ -89,17 +90,27 @@ BY DEFAULT
 | **Any tracker** | Jira, GitHub Issues, ClickUp, Linear, GitLab, Azure DevOps, any other tool you can connect, a `.md` file or plain quoted text, all read through one intake contract. `setup` reads one real issue to prove the tracker works in your project. |
 | **Builds test-first** | Branch per project convention, failing test first, smallest change, the project's own checks. Asks before any push, pull request or tracker write. |
 | **Verifies with evidence** | "Verified" means a check ran green in this run and its result is quoted. `verify` proves an existing fix without touching code. |
-| **Leaves a visual learning page** | One page per issue in the repository's root `docs/` (Obsidian-compatible Markdown, listed in the docs router), or in Notion on request. You can scan it in a minute: each section is a caption and a picture (where it fits, a before/after screenshot, how it works, the decision), with the detail folded underneath: a numbered code walkthrough, files touched, how to check it. Blockers are never folded. Up to three live-checked learning links (docs, YouTube, LinkedIn Learning) and an explain-back question. |
+| **Leaves a visual learning page** | One page per issue in the repository's root `docs/` (Obsidian-compatible Markdown, listed in the docs router), or in Notion on request. You can scan it in a minute: each section is a caption and a picture (where it fits, a before/after screenshot, how it works, the decision), with the detail folded underneath: a numbered code walkthrough, files touched, how to check it. Blockers are never folded. The plan is a list of 3 to 6 steps, ticked while the agent builds, so the page shows progress live; after the build, "Planned and built" says what was built instead and why. Each page names the concepts it leans on: one line each, with the longer explanation and live-checked lessons (docs, YouTube, LinkedIn Learning) in a toggle. It ends with an explain-back question that waits for your answer or "skip": the page is marked built only then. |
+| **Keeps pages short** | `lint-page` fails a page with more visible words than its kind allows (run record 150, issue page 400, feature page 350, app map 1,100), a diagram with more than 20 boxes, no Concepts section, or a built page whose explain-back was never answered. Long text goes in a toggle, never on the page. |
 | **Reviews and resolves pull requests** | `review PR` checks a pull request against its issue and the project's written rules and reports verified findings; `resolve PR` works the review threads in one new commit. Both update the issue page so it says what the code does now. |
-| **Explains the app** | `setup` reads the code and writes an app map: what the app is for, its core features in the users' words, a picture of how the features connect, the pieces, and one request traced end to end. A feature with a path worth tracing gets its own short page; a small app gets the map alone, so the pages scale with the code. Every row names the file it came from; what couldn't be confirmed is listed as "Not sure yet", not drawn as fact. On request the app map opens with one generated illustration. |
+| **Explains the app** | `setup` reads the code and writes an app map: what the app is for, its core features in the users' words, a picture of how the features connect, the pieces, and one request traced end to end. A feature with a path worth tracing gets its own short page; a small app gets the map alone, so the pages scale with the code. Every row names the file it came from; what couldn't be confirmed is listed as "Not sure yet", not drawn as fact. The app map names up to five concepts a newcomer must know, each with a folded explanation and checked lessons. With `illustrations: yes` (asked once at setup) the app map, the workspace map and each issue page open with one generated illustration. |
 | **Handles a folder of projects** | Run `setup` in a top folder that holds several repositories or monorepo apps and it maps each one, then writes a workspace map of what passes between them, each connection with the file that shows it. It checks first that git won't silently ignore the pages. |
-| **Records every agent run** | `setup` adds a 16-line block to `AGENTS.md` (or `CLAUDE.md`) telling every agent to finish a task by writing a run record: asked, changed, checked, problems, next. Bug fixes, small changes and failed runs included. A table lists every run, newest first. An optional Stop hook reminds an agent that forgets. |
+| **Records every agent run** | `setup` adds an 18-line block to `AGENTS.md` (or `CLAUDE.md`) telling every agent to finish a task by writing a run record: asked, changed, checked, problems, next, and one small diagram when the change has a shape. A record stays under 150 visible words; longer detail is folded. Bug fixes, small changes and failed runs included. A table lists every run, newest first. An optional Stop hook reminds an agent that forgets. |
 | **Plugs into your own skills** | `setup` finds this project's skills that work issues, verify, review or resolve, and lets you pick which to connect. Each picked skill keeps its own job and gains a short marked block that calls `/grasp page` for the learning page. `update` pulls the latest grasp and refreshes those blocks. |
 
 ## Quick start
 
-**Claude Code plugin.** The repository is private, so git on your machine must be able to clone
-it over SSH or with a stored HTTPS credential.
+**Any agent, one line** (Claude Code, Codex, Cursor, Gemini CLI and the other agents the
+[skills CLI](https://github.com/vercel-labs/skills) knows). Needs Node.
+
+```bash
+npx skills add junrillg/grasp -g     # every agent it detects; add -a codex to pick one
+npx skills update grasp -g           # later, to update
+```
+
+Run it as `/grasp ISSUE`. Start with `/grasp setup` in your project.
+
+**Claude Code plugin.**
 
 ```
 /plugin marketplace add junrillg/grasp
@@ -108,10 +119,10 @@ it over SSH or with a stored HTTPS credential.
 
 Run it as `/grasp:grasp ISSUE`. Update with `/plugin marketplace update grasp`.
 
-**Any agent, by link** (Claude Code, Codex, Cursor, Gemini CLI). Needs `git` and `bash`.
+**Any agent, by link.** Needs `git` and `bash`; a `git pull` then updates every agent at once.
 
 ```bash
-git clone git@github.com:junrillg/grasp.git ~/Projects/grasp
+git clone https://github.com/junrillg/grasp.git ~/Projects/grasp
 ~/Projects/grasp/install.sh                        # links into ~/.claude/skills and ~/.agents/skills
 ~/Projects/grasp/install.sh --project ~/code/app   # or one project only
 ```
@@ -147,7 +158,8 @@ for Jira, the ClickUp MCP server, the Linear MCP server, `glab` for GitLab, `az`
 DevOps MCP server, or a project's own wrapper script. `setup` tests it on one real issue and
 records the result in `.grasp.md`. Pages go to
 `docs/how-it-works/` at the repository root by default, in Markdown that opens as an Obsidian
-vault and renders on GitHub; the first run confirms that folder with you. Pass
+vault and renders on GitHub; the first run confirms that folder with you, and on a yes writes the
+vault settings so links you make in Obsidian stay standard Markdown. Pass
 `--notebook notion` (with the Notion MCP server connected) to use Notion instead. The first run in
 a repository runs `setup` and saves `.grasp.md`.
 
@@ -158,7 +170,7 @@ recorded in the copy's `.source` file. It then refreshes grasp's block in every 
 and in `AGENTS.md` or `CLAUDE.md`, after showing you the change. A grasp release that doesn't
 change a block leaves your files untouched.
 
-**Run records without grasp.** The block in `AGENTS.md` spells out the five lines, so a teammate's
+**Run records without grasp.** The block in `AGENTS.md` spells out the five lines and the diagram, so a teammate's
 agent with no grasp installed still writes a record the table can read. To check a branch from
 the command line or CI: `grasp-tools record-check` exits 1 when files changed and no record was
 added.
@@ -193,7 +205,7 @@ flowchart LR
 | [`skills/grasp/SKILL.md`](skills/grasp/SKILL.md) | Arguments, help, the rules for every run and the seven-step workflow |
 | [`skills/grasp/references/`](skills/grasp/references/) | One file per step, loaded only when that step runs |
 | [`skills/grasp/templates/`](skills/grasp/templates/) | The issue page, the app map, the feature page, the workspace map, the run record and the `.grasp.md` project settings |
-| [`skills/grasp/bin/grasp-tools`](skills/grasp/bin/grasp-tools) | The exact, testable steps: connect, disconnect, status, refresh, record-index, record-check, projects, check-link, lint-page, version. Needs only bash, sed, awk, curl and git |
+| [`skills/grasp/bin/grasp-tools`](skills/grasp/bin/grasp-tools) | The exact, testable steps: connect, disconnect, block, status, refresh, record-index, record-check, projects, check-link, lint-page, version. Needs only bash, sed, awk, curl and git |
 | [`tests/`](tests/) | Plain-bash tests for `grasp-tools` and the skill docs, plus the Obsidian render check |
 | [`.claude-plugin/`](.claude-plugin/) | Plugin and marketplace manifests for Claude Code |
 | [`install.sh`](install.sh) | Links or copies the skill into each agent's skills folder |
@@ -214,8 +226,7 @@ same notes list the open gaps: treat the prediction question as a cheap bet, not
 
 ## Status
 
-Version 0.3.0, private. There's no license file yet, so no rights are granted beyond the
-repository's access settings. To change the skill, edit `skills/grasp/` and try it from a linked
+Version 0.4.0, [MIT licensed](LICENSE). To change the skill, edit `skills/grasp/` and try it from a linked
 install (`./install.sh --project <a test repo>`) with `/grasp <issue> --plan`.
 
 Run the tests (bash only, no installs):

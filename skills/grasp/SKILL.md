@@ -1,6 +1,6 @@
 ---
 name: grasp
-description: Works one issue from any tracker (Jira, GitHub, ClickUp, Linear, GitLab, Azure DevOps, or plain text) so the team understands it before and after it is built, and keeps a record of what agents do in a repository. Understand first: restate the ask, one question at a time, two or three approaches, wait for a pick. Then build test-first, verify with fresh evidence, and write a visual-first learning page (diagrams, a code walkthrough, detail folded; Obsidian-compatible Markdown in docs/, or Notion). `setup` live-tests the tracker, makes every agent run leave a short run record (a block in AGENTS.md or CLAUDE.md), and writes an overview of the app: core features, how they connect, the architecture, and each sub-project of a workspace. Use when given an issue key, URL or description to build, fix or investigate; to verify a fix; to review a pull request or resolve its comments; to record what a run did; to map or explain an app; or to set up or update grasp.
+description: "Works one issue from any tracker (Jira, GitHub, ClickUp, Linear, GitLab, Azure DevOps, or plain text) so the team understands it before and after it is built, and keeps a record of what agents do in a repository. Understand first: restate the ask, one question at a time, two or three approaches, wait for a pick. Then build test-first, verify with fresh evidence, and write a visual-first learning page (diagrams, the concepts it leans on with checked lessons, a code walkthrough, long text folded; Obsidian-compatible Markdown in docs/, or Notion). `setup` live-tests the tracker, makes every agent run leave a short run record (a block in AGENTS.md or CLAUDE.md), and writes an overview of the app: core features, how they connect, the architecture, and each sub-project of a workspace. Use when given an issue key, URL or description to build, fix or investigate; to verify a fix; to review a pull request or resolve its comments; to record what a run did; to map or explain an app; or to set up or update grasp."
 argument-hint: "ISSUE [--plan] [--notebook markdown|notion|off] [--no-comment] | verify ISSUE|PR | review PR [--post] | resolve PR | page ISSUE|PR [--step work|verify|review|resolve] | record [\"NAME\"] | map | setup | update | help"
 ---
 
@@ -29,7 +29,7 @@ task.
 | `record` | subcommand | no | none | Write or update the run record for the task in this conversation: asked, changed, checked, problems, next. Nothing else: no code, commits or tracker writes. The block that `setup` adds to `AGENTS.md` makes every agent run do this. |
 | `"NAME"` | quoted text, with `record` | no | named after what changed | The record's short name. |
 | `map` | subcommand | no | none | Build or refresh the overview only: the app map, a page for each core feature that needs one and, at the top of a workspace, the workspace map and each sub-project's app map. |
-| `setup` | subcommand | no | none | Set grasp up in this project: tracker (live-tested), checks, app, docs folder, learning links, the run-record block in `AGENTS.md` or `CLAUDE.md`, the project's own workflow skills, and the overview of the app. In a top folder with sub-projects it covers each one. Runs by itself when `.grasp.md` is missing. |
+| `setup` | subcommand | no | none | Set grasp up in this project: tracker (live-tested), checks, app, docs folder, learning links, illustrations yes/no, the run-record block in `AGENTS.md` or `CLAUDE.md`, the project's own workflow skills, and the overview of the app. In a top folder with sub-projects it covers each one. Runs by itself when `.grasp.md` is missing. |
 | `update` | subcommand | no | none | Pull the latest grasp for this install, then refresh the block in every connected skill. |
 | `help` | first word | no | none | Also `--help`, `-h`. Print usage and stop. |
 
@@ -71,6 +71,8 @@ FLAGS
   --no-comment      off. Nothing is written back to the tracker.
   --step VALUE      with page only. work (default), verify, review or resolve: which
                     skill is calling, so page knows which part of the page to write.
+  --post            off. With review only: offer to post the review comments, after you
+                    approve the exact text.
 
 SUBCOMMANDS
   verify ISSUE|PR   prove an existing fix works with fresh evidence; fill the "after" half.
@@ -85,12 +87,15 @@ SUBCOMMANDS
   record ["NAME"]   write or update the run record for the task in this conversation: five
                     lines (asked, changed, checked, problems, next), a diagram when the
                     change has a shape, then rebuild the table of all runs. Nothing else.
+                    150 visible words at most; longer detail is folded.
   map               build or refresh the overview: the app map (what the app is for, core
-                    features, how they connect, the pieces, one traced request), a page for
+                    features, the concepts to know, how the features connect, the pieces,
+                    one traced request), a page for
                     each core feature that needs one, and in a workspace each sub-project
                     plus how they fit. Small apps get fewer pages, not thinner ones.
   setup             tracker (read live to prove it works), checks, app run command, docs
-                    folder, LinkedIn Learning yes/no; then the run-record block in AGENTS.md
+                    folder, LinkedIn Learning yes/no, illustrations yes/no; then the
+                    run-record block in AGENTS.md
                     or CLAUDE.md so every agent run records itself (Stop hook optional); then
                     which of this project's own skills should call grasp for the learning
                     page; then the overview of the app. Covers each sub-project when run in a
@@ -103,18 +108,21 @@ BY DEFAULT
   1 Intake    read the issue, comments and attachments (read only)
   2 Grasp     restate it, ask what is unclear one question at a time, show 2-3 approaches
               with a recommendation, and wait for your pick
-  3 Before    write the "before" half of the issue's learning page: diagrams first (where
-              it fits, expected flow, the decision), detail folded; one prediction question
-  4 Build     branch, test first, smallest change, the project's own checks
+  3 Before    write the "before" half of the issue's learning page: the plan as 3 to 6
+              steps, diagrams first (where it fits, expected flow, the decision), the
+              concepts it leans on (one line each, the long explanation and checked
+              YouTube or LinkedIn Learning links folded); one prediction question
+  4 Build     branch, test first, smallest change, the project's own checks; the page says
+              "building" and each step is ticked as it finishes, so you can follow along
   5 Verify    fresh evidence only: checks, the test failing without the fix, the behaviour seen
   6 After     write the "after" half: screenshot, how it works with a numbered code
-              walkthrough, decision, blockers, up to 3 checked learning links; then one
-              explain-back question
+              walkthrough, decision, planned and built side by side, blockers; then one
+              explain-back question, which waits for your answer or "skip"
   7 Close     write the run record; patch the app map and the feature page if the issue
               changed how the app is put together; report
 
 EXAMPLES
-  /grasp PROJ-123 --plan          safe first run: understand and plan, no code, no writes
+  /grasp PROJ-123 --plan          safe first run: understand, plan, the "before" page; no code
   /grasp #42                      GitHub issue, full run
   /grasp "add CSV export to the report page" --notebook off
   /grasp verify PROJ-123          is it really fixed?
@@ -131,16 +139,18 @@ IT WILL ASK YOU
   - one question at a time about anything that would change what gets built
   - which approach to take (no code before you pick)
   - before a branch reset, a push, opening a pull request, any tracker write (exact text shown)
-  - a prediction question before the build and an explain-back question after (never blocking)
+  - a prediction question before the build (never blocking), and an explain-back question
+    after it: the page is marked built only once you answer or type "skip"
   - setup (and the first run in a repo): the tracker and one real issue to test it with,
     check commands, how to start the app, where the docs go (default docs/how-it-works/),
-    LinkedIn Learning yes/no, and which of your skills to connect (multi-select), all
-    saved to .grasp.md. A test tracker comment is posted only on a yes.
+    whether you read them in Obsidian (on yes, vault settings are written),
+    LinkedIn Learning yes/no, generated illustrations yes/no, and which of your skills to
+    connect (multi-select), all saved to .grasp.md. A test tracker comment is posted only on a yes.
   - setup, run records: before adding the block to AGENTS.md or CLAUDE.md (exact text
     shown), before adding @AGENTS.md to an existing CLAUDE.md, and whether to add the
     Stop hook (off unless you say yes)
-  - setup and map, overview: to confirm the list of core features before pages are
-    written; in a workspace, which sub-projects to cover and where their pages go
+  - setup and map, overview: to confirm the list of core features and concepts before
+    pages are written; in a workspace, which sub-projects to cover and where their pages go
   - update: to refresh stale blocks in connected skills (diff shown first), and what to do
     with a connected skill that moved; plugin installs ask you to run the plugin update
   - before installing Playwright for a screenshot, or signing in to a protected screen
@@ -150,7 +160,7 @@ REFERENCES
   references/understand.md   restating, questions, approaches, the "before" half
   references/build.md        branch, test first, checks, commit, pull request
   references/verify.md       evidence rules and the gate
-  references/notebook.md     page layout, toggles, diagrams, screenshots, links
+  references/notebook.md     page layout, toggles, diagrams, concepts, links, illustrations
   references/records.md      run records, the AGENTS.md block, the Stop hook
   references/overview.md     app map, feature pages, workspaces with sub-projects
   references/setup.md        setup, update, connecting skills
@@ -161,7 +171,7 @@ REFERENCES
   templates/workspace-map.md how the projects of a workspace fit
   templates/run-record.md    one agent task
   templates/grasp-config.md  the .grasp.md project settings file
-  bin/grasp-tools            helper: connect, disconnect, status, refresh, record-index,
+  bin/grasp-tools            helper: connect, disconnect, block, status, refresh, record-index,
                              record-check, projects, check-link, lint-page, version
                              (grasp-tools -h)
 ```
@@ -181,8 +191,10 @@ REFERENCES
   is quoted. A test that exists but did not run is not evidence.
 - **Subagents explore, the main thread decides.** Read the decisive lines yourself before relying
   on a subagent's claim. Never run two heavy commands (test, build, typecheck) at once.
-- **Pages teach, they do not narrate.** Short, visual, plain words. Link to code and the pull
-  request; never paste secrets, personal data or client documents into a page.
+- **Pages teach, they do not narrate.** Short, visual, plain words. Long text is always folded:
+  one visible line states the point, a toggle holds the rest. Every page names the concepts it
+  leans on. Link to code and the pull request; never paste secrets, personal data or client
+  documents into a page.
 - **Every task that changes files leaves a run record.** Big or small, finished or failed, with
   every problem met written down ([references/records.md](references/records.md)). A record says
   only what happened in this run.
@@ -222,13 +234,18 @@ the fix itself is a real choice.
 ### 3. Before page
 
 Write the "before" half of the issue page ([templates/issue-page.md](templates/issue-page.md))
-with one subagent, then ask the user its prediction question. Do not wait for the answer to go
+with one subagent (or inline for a small change, as the token budget in
+[references/notebook.md](references/notebook.md) decides): the plan as 3 to 6 steps, the pictures, and the concepts the change leans on
+(one visible line each, the longer explanation and checked links folded). Then ask the user its
+prediction question. Do not wait for the answer to go
 on. With `--plan`, stop here and report.
 
 ### 4. Build
 
 Follow [references/build.md](references/build.md): branch per the project convention, failing
-test first, smallest correct change, the project's checks one at a time, one-line commit. Ask
+test first, smallest correct change, the project's checks one at a time, one-line commit. Set
+the page to `Status: building` at the first edit and tick each step of its "Steps" list the
+moment that step is finished, so the page shows the build as it happens. Ask
 before the push and the pull request. If the work grows past the picked approach, stop and bring
 it back to the user.
 
@@ -241,11 +258,11 @@ failed gate is reported plainly and nothing is drafted as passing.
 
 Fill the "after" half of the same page ([templates/issue-page.md](templates/issue-page.md),
 rules in [references/notebook.md](references/notebook.md)): the screenshot (UI changes only),
-how it works with a numbered code walkthrough, the decision, blockers met, up to 3 checked
-learning links, and the explain-back question with its answer folded away (a one-block
-`<details>` in Markdown, a toggle in Notion). Run `grasp-tools lint-page` on the page. Add or update the row in the Features table, and the docs router row for a
-new page. Then ask the user the explain-back question. Put their answer under it on the page. A vague or wrong answer means the code is not understood yet: point them to the
-section that answers it.
+how it works with a numbered code walkthrough, the decision, "Planned and built" (what was
+built instead of the plan, and why), blockers met, the concepts corrected if the build leaned on
+something else, and the explain-back question with its answer folded away (a one-block
+`<details>` in Markdown, a toggle in Notion). Run `grasp-tools lint-page` on the page. Add or update the row in the Features table (the docs router lists that table, never single issue pages). Leave the status at `building`, ask the user the explain-back question and wait: the page becomes `built` (or `verified`) only once they answer or type "skip", and either goes under the question on the page ("Explain-back" in [references/notebook.md](references/notebook.md)). A vague or wrong answer means the code is not understood yet: point them to the
+section that answers it. With no person in the run, never wait: write "not asked" and set the status.
 
 ### 7. Close out
 
@@ -255,8 +272,9 @@ section that answers it.
 - Patch the app map only if the issue added or changed a core feature, a connection between
   features, a container, module, external service, data store, or a step of the main request
   path ([references/overview.md](references/overview.md)). A changed core feature also gets its
-  feature page patched. One line in `decisions.md` for a new decision; one glossary line for a
-  new domain word.
+  feature page patched. One line in `decisions.md` for a new decision (created on first use,
+  beside the app map; in a workspace, in the sub-project's own notebook folder); one line in the
+  app map's Glossary for a new domain word.
 - Unless `--no-comment`, draft one short tracker comment (verdict first, link to the pull
   request, what to re-test), show it, and post only on yes.
 - Report: what the user can do now, what remains, the pull request and checks with results,
@@ -295,8 +313,11 @@ from the current state and do nothing else: no code, no commits, no pushes, no t
    verify results in this conversation, or "not verified yet" without any; `review` and
    `resolve` patch the sections the pull request or its fixes touched, as
    [references/review.md](references/review.md) "The issue page" says.
-4. Run `grasp-tools lint-page`, then report the page path in one line. Questions (prediction,
-   explain-back) are asked only when a person is in the conversation; never block on them.
+4. The calling skill did the build, so nobody ticked the steps live: in the after half, tick each
+   step the diff shows as done and explain every other one in "Planned and built".
+5. Run `grasp-tools lint-page`, then report the page path in one line. Questions (prediction,
+   explain-back) are asked only when a person is in the conversation; `page` itself never waits:
+   it writes "Your answer: not asked (no person in the run)" unless an answer is already there.
 
 ## `record` subcommand
 

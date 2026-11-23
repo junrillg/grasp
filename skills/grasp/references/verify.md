@@ -21,8 +21,12 @@ Run, one at a time, keeping the exit code and the result line:
 
 1. The project's checks from `.grasp.md`.
 2. **The control**: the new test must fail on the code before the change
-   (`git stash` the source change, or check out the parent commit in a worktree, run the one test,
-   restore). When the control cannot run cleanly, skip it and say so. Do not improvise one.
+   The new test stays; only the source goes back. Before the commit: `git stash push -- <the
+   changed source files>` (not the test), run the one test, `git stash pop`. After the commit:
+   `git checkout <parent sha> -- <the changed source files>`, run the one test, then
+   `git checkout HEAD -- <the same files>` and confirm `git status` is clean. A source file the
+   change created is moved aside instead. When the control cannot run cleanly, skip it and say
+   so. Do not improvise one.
 3. **The behaviour**: follow the issue's own steps against a local run. Screenshot or capture
    output for each passing step and look at it. If the behaviour cannot run locally, say so and
    rest on the tests and CI.
@@ -44,7 +48,7 @@ Words like "should work", "looks fine", "probably" mean the gate has not passed.
 confidence percentage with what would raise it; it goes to the user, never onto a tracker.
 
 Whatever went wrong on the way (a failed check, a wrong first approach, a surprise in the code)
-goes on the page: a blocker as a visible `> [!WARNING]` under Blocker, anything else in the
-"Plan vs actual" toggle. That is where the team learns the most. The same problems go, one
+goes on the page: a blocker as a visible `> [!WARNING]` under Blocker, anything else as a row in
+the "Planned and built" table. That is where the team learns the most. The same problems go, one
 sentence each, in the Problems line of the run record ([records.md](records.md)), and a failed
 gate makes the record's status `partial` or `failed`, never `done`.

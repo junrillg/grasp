@@ -37,24 +37,28 @@ sequenceDiagram
 
 <details><summary>Code walkthrough: 4 steps, numbered like the diagram</summary>
 <p><b>1.</b> Any output means a workspace, and each sub-project gets its own map (<code>skills/grasp/bin/grasp-tools</code>, <code>cmd_projects</code>)</p>
-<pre><code># cmd_projects [DIR]: sub-projects under DIR, up to three folders deep: a folder with its own
-# .git (repo) or its own manifest (package). Nothing inside a nested repo is listed: that repo
+<pre><code># cmd_projects [DIR]: sub-projects under DIR, up to three folders d...
+# .git (repo) or its own manifest (package). Nothing inside a neste...
 # gets its own setup. DIR itself is never listed.</code></pre>
 <p><b>2.</b> The agent searches indexes and reads only one path per feature (<code>skills/grasp/references/overview.md</code>, "Exploring the code")</p>
-<pre><code>Cheap and grounded: find the features from the code's own indexes, read only the files on one
-path per feature. One subagent (Sonnet) per app; the main thread keeps only the page paths and
+<pre><code>Cheap and grounded: find the features from the code's own indexes,...
+path per feature. One subagent (Sonnet) per app; the main thread ke...
 the feature list.</code></pre>
 <p><b>3.</b> The feature names are the user's to fix (<code>skills/grasp/references/overview.md</code>, "Exploring the code")</p>
-<pre><code>Ask the user one thing before writing when the code can't say it: who uses the app and what for,
-if the README is silent. Show the feature list and let them fix names or drop rows; it is their
+<pre><code>Ask the user one thing before writing when the code can't say it: w...
+if the README is silent. Show the feature list and let them fix nam...
 vocabulary.</code></pre>
 <p><b>4.</b> Pages are written from the traces, listed in the router and linted (<code>skills/grasp/references/setup.md</code>, "8. Overview")</p>
-<pre><code>3. Write the app map, the feature pages that earn one and, in a workspace, the workspace map.
-   Create the notebook's `README.md` (the pages in reading order: the app map, Features once
-   that table exists, Run records) and add the same rows to the docs router. In a workspace the
-   README and the router follow "Settings in a workspace" in overview.md instead. Feature pages
-   are reached from the app map, not from the router. Run `grasp-tools lint-page` on each page.</code></pre>
+<pre><code>3. Write the app map, the feature pages that earn one and, in a wor...
+   Create the notebook's `README.md` (the pages in reading order: t...
+   that table exists, Run records) and add the same rows to the doc...
+   README and the router follow "Settings in a workspace" in overvi...
+   are reached from the app map, not from the router. Run `grasp-to...</code></pre>
 </details>
+
+## Concepts
+
+Explained on the app map: [Concepts](../app-map.md#concepts). Diagrams as text (Mermaid) and the agent instructions file apply here.
 
 ## Connects to
 
@@ -70,11 +74,8 @@ vocabulary.</code></pre>
 - About 10 boxes per diagram, never more than 20 (`skills/grasp/references/overview.md`).
 - The overview is never pasted into `AGENTS.md` or `CLAUDE.md` (`skills/grasp/references/overview.md`).
 
-## Not sure yet
-
-- Nothing counts the boxes in a diagram: `lint-page` checks only the diagram type and its quotes (`skills/grasp/bin/grasp-tools`). Should it count them too?
-
 ## Changes
 
 | When | What changed | Page |
 | ---- | ------------ | ---- |
+| 2026-11-23 | `lint-page` now counts diagram boxes and visible words, and the app map and feature pages name their concepts | [Goal review](../runs/2026-11-23-goal-review-steps-concepts-limits.md) |

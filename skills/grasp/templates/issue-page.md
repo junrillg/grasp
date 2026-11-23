@@ -6,7 +6,8 @@ after half: it patches the same sections and adds the ones marked (after). Rules
 part are in [notebook.md](../references/notebook.md). Fill every `{...}`. Delete a section that
 has nothing true to say instead of padding it.
 
-**Visible:** pictures, one-line captions, the status line, blockers, the explain-back question.
+**Visible:** pictures, one-line captions, the status line, the steps, one line per concept,
+blockers, the explain-back question.
 **Folded:** everything else, in a toggle directly under the picture it explains. A toggle is a
 single HTML block: no blank lines inside, HTML only (`p`, `ul`, `ol`, `li`, `a`, `code`, `pre`,
 `b`, `br`). Each toggle title states a conclusion, never "Details". Run
@@ -16,12 +17,20 @@ single HTML block: no blank lines inside, HTML only (`p`, `ul`, `ol`, `li`, `a`,
 
 # {KEY}: {short name}
 
-Status: {planned | building | built | verified | blocked} · [issue]({issue url}) · [pull request]({pr url, or "not yet"})
+Status: {planned | building | built | verified | blocked} · [issue]({issue url}; for a text issue write "text issue" with no link) · [pull request]({pr url, or "not yet"})
 
 > [!WARNING]
 > {Blocked: what blocks it and who can unblock it, in one line. Only while blocked; never folded.}
 
 **In one line:** {what someone can do now (after) or will be able to do (before), in plain words}
+
+## Steps
+
+{Caption: the plan in 3 to 6 steps. Each box is ticked the moment the build finishes that step, so this list is the live progress.} (before, ticked during the build)
+
+- [ ] {step 1, something a person could check, e.g. "A test that fails for the expired token"}
+- [ ] {step 2}
+- [ ] {step 3}
 
 ## Where it fits
 
@@ -38,9 +47,21 @@ flowchart LR
 <p><b>Not doing:</b> {what this issue deliberately leaves out}</p>
 </details>
 
+## Concepts
+
+{Caption: the ideas this change leans on, one line. Up to 3. With none: "Nothing new: {the one idea already on the app map}".} (before; links checked again after)
+
+- **{Concept name}:** {what it is in one plain sentence, and where this change uses it}
+
+<details><summary>{Concept name}: {its point as a conclusion, e.g. "A queue lets the request return before the work is done"}</summary>
+<p>{the longer explanation, 3 to 8 lines, plain words, tied to this code and not a textbook definition}</p>
+<ul><li><a href="{official docs url}">{page title}</a>, official docs, free</li><li><a href="{video url}">{title from check-link}</a>, {channel from check-link}, YouTube, free</li><li><a href="{final url from check-link}">{course title from check-link}</a>, LinkedIn Learning, paid</li></ul>
+<p>Links checked {YYYY-MM-DD}.</p>
+</details>
+
 ## Before and after
 
-{Caption: what changed on screen, one line, or "No visible change" and drop the table.} (after, UI changes only)
+{Caption: what changed on screen, one line, or "No visible change" and drop the table.} (after; the table is for UI changes only, the "Check it yourself" toggle below stays for every change: it holds the evidence)
 
 | Before | After |
 | ------ | ----- |
@@ -91,9 +112,16 @@ flowchart LR
 <details><summary>Why {picked} wins, and what it costs</summary>
 <p>{the reason}. <b>Costs:</b> {the trade-off}. <b>Biggest risk:</b> {one line}.</p>
 </details>
-<details><summary>Plan vs actual: {"as planned", or the one thing that changed}</summary>
-<p>{what changed from the plan and why} (after)</p>
-</details>
+
+## Planned and built
+
+{Caption: "{n} of {m} steps built as planned", then the one thing that changed, if any.} (after)
+
+| Planned | Built instead | Why |
+| ------- | ------------- | --- |
+| {a step that changed, or was not done} | {what was built, or "not done"} | {one line} |
+
+{One row per step that changed or was not done, never the steps built as planned: their ticks say it. Everything as planned: keep the caption, drop the table.}
 
 ## Blocker
 
@@ -109,12 +137,6 @@ flowchart LR
 
 <details><summary>Your guess vs what happened: {one-line verdict}</summary>
 <p>{the predictions, then one or two lines comparing them with the diff} (after)</p>
-</details>
-
-## Learn more
-
-<details><summary>{n} links on {concept names}, checked {YYYY-MM-DD}</summary>
-<ul><li><a href="{official docs url}">{page title}</a>, official docs, free</li><li><a href="{video url}">{title from check-link}</a>, {channel from check-link}, YouTube, free</li><li><a href="{final url from check-link}">{course title}</a>, LinkedIn Learning, paid</li></ul>
 </details>
 
 ## Explain it back

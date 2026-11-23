@@ -20,7 +20,7 @@ src="$repo/skills/grasp"
 base="$HOME" mode=link action=install
 while [ $# -gt 0 ]; do
   case "$1" in
-    --project) base="$(cd "$2" && pwd)"; shift ;;
+    --project) [ $# -ge 2 ] || { usage; exit 2; }; base="$(cd "$2" && pwd)"; shift ;;
     --copy) mode=copy ;;
     --uninstall) action=uninstall ;;
     -h|--help|help) usage; exit 0 ;;

@@ -7,7 +7,7 @@ does not rot when files move. Rules and the way to explore the code are in
 [overview.md](../references/overview.md). Patch the rows an issue touches; refresh in full about
 monthly.
 
-Every diagram: about 10 boxes, never more than 20; `flowchart LR` only for a short chain with no
+Every diagram: about 10 boxes, never more than 20 (`lint-page` reports `too-many-boxes`); `flowchart LR` only for a short chain with no
 `subgraph`, otherwise `flowchart TB`, so the text stays readable in Obsidian. Every row names the file it was read from; a
 row that was guessed from a name and not read ends with "(inferred)". Anything that could not be
 confirmed goes under "Not sure yet", never into a diagram as if it were known.
@@ -22,7 +22,7 @@ confirmed goes under "Not sure yet", never into a diagram as if it were known.
 
 {2-3 lines: who uses it and the main thing they do. With more than one kind of user, one line each: "**{role}:** {what they do here}".}
 
-{Only when the user asked for an illustration: one image line for `assets/app-map.png`, its alt text saying what the picture shows. Otherwise delete this line.}
+{Only when `.grasp.md` says `illustrations: yes` and an image tool is available: one image line for `assets/app-map.png`, its alt text saying what the picture shows. Otherwise delete this line.}
 
 ## Core features
 
@@ -33,6 +33,20 @@ confirmed goes under "Not sure yet", never into a diagram as if it were known.
 | {name in the users' words} | {one line, plain words} | `{route, screen, command or job, and the file that holds it}` | {[{name}](features/{feature-name}.md), or "on this page" for a feature too small for its own} |
 
 {At most 9 rows. Smaller features go in one last row, "Also: {names}".}
+
+## Concepts
+
+{Caption: the ideas to know before the pictures below make sense, one line.}
+
+- **{Concept name}:** {what it is in one plain sentence, and where this app uses it, with the file}
+
+{At most 5: the ideas a newcomer must know to follow this app (e.g. "server-side rendering", "message queue", "multi-tenancy"), never a list of every library. Each gets one toggle; a long explanation always goes in the toggle, never on the page.}
+
+<details><summary>{Concept name}: {its point as a conclusion, e.g. "Each customer's rows are fenced off by one column"}</summary>
+<p>{the longer explanation, 3 to 8 lines, plain words, tied to this app's code}</p>
+<ul><li><a href="{official docs url}">{page title}</a>, official docs, free</li><li><a href="{video url}">{title from check-link}</a>, {channel from check-link}, YouTube, free</li><li><a href="{final url from check-link}">{course title from check-link}</a>, LinkedIn Learning, paid</li></ul>
+<p>Links checked {YYYY-MM-DD}.</p>
+</details>
 
 ## How the features connect
 

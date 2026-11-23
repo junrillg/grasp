@@ -65,6 +65,15 @@ test_review_converts_old_pages() {
   assert_contains "$r" "lint-page" "review.md runs lint-page"
 }
 
+test_description_is_a_quoted_yaml_string() {
+  # an unquoted description holding ": " is invalid YAML: strict loaders (npx skills) skip the skill
+  local d
+  d=$(sed -n 's/^description: //p' "$SKILL")
+  [[ "$d" == \"*\" ]] || _fail "description is wrapped in double quotes"
+  d=${d#\"}; d=${d%\"}
+  [[ "$d" != *\"* && "$d" != *\\* ]] || _fail "description holds no inner double quote or backslash"
+}
+
 test_description_within_1024_chars() {
   local d
   d=$(sed -n 's/^description: //p' "$SKILL")

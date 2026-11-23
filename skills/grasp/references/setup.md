@@ -33,6 +33,12 @@ show the list, ask which sub-projects to cover and where their pages go, then ru
 for the top folder first and for each sub-repository after it, asking a sub-repository only what
 differs from the top (its tracker project, its checks, its branch). Step 8 covers them all.
 
+Every folder an agent may be started in gets its own `.grasp.md` and its own run-record block:
+the top folder and each sub-repository ("one repository, one block" means never two blocks in
+one repository, not one block for the whole workspace). A top folder that is not a git
+repository has no branch, no pull request command and no `.gitattributes`: write `none` for
+those settings and skip the `.gitattributes` line.
+
 ### 1. Tracker
 
 Detect before asking: the git remote host, connected tools (Atlassian, ClickUp, Linear, GitHub,
@@ -81,10 +87,30 @@ create there (in a workspace, the folder per sub-project), and wait for a yes or
 Then make sure git will keep the pages, as "Not git-ignored" in [overview.md](overview.md) says:
 test the path of a page about to be written, one per sub-project folder.
 
-### 5. Learning links
+Then ask: "Do you read these pages in Obsidian?" Save `obsidian: yes` or `no`. On yes, the vault
+is the docs root (the `docs/` folder that holds the notebook folder; the notebook folder itself
+when there is no `docs/` above it). When that folder has no `.obsidian/` yet, create two files and
+nothing else:
+
+- `.obsidian/app.json`: `{"useMarkdownLinks": true, "newLinkFormat": "relative", "attachmentFolderPath": "./assets"}`.
+  It makes links created by hand in Obsidian standard Markdown links, which is what `lint-page`,
+  GitHub and doc sites need.
+- `.obsidian/.gitignore`: one line, `workspace*.json` (Obsidian rewrites those on every click).
+
+A folder that already has `.obsidian/` is somebody's vault: change nothing in it; when its
+`app.json` lacks `"useMarkdownLinks": true`, say so and let the user switch it on (Settings,
+Files and links, "Use [[Wikilinks]]" off). Tell the user to open that folder as a vault; never
+rename a vault from inside Obsidian, since that renames the folder on disk.
+
+### 5. Learning links and illustrations
 
 Ask whether the team has LinkedIn Learning. Save `linkedin learning: yes` or `no`. With `no`,
-"Learn more" lists only free material.
+"Concepts" lists only free material.
+
+Then ask once whether pages should open with a generated illustration (one image generation per
+page: the app map, the workspace map and each issue page). Save `illustrations: yes` or `no`.
+Say which image tool was found; with none, say so, save the answer anyway and write diagrams only
+until one is available ("Illustrations" in [notebook.md](notebook.md)).
 
 Now write `.grasp.md` from [templates/grasp-config.md](../templates/grasp-config.md), with
 `run records:` set to `<docs folder>/runs`. The steps below read it.
@@ -159,9 +185,10 @@ The issue the user came for should not wait on it unless they choose so.
 2. Show the user the feature list (at most 9 core features, in their words) and let them rename
    or drop rows. Say which features will get a page of their own ("Scale with the app" in
    overview.md decides; a small project gets none) and ask whether to write those now
-   (recommended) or only the app map. When an image tool is available, ask whether the app map
-   should open with one illustration.
-3. Write the app map, the feature pages that earn one and, in a workspace, the workspace map.
+   (recommended) or only the app map. Show the concepts picked for the app map (at most 5) in
+   the same message, so a wrong or missing one is caught before pages are written.
+3. Write the app map, the feature pages that earn one and, in a workspace, the workspace map
+   (a small workspace gets the workspace map alone: "Scale with the app" in overview.md).
    Create the notebook's `README.md` (the pages in reading order: the app map, Features once
    that table exists, Run records) and add the same rows to the docs router. In a workspace the
    README and the router follow "Settings in a workspace" in overview.md instead. Feature pages
@@ -172,8 +199,11 @@ The issue the user came for should not wait on it unless they choose so.
 - Write setup's own run record with `/grasp record "grasp set up"` ([records.md](records.md)): it
   is the first row of the table and proves the folder, the index and the block work. One record,
   also in a workspace.
-- Tell the user what to open first (the app map, or the workspace map), what was written, and to
-  commit `.grasp.md`, the instruction file and the new pages.
+- Tell the user what to open first (the app map, or the workspace map) and list what was
+  written. `.grasp.md`, the instruction file and the new pages are new, uncommitted files in each
+  repository: offer one commit per repository (`chore: set up grasp`), files staged by path, and
+  make it only on a yes. Left uncommitted, they show up as untracked files in the next issue's
+  branch: a later run commits them in a commit of their own, never inside the issue's commit.
 
 ## `/grasp update`
 
@@ -190,6 +220,10 @@ Brings grasp up to date, then refreshes the block in every connected skill.
      and new `grasp-tools version`. A pull that isn't a fast-forward: stop and show git's message.
    - It sits under Claude Code's plugin folder (`~/.claude/plugins/`): ask the user to run
      `/plugin marketplace update grasp` (an agent can't run it) and continue when they confirm.
+   - `<skill dir>` is a real folder with no `.source`, or a link into `.agents/skills/`, and
+     `grasp` is named in `~/.agents/.skill-lock.json` or in the project's `skills-lock.json`
+     (installed with `npx skills add`): run `npx skills update grasp`, with `-g` for the global
+     install.
    - None of these: say how grasp seems to be installed and ask; never pull a repository you
      didn't identify as grasp's.
 2. **Check what is connected:** `grasp-tools status`. Each line is
@@ -215,8 +249,9 @@ Brings grasp up to date, then refreshes the block in every connected skill.
 
 A file written by grasp 0.1.0 has no `tested:` line, no `## App`, no `## Learning` and no
 `## Connected skills`. Never force a full setup for that. Ask for a missing part the first time a
-run needs it (the app command when a screenshot is due, LinkedIn Learning when writing "Learn
-more"), save it, and carry on. `grasp-tools connect` adds the Connected skills section itself.
+run needs it (the app command when a screenshot is due, LinkedIn Learning when writing
+"Concepts", `illustrations:` when a page that may open with a picture is written), save it, and
+carry on. `grasp-tools connect` adds the Connected skills section itself.
 
 A file written before 0.3.0 has no `run records:` line, no run-record block in the instruction
 files and usually no app map. Runs still work: records go to the default

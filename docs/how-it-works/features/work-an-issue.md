@@ -40,40 +40,44 @@ sequenceDiagram
 
 <details><summary>Code walkthrough: 7 steps, numbered like the diagram</summary>
 <p><b>1.</b> Whatever the tracker, intake produces the same note (<code>skills/grasp/references/trackers.md</code>, "The contract")</p>
-<pre><code>key:        PROJ-123 | owner/repo#42 | 86abc123 | LIN-7 | AB#1234 | text
+<pre><code>key:        PROJ-123 | owner/repo#42 | 86abc123 | LIN-7 | AB#1234 |...
 url:        link, or none
-type:       bug | feature | investigation (from the tracker type, else from the text)
+type:       bug | feature | investigation (from the tracker type, e...
 status:     as the tracker says
 title:      one line
 body:       the description, as text</code></pre>
 <p><b>2.</b> Approaches go in a message of their own, and the agent waits (<code>skills/grasp/references/understand.md</code>, "Approaches")</p>
-<pre><code>Two or three real options grounded in the code. For each: what it is in one line, what it costs,
-what it trades off. Say which you recommend and why. If only one way makes sense, say so and why
-the others do not fit. Wait for the pick. Record it, with the rejected options, for the page.</code></pre>
+<pre><code>Two or three real options grounded in the code. For each: what it i...
+what it trades off. Say which you recommend and why. If only one wa...
+the others do not fit. Wait for the pick. Record it, with the rejec...</code></pre>
 <p><b>3.</b> One subagent writes the before half from a narrow input (<code>skills/grasp/references/understand.md</code>, "The before half")</p>
-<pre><code>Written by one subagent (Sonnet) from: the issue note, the restatement, the picked approach and
-rejected ones, the list of files expected to change, and the app map's diagram source. Never the
-whole repository. Shape is in [templates/issue-page.md](../templates/issue-page.md): the sections</code></pre>
+<pre><code>Written by one subagent (Sonnet) from: the issue note, the restatem...
+rejected ones, the list of files expected to change, and the app ma...
+whole repository. Shape is in [templates/issue-page.md](../template...</code></pre>
 <p><b>4.</b> The build starts with a test that fails (<code>skills/grasp/references/build.md</code>, "Implement")</p>
 <pre><code>## 2. Implement
-- **Test first.** Write the test that fails for the issue's reason. Run it and watch it fail.
-  Then change the code. A bug fix without a test that fails without it is not done.
-- **Smallest correct change** at the place every caller passes through. Search the callers of a
+- **Test first.** Write the test that fails for the issue's reason....
+  Then change the code. A bug fix without a test that fails without...
+- **Smallest correct change** at the place every caller passes thro...
   function before changing it.</code></pre>
 <p><b>5.</b> The gate comes before any claim of done (<code>skills/grasp/SKILL.md</code>, "5. Verify")</p>
 <pre><code>### 5. Verify
-Follow [references/verify.md](references/verify.md). Pass the gate before claiming done. A
+Follow [references/verify.md](references/verify.md). Pass the gate...
 failed gate is reported plainly and nothing is drafted as passing.</code></pre>
 <p><b>6.</b> The after half is filled on the same page (<code>skills/grasp/SKILL.md</code>, the help block)</p>
-<pre><code>  6 After     write the "after" half: screenshot, how it works with a numbered code
-              walkthrough, decision, blockers, up to 3 checked learning links; then one
-              explain-back question</code></pre>
+<pre><code>  6 After     write the "after" half: screenshot, how it works with...
+              walkthrough, decision, planned and built side by side...
+              explain-back question, which waits for your answer or "skip"</code></pre>
 <p><b>7.</b> Every run ends with a record, also a failed one (<code>skills/grasp/SKILL.md</code>, "7. Close out")</p>
 <pre><code>### 7. Close out
-- Write the run record ([references/records.md](references/records.md)): the five lines, linked
-  to the issue page, then `grasp-tools record-index`. Always, also when the run failed or stopped
+- Write the run record ([references/records.md](references/records....
+  to the issue page, then `grasp-tools record-index`. Always, also...
   early; every blocker met goes in its Problems line.</code></pre>
 </details>
+
+## Concepts
+
+Explained on the app map: [Concepts](../app-map.md#concepts). Agent skill, test-first development and diagrams as text (Mermaid) apply here.
 
 ## Connects to
 

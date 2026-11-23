@@ -4,7 +4,9 @@ Detail for step 1 of [SKILL.md](../SKILL.md) and every tracker write.
 
 ## The contract
 
-Whatever the source, intake produces the same note in the run's scratch folder:
+Whatever the source, intake produces the same note in the run's scratch folder (a temp folder
+outside the repository, `mktemp -d`; the agent's own scratch folder when it has one; never
+committed):
 
 ```
 key:        PROJ-123 | owner/repo#42 | 86abc123 | LIN-7 | AB#1234 | text

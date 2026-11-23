@@ -40,29 +40,44 @@ sequenceDiagram
 <p><b>1.</b> The installer links the skill into each skills folder, or copies it and notes where from (<code>install.sh</code>)</p>
 <pre><code>  if [ "$mode" = copy ]; then
     cp -R "$src" "$dest"
-    printf '%s\n' "$repo" > "$dest/.source"   # lets /grasp update re-copy from here
+    printf '%s\n' "$repo" > "$dest/.source"   # lets /grasp update...
   else
     ln -s "$src" "$dest"
   fi
   echo "$mode $dest"</code></pre>
 <p><b>2.</b> A tracker counts as working only after a live read (<code>skills/grasp/references/setup.md</code>, "2. Tracker test")</p>
-<pre><code>Ask for one real issue key or URL. Read it with the chosen reader and show the user what came
-back, in a few lines: title, the first lines of the body, the comment count with the newest
-comment's author, and one attachment opened (or "no attachments"). Ask whether that matches
+<pre><code>Ask for one real issue key or URL. Read it with the chosen reader a...
+back, in a few lines: title, the first lines of the body, the comme...
+comment's author, and one attachment opened (or "no attachments")....
 what they see in the tracker.</code></pre>
 <p><b>3.</b> The answers go into one settings file (<code>skills/grasp/templates/grasp-config.md</code>)</p>
 <pre><code>## Tracker
-- type: {jira | github | clickup | linear | gitlab | azure-devops | other | none}
-- reader: {e.g. "Atlassian MCP", "gh", "ClickUp MCP", "az boards", "bin/tracker" (a project wrapper)}
+- type: {jira | github | clickup | linear | gitlab | azure-devops |...
+- reader: {e.g. "Atlassian MCP", "gh", "ClickUp MCP", "az boards",...
 - project or repo: {e.g. PROJ, owner/repo, ClickUp space or list}</code></pre>
 <p><b>4.</b> Steps 6 to 8 write into the project (<code>skills/grasp/references/setup.md</code>, the step table)</p>
-<pre><code>| 6 Run records | which instructions file, Stop hook yes/no | the block in `AGENTS.md` or `CLAUDE.md`, the `runs/` folder |
-| 7 Connect skills | which of the project's skills | the block in each picked skill |
-| 8 Overview | to confirm the feature list | the app map, feature pages, the workspace map |</code></pre>
+<pre><code>| 6 Run records | which instructions file, Stop hook yes/no | the b...
+| 7 Connect skills | which of the project's skills | the block in e...
+| 8 Overview | to confirm the feature list | the app map, feature p...</code></pre>
 <p><b>5.</b> <code>update</code> first works out how grasp was installed; this is the link case (<code>skills/grasp/references/setup.md</code>, "/grasp update")</p>
-<pre><code>   - `&lt;skill dir>` is a symlink whose target is `skills/grasp` inside a checkout that also holds
-     `install.sh` (a link install): run `git -C &lt;that checkout> pull --ff-only` and report the old
-     and new `grasp-tools version`. A pull that isn't a fast-forward: stop and show git's message.</code></pre>
+<pre><code>   - `&lt;skill dir>` is a symlink whose target is `skills/grasp` insi...
+     `install.sh` (a link install): run `git -C &lt;that checkout> pul...
+     and new `grasp-tools version`. A pull that isn't a fast-forwar...</code></pre>
+</details>
+
+## Concepts
+
+One idea of its own. Explained on the app map: [Concepts](../app-map.md#concepts). Agent skill, the agent instructions file and the agent hook apply here.
+
+- **Symbolic link:** a small file that only points at another folder, so both paths show the same content; the default install links the skill and does not copy it (`install.sh`).
+
+<details><summary>Symbolic link: one checkout serves every agent, so an update is one git pull</summary>
+<p>A copy goes stale: the skill would sit in two skills folders, and a new version would have to be copied into each. A link holds no content, only the path of the real folder.</p>
+<p><code>install.sh</code> runs <code>ln -s</code> so that <code>~/.claude/skills/grasp</code> and <code>~/.agents/skills/grasp</code> both point at <code>skills/grasp</code> in the checkout. Every agent reads the same files.</p>
+<p>That is why <code>/grasp update</code> on a link install is one <code>git pull --ff-only</code> in the checkout: the links already point at the new files.</p>
+<p>With <code>--copy</code> there is no link. The installer writes the checkout's path into a <code>.source</code> file inside the copy, and <code>update</code> copies again from there.</p>
+<ul><li><a href="https://www.gnu.org/software/coreutils/manual/html_node/ln-invocation.html">ln invocation (GNU Coreutils 9.12)</a>, gnu.org, official docs, free</li><li><a href="https://www.youtube.com/watch?v=zfSa-PEU3h4">Linux Crash Course - Symbolic Links</a>, Learn Linux TV, YouTube, free</li></ul>
+<p>Links checked 2026-11-23.</p>
 </details>
 
 ## Connects to

@@ -63,15 +63,17 @@ After the five lines, only when it helps:
   small `flowchart` with the changed box highlighted, reusing the app map's names. No diagram for
   copy, config or a one-line fix. When the task has an issue page, link the page and leave the
   picture there.
-- **One `> [!WARNING]` alert per problem** that needs more than its line: what happened, what was
-  done, what is still open. Never folded.
+- **One `> [!WARNING]` alert** only for a problem that is still open or blocks someone, one line,
+  never folded. A problem that was met and fixed, and needs more than its Problems line, goes in
+  one toggle ("3 problems met, all fixed"), one list item each: what happened and what was done.
 - **Files touched**, folded in one toggle.
 
 Rules that keep a record true and short:
 
 - Write only what happened in this run. Agent summaries are known to claim changes that were never
   made; every "Changed" and "Checked" must be something you can point to in the diff or the output.
-- About 120 words outside the toggle. Plain words. No narration of how you worked.
+- About 120 words outside the toggles, never more than 150: `lint-page` reports `too-long`. Plain
+  words. No narration of how you worked. What needs more room goes in a toggle.
 - No secrets, tokens, env values, personal data, client text or raw command output. Quote one
   result line, not a log.
 - The same Markdown rules as every page ([notebook.md](notebook.md)): standard links, one-block
@@ -107,8 +109,9 @@ themselves don't: `page` is called by a skill that is still working.
 
 Most agent work never goes through `/grasp`. `setup` therefore adds a short marked block to the
 project's agent instructions file, so every agent session is told to leave a record. The block
-holds the folder, the title and status form and the five lines, so an agent with no grasp
-installed can still write a record the index reads.
+holds the folder, the title and status form, the five lines and the ask for one small Mermaid
+diagram when the change has a shape, so an agent with no grasp installed can still write a record
+the index reads, picture included.
 
 - **Which file.** `AGENTS.md` is the one file Codex, Cursor, Gemini CLI and Claude Code can all
   read. Claude Code reads `AGENTS.md` by itself only when the project has no `CLAUDE.md`; when
@@ -134,6 +137,12 @@ installed can still write a record the index reads.
 
 One repository, one block. In a workspace each sub-repository gets the block in its own
 `AGENTS.md`, because an agent started inside it reads only that.
+
+**What `record-check` can and cannot see.** It compares the files git says changed with the
+records git says were added. With one notebook at the top of a workspace, a sub-repository's
+records live outside that repository: the check prints `ok records-outside-git` and proves
+nothing about them. In a folder that is no repository it prints `ok not-a-git-repo`. Read both as
+"not checked here", never as "a record exists": look in the runs folder itself.
 
 ## The Stop hook (optional)
 

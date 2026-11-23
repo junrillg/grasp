@@ -13,8 +13,8 @@ gt() { "$TOOLS" "$@"; }
 
 # ---- version and dispatch ----
 
-test_version_prints_0_2_0() {
-  assert_eq "0.3.0" "$(gt version)" "version prints 0.3.0"
+test_version_prints_the_version_file() {
+  assert_eq "$(cat "$ROOT/skills/grasp/VERSION")" "$(gt version)" "version prints the VERSION file"
 }
 
 test_version_matches_plugin_json() {
@@ -41,7 +41,7 @@ test_help_lists_all_commands() {
 expected_block() {
   local step=$1 eol=${2:-$'\n'}
   printf '%s%s' \
-    "<!-- grasp:start b=1 v=0.3.0 step=$step -->" "$eol" \
+    "<!-- grasp:start b=1 v=0.4.0 step=$step -->" "$eol" \
     "## Learning page (grasp)" "$eol" \
     "When this skill has finished its own work, run grasp's \`page\` subcommand for the same issue or" "$eol" \
     "pull request with \`--step $step\` (\`/grasp page <issue or PR> --step $step\`, or \`/grasp:grasp page ...\`" "$eol" \
@@ -68,7 +68,7 @@ test_connect_appends_block_and_row() {
   want=$(mktemp)
   { cat "$FIX/skills/plain/SKILL.md"; printf '\n'; expected_block work; } > "$want"
   assert_file_eq "$want" "$p/.claude/skills/plain/SKILL.md" "block appended after one blank line"
-  assert_contains "$(cat "$p/.grasp.md")" "| .claude/skills/plain | work | 0.3.0 |" "row recorded"
+  assert_contains "$(cat "$p/.grasp.md")" "| .claude/skills/plain | work | 0.4.0 |" "row recorded"
 }
 
 test_connect_twice_is_idempotent() {
@@ -89,9 +89,9 @@ test_connect_replaces_block_when_step_changes() {
   gt --config "$p/.grasp.md" connect .claude/skills/plain work >/dev/null
   gt --config "$p/.grasp.md" connect .claude/skills/plain verify >/dev/null
   assert_eq 1 "$(grep -c 'grasp:start' "$p/.claude/skills/plain/SKILL.md")" "still one block"
-  assert_eq 1 "$(grep -c 'grasp:start b=1 v=0.3.0 step=verify' "$p/.claude/skills/plain/SKILL.md")" "block now verify"
+  assert_eq 1 "$(grep -c 'grasp:start b=1 v=0.4.0 step=verify' "$p/.claude/skills/plain/SKILL.md")" "block now verify"
   assert_eq 1 "$(grep -c '^| .claude/skills/plain |' "$p/.grasp.md")" "still one row"
-  assert_contains "$(cat "$p/.grasp.md")" "| .claude/skills/plain | verify | 0.3.0 |" "row updated"
+  assert_contains "$(cat "$p/.grasp.md")" "| .claude/skills/plain | verify | 0.4.0 |" "row updated"
 }
 
 test_connect_preserves_crlf_and_text_above() {
@@ -141,7 +141,7 @@ test_connect_creates_section_in_old_grasp_md() {
   gt --config "$p/.grasp.md" connect .claude/skills/plain work >/dev/null
   want=$(mktemp)
   { cat "$FIX/grasp-md/old.md"
-    printf '\n## Connected skills\n\n| skill | step | grasp version |\n| ----- | ---- | ------------- |\n| .claude/skills/plain | work | 0.3.0 |\n'
+    printf '\n## Connected skills\n\n| skill | step | grasp version |\n| ----- | ---- | ------------- |\n| .claude/skills/plain | work | 0.4.0 |\n'
   } > "$want"
   assert_file_eq "$want" "$p/.grasp.md" "section created at end of old .grasp.md"
   gt --config "$p/.grasp.md" connect .claude/skills/crlf verify >/dev/null
@@ -155,7 +155,7 @@ test_connect_twice_into_new_grasp_md() {
   gt --config "$p/.grasp.md" connect .claude/skills/plain work >/dev/null
   gt --config "$p/.grasp.md" connect .claude/skills/crlf review >/dev/null
   want=$(mktemp)
-  printf '## Connected skills\n\n| skill | step | grasp version |\n| ----- | ---- | ------------- |\n| .claude/skills/plain | work | 0.3.0 |\n| .claude/skills/crlf | review | 0.3.0 |\n' > "$want"
+  printf '## Connected skills\n\n| skill | step | grasp version |\n| ----- | ---- | ------------- |\n| .claude/skills/plain | work | 0.4.0 |\n| .claude/skills/crlf | review | 0.4.0 |\n' > "$want"
   assert_file_eq "$want" "$p/.grasp.md" ".grasp.md created with both rows under the header"
   assert_eq 2 "$(gt --config "$p/.grasp.md" status | grep -c $'\tok$')" "status lists both"
 }
@@ -166,7 +166,7 @@ test_connect_into_empty_template_table() {
   sed -n '/^## Connected skills/,$p' "$ROOT/skills/grasp/templates/grasp-config.md" > "$p/.grasp.md"
   gt --config "$p/.grasp.md" connect .claude/skills/plain work >/dev/null
   gt --config "$p/.grasp.md" connect .claude/skills/crlf review >/dev/null
-  assert_eq "$(printf '| .claude/skills/plain | work | 0.3.0 |\n| .claude/skills/crlf | review | 0.3.0 |')" "$(tail -n 2 "$p/.grasp.md")" "rows appended under the template's empty table"
+  assert_eq "$(printf '| .claude/skills/plain | work | 0.4.0 |\n| .claude/skills/crlf | review | 0.4.0 |')" "$(tail -n 2 "$p/.grasp.md")" "rows appended under the template's empty table"
   assert_exit 0 "status ok, no placeholder row" -- "$TOOLS" --config "$p/.grasp.md" status
 }
 
@@ -206,7 +206,7 @@ test_connect_section_without_table() {
   printf '# grasp settings\n\n## Connected skills\n\nNone yet.\n\n## Voice\n\n- plain\n' > "$p/.grasp.md"
   gt --config "$p/.grasp.md" connect .claude/skills/plain work >/dev/null
   want=$(mktemp)
-  printf '# grasp settings\n\n## Connected skills\n\n| skill | step | grasp version |\n| ----- | ---- | ------------- |\n| .claude/skills/plain | work | 0.3.0 |\n\nNone yet.\n\n## Voice\n\n- plain\n' > "$want"
+  printf '# grasp settings\n\n## Connected skills\n\n| skill | step | grasp version |\n| ----- | ---- | ------------- |\n| .claude/skills/plain | work | 0.4.0 |\n\nNone yet.\n\n## Voice\n\n- plain\n' > "$want"
   assert_file_eq "$want" "$p/.grasp.md" "table added under the heading"
   printf '# grasp settings\n\n## Connected skills\n' > "$p/.grasp.md"
   gt --config "$p/.grasp.md" connect .claude/skills/plain work >/dev/null
@@ -320,12 +320,24 @@ test_youtube_400_fails() {
   assert_eq "fail 400" "$out" "status reported"
 }
 
-test_linkedin_redirect_prints_final_url() {
+test_linkedin_redirect_prints_final_url_and_title() {
   local log out
   log=$(mktemp)
   out=$(FAKE_CURL_LOG=$log cl li-redirect "https://www.linkedin.com/learning/oauth-2-0-essentials-2")
-  assert_eq $'ok\thttps://www.linkedin.com/learning/oauth-2-0-essentials' "$out" "final URL printed"
+  assert_eq $'ok\thttps://www.linkedin.com/learning/oauth-2-0-essentials\tOAuth 2.0 Essentials' "$out" "final URL and the course title printed"
   assert_contains "$(cat "$log")" "-L" "follows redirects"
+  [[ "$(cat "$log")" != *"/dev/null"* ]] || _fail "the page is read for its title, not thrown away"
+}
+
+test_linkedin_title_entities_decoded() {
+  assert_eq $'ok\thttps://www.linkedin.com/learning/devs-guide\tDev\'s Guide to "OAuth" & OpenID' "$(cl li-entities "https://www.linkedin.com/learning/devs-guide")" "&#39; &quot; &amp; decoded"
+}
+
+test_linkedin_without_title_fails_no_title() {
+  local out rc=0
+  out=$(cl li-no-title "https://www.linkedin.com/learning/oauth-2-0-essentials") || rc=$?
+  assert_eq 1 "$rc" "exit 1"
+  assert_eq "fail no-title" "$out" "a course page with no readable title is not verified"
 }
 
 test_linkedin_404_fails() {
@@ -343,7 +355,10 @@ test_linkedin_leaves_learning_fails_not_learning() {
 }
 
 test_other_200_ok() {
-  assert_eq $'ok\thttps://developer.mozilla.org/en-US/docs/Web/HTTP' "$(cl other-200 "https://developer.mozilla.org/en-US/docs/Web/HTTP")" "other URL ok"
+  local log
+  log=$(mktemp)
+  assert_eq $'ok\thttps://developer.mozilla.org/en-US/docs/Web/HTTP' "$(FAKE_CURL_LOG=$log cl other-200 "https://developer.mozilla.org/en-US/docs/Web/HTTP")" "other URL ok"
+  assert_contains "$(cat "$log")" "/dev/null" "any other page is not downloaded into memory"
 }
 
 test_timeout_fails() {
@@ -466,6 +481,121 @@ test_lint_missing_file_exits_2() {
   assert_exit 2 "missing file exits 2" -- "$TOOLS" lint-page "$FIX/pages/nope.md"
 }
 
+# ---- lint-page: page kinds, length, boxes, concepts ----
+
+test_lint_flags_too_long()       { _lint_expect too-long "bad-too-long.md:1: too-long 151 words, limit 150"; }
+test_lint_flags_too_many_boxes() { _lint_expect too-many-boxes "bad-too-many-boxes.md:5: too-many-boxes 21 boxes, limit 20"; }
+test_lint_flags_no_concepts()    { _lint_expect no-concepts "bad-no-concepts.md:1: no-concepts"; }
+test_lint_instruction_file_is_not_a_run_record() {
+  # AGENTS.md holds the block, which spells out "- **Asked:**": it must not be measured as a record
+  local t i; t=$(new_tmp)
+  { printf '# Project rules\n\n'; for i in $(seq 1 200); do printf 'word '; done; printf '\n\n'; "$TOOLS" block record; } > "$t/AGENTS.md"
+  assert_eq "" "$("$TOOLS" lint-page "$t/AGENTS.md" | grep -e too-long -e no-concepts)" "an instruction file is never too-long"
+}
+
+test_lint_flags_no_answer()      { _lint_expect no-answer "bad-no-answer.md:14: no-answer"; }
+
+test_lint_no_answer_only_once_built() {
+  local t; t=$(new_tmp)
+  # still building: the question is open, which is true; answered or skipped: clean
+  sed 's/^Status: built/Status: building/' "$FIX/pages/bad-no-answer.md" > "$t/building.md"
+  sed 's/Your answer:$/Your answer: skipped/' "$FIX/pages/bad-no-answer.md" > "$t/skipped.md"
+  assert_eq "" "$("$TOOLS" lint-page "$t/building.md" "$t/skipped.md")" "a building page, or a skipped answer, is not no-answer"
+}
+
+test_lint_counts_only_what_a_reader_sees() {
+  local out rc=0
+  # the same run record as bad-too-long.md less one word: exactly 150
+  out=$(lint words-not-counted.md) || rc=$?
+  assert_eq "" "$out" "folded text, code fences, <pre>, comments and link targets are not counted"
+  assert_eq 0 "$rc" "exit 0"
+}
+
+words() { local i; for ((i = 1; i <= $1; i++)); do printf 'w%d ' "$i"; done; }   # N words on one line
+
+# kind_page KIND N -> a page of that kind: its own few words, then N more
+kind_page() {
+  case $1 in
+    run)       printf '# 2026-01-02: x\n\n- **Asked:** x\n\n' ;;                                    # 4 words
+    issue)     printf '# K-1: x\n\nStatus: built\n\n## Concepts\n\n' ;;                              # 5
+    feature)   printf '# Cart\n\npart of the [app map](app-map.md)\n\n## Concepts\n\n' ;;            # 7
+    app)       printf '# Shop: app map\n\n## Concepts\n\n' ;;                                        # 4
+    workspace) printf '# Shop: how the projects fit\n\n' ;;                                          # 5
+    none)      printf '# Features\n\nStatus: done\n\n' ;;
+  esac
+  words "$2"; printf '\n'
+}
+
+test_lint_word_limit_follows_the_page_kind() {
+  local d kind own limit f
+  d=$(new_tmp); : > "$d/app-map.md"
+  while read -r kind own limit; do
+    f="$d/$kind.md"
+    kind_page "$kind" $((limit - own)) > "$f"
+    assert_eq "" "$("$TOOLS" lint-page "$f")" "$kind: $limit words pass"
+    kind_page "$kind" $((limit - own + 1)) > "$f"
+    assert_eq "$f:1: too-long $((limit + 1)) words, limit $limit" "$("$TOOLS" lint-page "$f")" "$kind: one word more is too long"
+  done <<'EOF'
+run 4 150
+issue 5 400
+feature 7 350
+app 4 1100
+workspace 5 1100
+EOF
+}
+
+test_lint_page_of_no_kind_is_never_too_long_or_without_concepts() {
+  local d out rc=0
+  d=$(new_tmp)
+  kind_page none 3000 > "$d/README.md"
+  out=$("$TOOLS" lint-page "$d/README.md") || rc=$?
+  assert_eq "" "$out" "an index or a README has no word limit and needs no Concepts"
+  assert_eq 0 "$rc" "exit 0"
+}
+
+test_lint_no_concepts_only_on_issue_app_and_feature_pages() {
+  local d kind f
+  d=$(new_tmp); : > "$d/app-map.md"
+  for kind in issue feature app; do
+    f="$d/$kind.md"
+    kind_page "$kind" 10 | grep -v '^## Concepts$' > "$f"
+    assert_eq "$f:1: no-concepts" "$("$TOOLS" lint-page "$f")" "$kind page without Concepts"
+    kind_page "$kind" 10 | sed 's/^## Concepts$/## Concepts and more/' > "$f"
+    assert_eq "$f:1: no-concepts" "$("$TOOLS" lint-page "$f")" "$kind page: the heading is exactly ## Concepts"
+  done
+  # first match wins: a run record that also has an issue status line is a run record
+  f="$d/run.md"; printf '# 2026-01-02: x\n\nStatus: blocked\n\n- **Asked:** x\n' > "$f"
+  assert_eq "" "$("$TOOLS" lint-page "$f")" "a run record needs no Concepts"
+  kind_page workspace 10 > "$f"
+  assert_eq "" "$("$TOOLS" lint-page "$f")" "a workspace map needs no Concepts"
+}
+
+# seq_page N -> a page with one sequenceDiagram of N participants
+seq_page() {
+  local i
+  printf '# Flow\n\n```mermaid\nsequenceDiagram\n  autonumber\n  actor P1 as Person\n'
+  for ((i = 2; i <= $1; i++)); do printf '  participant P%d as Part %d\n' "$i" "$i"; done
+  printf '  P1->>P2: hello\n```\n'
+}
+
+test_lint_counts_sequence_participants() {
+  local d
+  d=$(new_tmp)
+  seq_page 20 > "$d/p.md"
+  assert_eq "" "$("$TOOLS" lint-page "$d/p.md")" "20 participants are fine"
+  seq_page 21 > "$d/p.md"
+  assert_eq "$d/p.md:3: too-many-boxes 21 boxes, limit 20" "$("$TOOLS" lint-page "$d/p.md")" "21 participants are reported on the opening fence"
+}
+
+test_lint_accepts_a_task_list_on_an_issue_page() {
+  local d out rc=0
+  d=$(new_tmp); : > "$d/app-map.md"
+  printf '# K-1: x\n\nStatus: building\n\n## Steps\n\n- [x] A test that fails for the expired token\n- [ ] The cache refreshes early\n- [ ] The [app map](app-map.md) names the cache\n\n## Concepts\n\n- **Token:** a pass.\n' > "$d/K-1-x.md"
+  out=$("$TOOLS" lint-page "$d/K-1-x.md") || rc=$?
+  assert_eq "" "$out" "ticked and open boxes are fine"
+  assert_eq 0 "$rc" "exit 0"
+}
+
 # ---- page template ----
 
 TEMPLATE="$ROOT/skills/grasp/templates/issue-page.md"
@@ -477,7 +607,7 @@ test_example_page_lints_clean() {
 test_template_has_sections() {
   local body sec
   body=$(cat "$TEMPLATE")
-  for sec in "Where it fits" "Before and after" "How it works" "Decision" "Blocker" "Explain it back" "Learn more"; do
+  for sec in "Where it fits" "Before and after" "How it works" "Decision" "Blocker" "Explain it back" "Concepts" "Steps" "Planned and built"; do
     assert_contains "$body" "## $sec" "template has section $sec"
   done
 }
@@ -493,14 +623,14 @@ test_template_lints_clean() {
 test_example_has_sections() {
   local body sec
   body=$(cat "$FIX/pages/example-issue-page.md")
-  for sec in "Where it fits" "Before and after" "How it works" "Decision" "Explain it back" "Learn more"; do
+  for sec in "Where it fits" "Before and after" "How it works" "Decision" "Explain it back" "Concepts" "Steps" "Planned and built"; do
     assert_contains "$body" "## $sec" "example has section $sec"
   done
 }
 
 # ---- run records: the block in AGENTS.md / CLAUDE.md ----
 
-RECORD_MARKER='<!-- grasp:start b=1 v=0.3.0 step=record dir=docs/how-it-works/runs -->'
+RECORD_MARKER='<!-- grasp:start b=1 v=0.4.0 step=record dir=docs/how-it-works/runs -->'
 
 test_connect_record_appends_block_to_agents_md() {
   local p out body
@@ -517,8 +647,53 @@ test_connect_record_appends_block_to_agents_md() {
   for f in '**Asked:**' '**Changed:**' '**Checked:**' '**Problems:**' '**Next:**'; do
     assert_contains "$body" "$f" "block lists field $f"
   done
-  assert_contains "$(cat "$p/.grasp.md")" "| AGENTS.md | record | 0.3.0 |" "row recorded"
+  assert_contains "$(cat "$p/.grasp.md")" "| AGENTS.md | record | 0.4.0 |" "row recorded"
   assert_eq $'AGENTS.md\trecord\tok' "$(gt --config "$p/.grasp.md" status)" "status ok"
+}
+
+test_record_block_asks_for_a_small_flowchart() {
+  local p want
+  p=$(new_project)
+  want=$(mktemp)
+  cat > "$want" <<'EOF'
+- **Next:** what a person should do or decide next, or "nothing".
+Under them, when the change has a shape (steps, or parts that connect), add one small Mermaid
+`flowchart` of it: at most 10 boxes, every label in double quotes.
+Write only what happened: never claim a change or a check you did not make. No secrets, tokens,
+env values or raw command output. Skip it for questions and for runs that changed no files.
+With the grasp skill installed, `/grasp record` writes it and rebuilds the index.
+<!-- grasp:end -->
+EOF
+  gt --config "$p/.grasp.md" block record | tail -n 7 > "$p/tail.txt"
+  assert_file_eq "$want" "$p/tail.txt" "the end of the record block"
+}
+
+test_record_block_from_0_3_0_is_stale() {
+  local p
+  p=$(new_project)
+  cat > "$p/AGENTS.md" <<'EOF'
+<!-- grasp:start b=1 v=0.3.0 step=record dir=docs/how-it-works/runs -->
+## Run records (grasp)
+Before your final message on any task that changed files in this repository, write one run record:
+`docs/how-it-works/runs/YYYY-MM-DD-short-name.md`. It is part of the task, also when you were told to change only
+certain files. One file per task; the same task continued updates its file.
+Start it with `# YYYY-MM-DD: short name` and `Status: done` (or `partial`, `blocked`, `failed`), then
+exactly these five lines, one short plain sentence each:
+- **Asked:** the request.
+- **Changed:** what behaves differently now.
+- **Checked:** the command you ran and its result line, or "not checked".
+- **Problems:** what failed, was worked around or is uncertain, or "none".
+- **Next:** what a person should do or decide next, or "nothing".
+Write only what happened: never claim a change or a check you did not make. No secrets, tokens,
+env values or raw command output. Skip it for questions and for runs that changed no files.
+With the grasp skill installed, `/grasp record` writes it, adds a diagram and rebuilds the index.
+<!-- grasp:end -->
+EOF
+  printf '\n## Connected skills\n\n| skill | step | grasp version |\n| ----- | ---- | ------------- |\n| AGENTS.md | record | 0.3.0 |\n' >> "$p/.grasp.md"
+  assert_eq $'AGENTS.md\trecord\tstale' "$(gt --config "$p/.grasp.md" status)" "the block an 0.3.0 install wrote is stale, with the same b= number"
+  assert_eq "refreshed AGENTS.md record" "$(gt --config "$p/.grasp.md" refresh)" "refresh rewrites it"
+  assert_contains "$(cat "$p/AGENTS.md")" "at most 10 boxes" "the new wording is in"
+  assert_eq $'AGENTS.md\trecord\tok' "$(gt --config "$p/.grasp.md" status)" "ok after refresh"
 }
 
 test_record_block_is_short() {
@@ -563,7 +738,7 @@ test_record_folder_comes_from_config_and_goes_stale() {
   p=$(new_project)
   printf '\n## Notebook\n\n- run records: ../docs/how-it-works/runs\n' >> "$p/.grasp.md"
   gt --config "$p/.grasp.md" connect AGENTS.md record >/dev/null
-  assert_eq '<!-- grasp:start b=1 v=0.3.0 step=record dir=../docs/how-it-works/runs -->' "$(head -n 1 "$p/AGENTS.md")" "marker holds the configured folder"
+  assert_eq '<!-- grasp:start b=1 v=0.4.0 step=record dir=../docs/how-it-works/runs -->' "$(head -n 1 "$p/AGENTS.md")" "marker holds the configured folder"
   assert_contains "$(cat "$p/AGENTS.md")" '`../docs/how-it-works/runs/YYYY-MM-DD-short-name.md`' "block path uses it"
   sed -i.bak 's|^- run records: .*|- run records: notes/runs|' "$p/.grasp.md"
   assert_eq $'AGENTS.md\trecord\tstale' "$(gt --config "$p/.grasp.md" status)" "a moved folder makes the block stale"
@@ -643,21 +818,21 @@ test_run_records_value_is_trimmed() {
   p=$(new_project)
   printf -- '\n- run records: notes/runs/  \n' >> "$p/.grasp.md"
   gt --config "$p/.grasp.md" connect AGENTS.md record >/dev/null
-  assert_eq '<!-- grasp:start b=1 v=0.3.0 step=record dir=notes/runs -->' "$(head -n 1 "$p/AGENTS.md")" "trailing slash and spaces dropped"
+  assert_eq '<!-- grasp:start b=1 v=0.4.0 step=record dir=notes/runs -->' "$(head -n 1 "$p/AGENTS.md")" "trailing slash and spaces dropped"
 }
 
 test_connect_import_makes_claude_md_load_agents_md() {
   local p want
   p=$(new_project)
   assert_eq "connected CLAUDE.md import" "$(gt --config "$p/.grasp.md" connect CLAUDE.md import)" "connect prints confirmation"
-  want=$(mktemp); printf '<!-- grasp:start b=1 v=0.3.0 step=import -->\n@AGENTS.md\n<!-- grasp:end -->\n' > "$want"
+  want=$(mktemp); printf '<!-- grasp:start b=1 v=0.4.0 step=import -->\n@AGENTS.md\n<!-- grasp:end -->\n' > "$want"
   assert_file_eq "$want" "$p/CLAUDE.md" "a missing CLAUDE.md is created with only the import"
   gt --config "$p/.grasp.md" connect CLAUDE.md import >/dev/null
   assert_file_eq "$want" "$p/CLAUDE.md" "second connect changes nothing"
   assert_eq $'CLAUDE.md\timport\tok' "$(gt --config "$p/.grasp.md" status)" "status lists it"
   printf '# My rules\n\nUse tabs.\n' > "$p/CLAUDE.md"
   gt --config "$p/.grasp.md" connect CLAUDE.md import >/dev/null
-  assert_eq "$(printf '# My rules\n\nUse tabs.\n\n<!-- grasp:start b=1 v=0.3.0 step=import -->\n@AGENTS.md\n<!-- grasp:end -->')" "$(cat "$p/CLAUDE.md")" "an existing CLAUDE.md keeps its text"
+  assert_eq "$(printf '# My rules\n\nUse tabs.\n\n<!-- grasp:start b=1 v=0.4.0 step=import -->\n@AGENTS.md\n<!-- grasp:end -->')" "$(cat "$p/CLAUDE.md")" "an existing CLAUDE.md keeps its text"
   gt --config "$p/.grasp.md" disconnect CLAUDE.md >/dev/null
   assert_eq "$(printf '# My rules\n\nUse tabs.')" "$(cat "$p/CLAUDE.md")" "disconnect restores it"
 }
@@ -668,7 +843,7 @@ test_block_with_old_text_is_stale() {
   gt --config "$p/.grasp.md" connect AGENTS.md record >/dev/null
   gt --config "$p/.grasp.md" connect .claude/skills/plain work >/dev/null
   sed -i.bak 's/one short plain sentence each/one sentence each/' "$p/AGENTS.md"
-  sed -i.bak 's/grasp:start b=1 v=0.3.0 step=work/grasp:start b=1 v=0.2.0 step=work/' "$p/.claude/skills/plain/SKILL.md"
+  sed -i.bak 's/grasp:start b=1 v=0.4.0 step=work/grasp:start b=1 v=0.2.0 step=work/' "$p/.claude/skills/plain/SKILL.md"
   assert_eq "$(printf 'AGENTS.md\trecord\tstale\n.claude/skills/plain\twork\tok')" "$(gt --config "$p/.grasp.md" status)" "changed wording is stale; an older version number alone is not"
   gt --config "$p/.grasp.md" refresh >/dev/null
   assert_contains "$(cat "$p/AGENTS.md")" "one short plain sentence each" "refresh restores the current text"
@@ -686,7 +861,7 @@ test_record_and_skill_rows_live_together() {
 test_record_broken_marker_is_refused() {
   local p before
   p=$(new_project)
-  printf '# Rules\n\n<!-- grasp:start b=1 v=0.3.0 step=record dir=x -->\nmine\n' > "$p/AGENTS.md"
+  printf '# Rules\n\n<!-- grasp:start b=1 v=0.4.0 step=record dir=x -->\nmine\n' > "$p/AGENTS.md"
   before=$(mktemp); cp "$p/AGENTS.md" "$before"
   assert_exit 1 "connect refuses a start marker with no end" -- "$TOOLS" --config "$p/.grasp.md" connect AGENTS.md record
   assert_file_eq "$before" "$p/AGENTS.md" "user text untouched"
@@ -971,6 +1146,14 @@ test_projects_lists_sub_projects() {
   assert_eq "$(printf 'backend\trepo\t.git,go.mod\nfrontend\trepo\t.git,package.json\ninfra\tpackage\tDockerfile\npackages/api\tpackage\tpackage.json')" "$(gt projects "$t")" "repos and packages, nothing inside a nested repo or node_modules"
 }
 
+test_projects_finds_a_repository_deeper_than_three_folders() {
+  local t
+  t=$(new_tmp)
+  mkdir -p "$t/a/b/c/d/deep/.git" "$t/a/b/c/d/pkg"
+  printf '{}' > "$t/a/b/c/d/pkg/package.json"
+  assert_eq "$(printf 'a/b/c/d/deep\trepo\t.git')" "$(gt projects "$t")" "a repository five folders down is listed; a package that deep is not"
+}
+
 test_projects_ignores_cdpath() {
   local t
   t=$(new_tmp); mkdir -p "$t/top/api" "$t/other/top/web"
@@ -1008,10 +1191,12 @@ test_new_templates_lint_clean() {
   local d t out rc
   for t in run-record app-map feature-page workspace-map issue-page; do
     rc=0
-    out=$("$TOOLS" lint-page "$ROOT/skills/grasp/templates/$t.md" | grep -v -e ': dead-link ' -e ': hard-wrap$') || true
+    # the notes above "---" count as words of the page here, so its length is checked below
+    out=$("$TOOLS" lint-page "$ROOT/skills/grasp/templates/$t.md" | grep -v -e ': dead-link ' -e ': hard-wrap$' -e ': too-long ') || true
     assert_eq "" "$out" "$t template: toggles and diagrams lint clean"
   done
-  # the page parts, laid out as a notebook, have no dead links either
+  # the page parts, laid out as a notebook, have no dead links either, are within their kind's
+  # word limit and have their Concepts section
   d=$(new_tmp); mkdir -p "$d/features" "$d/runs"
   page_of app-map > "$d/app-map.md"; page_of workspace-map > "$d/workspace-map.md"
   page_of feature-page > "$d/features/some-feature.md"; page_of run-record > "$d/runs/2026-01-02-x.md"
@@ -1040,13 +1225,20 @@ test_app_map_template_has_overview_sections() {
 
 # ---- install.sh ----
 
+test_install_project_without_dir_prints_usage() {
+  local out rc=0
+  out=$("$ROOT/install.sh" --project 2>&1) || rc=$?
+  assert_eq 2 "$rc" "--project with no DIR exits 2"
+  assert_contains "$out" "Usage:" "--project with no DIR prints usage"
+}
+
 test_install_copy_writes_source() {
   local p
   p=$(new_tmp)
   "$ROOT/install.sh" --project "$p" --copy >/dev/null
   assert_eq "$ROOT" "$(cat "$p/.claude/skills/grasp/.source" 2>/dev/null)" ".source holds the repo path (.claude)"
   assert_eq "$ROOT" "$(cat "$p/.agents/skills/grasp/.source" 2>/dev/null)" ".source holds the repo path (.agents)"
-  assert_eq "0.3.0" "$("$p/.claude/skills/grasp/bin/grasp-tools" version)" "copied grasp-tools runs"
+  assert_eq "0.4.0" "$("$p/.claude/skills/grasp/bin/grasp-tools" version)" "copied grasp-tools runs"
 }
 
 test_install_copy_twice_recopies() {
@@ -1055,7 +1247,7 @@ test_install_copy_twice_recopies() {
   "$ROOT/install.sh" --project "$p" --copy >/dev/null
   printf '0.0.1\n' > "$p/.claude/skills/grasp/VERSION"
   "$ROOT/install.sh" --project "$p" --copy >/dev/null 2>&1
-  assert_eq "0.3.0" "$(cat "$p/.claude/skills/grasp/VERSION")" "second --copy replaces grasp's own copy"
+  assert_eq "0.4.0" "$(cat "$p/.claude/skills/grasp/VERSION")" "second --copy replaces grasp's own copy"
   assert_eq "$ROOT" "$(cat "$p/.claude/skills/grasp/.source")" ".source still written"
 }
 
@@ -1072,7 +1264,7 @@ test_install_link_writes_no_source() {
   p=$(new_tmp)
   "$ROOT/install.sh" --project "$p" >/dev/null
   [[ ! -e "$ROOT/skills/grasp/.source" ]] || _fail "link install leaves no .source in the repo"
-  assert_eq "0.3.0" "$("$p/.claude/skills/grasp/bin/grasp-tools" version)" "grasp-tools runs through the symlink"
+  assert_eq "0.4.0" "$("$p/.claude/skills/grasp/bin/grasp-tools" version)" "grasp-tools runs through the symlink"
 }
 
 test_uninstall_removes_only_own_installs() {

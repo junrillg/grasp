@@ -50,9 +50,18 @@ whole repository. Shape is in [templates/issue-page.md](../templates/issue-page.
 marked (before), about 150 words of visible text with the rest folded under its picture. Run
 `grasp-tools lint-page` on it, as [notebook.md](notebook.md) says.
 
+Two sections of the before half carry the understanding:
+
+- **Steps**: the picked approach as 3 to 6 unticked boxes (`- [ ]`), each something a person could
+  check. The build ticks them one by one ([build.md](build.md)), so the page shows progress while
+  the agent works.
+- **Concepts**: up to 3 ideas the change leans on, each one visible line and one toggle that holds
+  the longer explanation and the checked links ("Concepts" in [notebook.md](notebook.md)). Name
+  them before the build: a reader who does not know the idea cannot judge the plan.
+
 The before half is also the spec: the build works from it, and the "after" half is compared
-against it. If the plan changes during the build, update the before half in one line ("Changed:
-... because ...") rather than rewriting it.
+against it in "Planned and built". If the plan changes during the build, change the step's text in
+place and add "(changed: why)" to it rather than rewriting the page.
 
 ## The prediction question
 

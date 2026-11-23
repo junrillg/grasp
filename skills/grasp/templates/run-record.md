@@ -2,7 +2,8 @@
 
 One small page per agent task that changed files, so anyone can see what happened without reading
 a transcript. Read in under a minute: a title, a status line and five fixed lines. Everything
-after the five lines is optional. Rules are in [records.md](../references/records.md). File name:
+after the five lines is optional. At most 150 words a reader sees, toggles not counted
+(`lint-page` reports `too-long`): a problem that needs more than its one line goes in a toggle. Rules are in [records.md](../references/records.md). File name:
 `YYYY-MM-DD-short-name.md` in the run records folder. Fill every `{...}`; delete an optional part
 that has nothing true to say.
 
@@ -30,7 +31,11 @@ flowchart LR
 ```
 
 > [!WARNING]
-> {One alert per problem that needs more than its one line: what happened, what was done about it, what is still open. Never folded.}
+> {Only for a problem that is still open or blocks someone: what it is and who can unblock it, one line. Never folded.}
+
+<details><summary>{n} problems met, {all fixed | m still open}</summary>
+<ul><li><b>{the problem in a few words}:</b> {what happened and what was done about it}</li></ul>
+</details>
 
 <details><summary>{n} files touched, {m} of them tests</summary>
 <ul><li><code>{path}</code>: {what changed, one line}</li></ul>

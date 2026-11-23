@@ -49,11 +49,23 @@ Commands:
                            --hook: for an agent's Stop hook. Reads the hook's JSON on stdin,
                            blocks once with exit 2 and the reason on stderr, never loops
   projects [DIR]           list sub-projects under DIR (default .): PATH, repo|package, markers,
-                           and a repository's origin remote when it has one
-  check-link URL           check a learning link live (YouTube, LinkedIn Learning, other)
+                           and a repository's origin remote when it has one. A repository is
+                           found up to eight folders deep, a package up to three
+  check-link URL           check a learning link live. Prints "ok" and, after a tab each: a
+                           YouTube video's title and channel; a LinkedIn Learning course's
+                           final URL and title; any other page's final URL. A link that
+                           fails prints "fail REASON" and exits 1
   lint-page FILE...        check a page renders in Obsidian and on GitHub: toggles, links to
                            files that are missing, diagram type and quotes, prose wrapped
-                           by hand, and that git does not ignore the page
+                           by hand, and that git does not ignore the page. Also reports
+                           too-many-boxes (a diagram with more than 20 boxes) and, by the
+                           kind of page read from its content: too-long (the words a reader
+                           sees, toggles and code not counted: run record 150, issue page
+                           400, feature page 350, app map and workspace map 1100) and
+                           no-concepts (an issue page, app map or feature page with no
+                           "## Concepts" heading), no-answer (a built or verified issue
+                           page with an empty "Your answer:"). Exits 1 when anything is
+                           reported
   version                  print the grasp version
 
 Options:
@@ -116,9 +128,11 @@ record_block_text() {
     "- **Checked:** the command you ran and its result line, or \"not checked\"." "$e" \
     "- **Problems:** what failed, was worked around or is uncertain, or \"none\"." "$e" \
     "- **Next:** what a person should do or decide next, or \"nothing\"." "$e" \
+    "Under them, when the change has a shape (steps, or parts that connect), add one small Mermaid" "$e" \
+    "\`flowchart\` of it: at most 10 boxes, every label in double quotes." "$e" \
     "Write only what happened: never claim a change or a check you did not make. No secrets, tokens," "$e" \
     "env values or raw command output. Skip it for questions and for runs that changed no files." "$e" \
-    "With the grasp skill installed, \`/grasp record\` writes it, adds a diagram and rebuilds the index." "$e" \
+    "With the grasp skill installed, \`/grasp record\` writes it and rebuilds the index." "$e" \
     "<!-- grasp:end -->" "$e"
 }
 
@@ -550,7 +564,10 @@ cmd_record_check() {
 
 MANIFESTS="package.json pyproject.toml go.mod Cargo.toml pom.xml build.gradle build.gradle.kts Gemfile composer.json pubspec.yaml mix.exs Package.swift Dockerfile main.tf"
 
-# cmd_projects [DIR]: sub-projects under DIR, up to three folders deep: a folder with its own
+# cmd_projects [DIR]: sub-projects under DIR: a repository up to eight folders deep, a package up
+# to three (a manifest deeper than that is a fixture or an example far more often than an app).
+# ponytail: eight is a ceiling, not a design; raise -maxdepth if a real workspace nests deeper.
+# A sub-project is a folder with its own
 # .git (repo) or its own manifest (package). Nothing inside a nested repo is listed: that repo
 # gets its own setup. DIR itself is never listed.
 cmd_projects() {
@@ -558,13 +575,14 @@ cmd_projects() {
   local top=${1:-.} m names=() path kind marks url
   [[ -d "$top" ]] || die 2 "no such folder: $top"
   for m in $MANIFESTS '*.csproj'; do names+=(-o -name "$m"); done
-  (cd "$top" && find . -maxdepth 4 \
+  (cd "$top" && find . -maxdepth 9 \
       \( -name node_modules -o -name vendor -o -name dist -o -name build -o -name target -o -name venv -o -name __pycache__ \) -prune \
       -o -name .git -print -prune \
       -o -name '.?*' -prune \
       -o \( -name ' ' "${names[@]}" \) -print) | sed 's|^\./||' | LC_ALL=C sort | awk '
     split($0, p, "/") < 2 { next }   # a marker in DIR itself
     { n = split($0, p, "/"); m = p[n]; d = substr($0, 1, length($0) - length(m) - 1)
+      if (m != ".git" && n > 4) next   # packages: three folders deep at most
       if (d in marks) marks[d] = marks[d] "," m; else { order[++k] = d; marks[d] = m }
       if (m == ".git") repo[d] = 1 }
     END { for (i = 1; i <= k; i++) {
@@ -650,19 +668,32 @@ cmd_check_link() {
       printf 'ok\t%s\t%s\n' "$title" "$channel"
       ;;
     *)
+      # a LinkedIn Learning page is kept, to read the course title from; any other is thrown away
+      local learning=0 sink=(-o /dev/null)
+      case "$url" in https://www.linkedin.com/learning/*|https://linkedin.com/learning/*) learning=1; sink=() ;; esac
       rc=0
-      res=$("$curl" "${common[@]}" -L -o /dev/null -w '%{http_code} %{url_effective}' "$url") || rc=$?
+      res=$("$curl" "${common[@]}" -L ${sink[@]+"${sink[@]}"} -w $'\n%{http_code} %{url_effective}' "$url") || rc=$?
       [[ $rc == 28 ]] && { echo "fail timeout"; return 1; }
+      body=${res%$'\n'*}; res=${res##*$'\n'}
       code=${res%% *}; final=${res#* }
       [[ "$code" == 200 ]] || { echo "fail ${code:-000}"; return 1; }
-      case "$url" in
-        https://www.linkedin.com/learning/*|https://linkedin.com/learning/*)
-          case "$final" in
-            https://www.linkedin.com/learning/*|https://linkedin.com/learning/*) ;;
-            *) echo "fail not-learning"; return 1 ;;
-          esac ;;
+      [[ $learning == 1 ]] || { printf 'ok\t%s\n' "$final"; return 0; }
+      case "$final" in
+        https://www.linkedin.com/learning/*|https://linkedin.com/learning/*) ;;
+        *) echo "fail not-learning"; return 1 ;;
       esac
-      printf 'ok\t%s\n' "$final"
+      # ponytail: reads a <title> that sits on one line, which is how LinkedIn serves it
+      title=$(printf '%s\n' "$body" | awk -v q="'" '
+        match($0, /<title[^>]*>/) {
+          t = substr($0, RSTART + RLENGTH); i = index(t, "</title>"); if (!i) next
+          t = substr(t, 1, i - 1)
+          i = index(t, " | LinkedIn Learning"); if (i) t = substr(t, 1, i - 1)
+          sub(/ Online Class[ \t]*$/, "", t)
+          gsub(/&#39;/, q, t); gsub(/&quot;/, "\"", t); gsub(/&amp;/, "\\&", t)
+          gsub(/^[ \t]+|[ \t]+$/, "", t); print t; exit
+        }')
+      [[ -n "$title" ]] || { echo "fail no-title"; return 1; }
+      printf 'ok\t%s\t%s\n' "$final" "$title"
       ;;
   esac
 }
@@ -675,7 +706,8 @@ cmd_lint_page() {
   for f in "$@"; do [[ -f "$f" ]] || die 2 "no such file: $f"; done
   out=$(mktemp "${TMPDIR:-/tmp}/grasp.XXXXXX") || die 1 "cannot create a temporary file in ${TMPDIR:-/tmp}; nothing was changed"
   awk -v form="$TOGGLE_FORM" '
-    function report(rule) { printf "%s:%d: %s\n", FILENAME, FNR, rule; bad = 1 }
+    # report(rule): on this line. report(rule, n, f): on line n, of file f when given
+    function report(rule, n, f) { printf "%s:%d: %s\n", (f != "" ? f : FILENAME), (n ? n : FNR), rule; bad = 1 }
     function count(s, re,   n) { n = 0; while (match(s, re)) { n++; s = substr(s, RSTART + RLENGTH) } return n }
     function remote_image(s,   t) {
       while (match(s, /!\[[^]]*\]\([^)]*\)/)) {
@@ -698,48 +730,128 @@ cmd_lint_page() {
         printf "\001%s\t%d\t%s\n", FILENAME, FNR, t
       }
     }
-    # strip_pre(s): the line without what sits inside <pre>...</pre>, across lines. Quoted code
-    # is never Markdown, so no rule below reads it.
-    function strip_pre(s,   out, i, j) {
+    # strip(s, k, from, to): the line without what sits between from (a regex) and to, across
+    # lines; k names the state. Used for <pre>...</pre>: quoted code is never Markdown, so no
+    # rule below reads it. And for comments, which a reader never sees.
+    function strip(s, k, from, to,   out, i, j) {
       out = ""
       while (1) {
-        if (inpre) {
-          j = index(s, "</pre>")
+        if (inside[k]) {
+          j = index(s, to)
           if (!j) return out
-          s = substr(s, j + 6); inpre = 0
+          s = substr(s, j + length(to)); inside[k] = 0
         }
-        i = match(s, /<pre[ >]/)
+        i = match(s, from)
         if (!i) return out s
-        out = out substr(s, 1, i - 1); s = substr(s, i + 4); inpre = 1
+        out = out substr(s, 1, i - 1); s = substr(s, i + RLENGTH); inside[k] = 1
       }
     }
-    FNR == 1 { fence = ""; depth = 0; inpre = 0; mm = 0; prev = "blank"; wrapped = 0 }
+    # shown(s): the line as its reader sees it, for the word count. Inline code stays, less its
+    # "<", so a `<pre>` named in prose opens nothing.
+    function shown(s,   out, c) {
+      out = ""
+      while (match(s, /`[^`]*`/)) {
+        c = substr(s, RSTART + 1, RLENGTH - 2); gsub(/</, " ", c)
+        out = out substr(s, 1, RSTART - 1) " " c " "; s = substr(s, RSTART + RLENGTH)
+      }
+      return out s
+    }
+    # words(s): the tokens that hold a letter or a digit, so table pipes, rules, bullets and
+    # heading marks are not words. A link or an image counts its text, never its target.
+    # ponytail: ASCII letters and digits only (this runs in the C locale), so a word written
+    # wholly in another script is not counted; count bytes above 127 too if pages need it.
+    function words(s,   n, i, w, tok) {
+      gsub(/\]\([^)]*\)/, "]", s)
+      n = split(s, tok); w = 0
+      for (i = 1; i <= n; i++) if (tok[i] ~ /[A-Za-z0-9]/) w++
+      return w
+    }
+    # boxes(t): the boxes one line of a diagram adds.
+    # ponytail: a heuristic, not a Mermaid parser. In a flowchart an id counts once, where it is
+    # given a shape with a label (id["x"], id(x), id{x}); a bare id that is never given a label
+    # is not counted, and a subgraph never is. In a sequence diagram, participant and actor
+    # lines count; one that only appears in a message does not. Parse Mermaid if this misleads.
+    function boxes(t,   n, id, c, j) {
+      if (mtype == "sequenceDiagram") return (t ~ /^(create[ \t]+)?(participant|actor)[ \t]/)
+      if (mtype != "flowchart" && mtype != "graph") return 0
+      if (t ~ /^(subgraph|style|classDef|linkStyle|class|click)([ \t]|$)/) return 0
+      gsub(/"[^"]*"/, "\"\"", t); gsub(/\|[^|]*\|/, " ", t)   # the text of a label holds no ids
+      n = 0
+      while (match(t, /[A-Za-z0-9_]+[[({]/)) {
+        id = substr(t, RSTART, RLENGTH - 1); c = substr(t, RSTART + RLENGTH - 1, 1)
+        t = substr(t, RSTART + RLENGTH)
+        j = index(t, (c == "[" ? "]" : (c == "(" ? ")" : "}"))); if (j) t = substr(t, j + 1)
+        if (!(id in box)) { box[id] = 1; n++ }
+      }
+      return n
+    }
+    # finish(f): the checks that need the whole page. Its kind, read from its content (the first
+    # that matches), sets the word limit and whether it must explain its concepts. An index or
+    # a README has no kind: neither check applies.
+    function finish(f,   limit, needs) {
+      limit = 0; needs = 0
+      # a run record: the five lines under a dated title (AGENTS.md also spells out the lines)
+      isrun = (isrun && h1 ~ /^# [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]: /)
+      if (isrun) limit = 150
+      else if (h1 ~ /: app map[ \t]*$/) { limit = 1100; needs = 1 }     # app map
+      else if (h1 ~ /: how the projects fit[ \t]*$/) limit = 1100       # workspace map
+      else if (isissue) { limit = 400; needs = 1 }                      # issue page
+      else if (isfeature) { limit = 350; needs = 1 }                    # feature page
+      if (limit && nwords > limit) report("too-long " nwords " words, limit " limit, 1, f)
+      if (needs && !concepts) report("no-concepts", 1, f)
+      # the explain-back is the step that makes the change understood: a page is not built without it
+      if (isissue && !isrun && isdone && noanswer) report("no-answer", noanswer, f)
+    }
+    FNR == 1 {
+      if (NR > 1) finish(page)
+      page = FILENAME; fence = ""; depth = 0; split("", inside); mm = 0; prev = "blank"; wrapped = 0
+      nwords = isrun = isissue = isfeature = concepts = isdone = noanswer = 0; h1 = ""
+    }
     {
       line = $0; sub(/\r$/, "", line)
       t = line; sub(/^(>[ ]?)*[ ]{0,3}/, "", t)
       # fenced code: skip everything inside, matching the opening fence character
       if (fence != "") {
         prev = "other"
-        if (index(t, fence) == 1) { fence = ""; mm = 0; next }
+        if (index(t, fence) == 1) {
+          # past 20 boxes the text of a diagram is too small to read: reported where it opens
+          if (mm && nbox > 20) report("too-many-boxes " nbox " boxes, limit 20", mmline)
+          fence = ""; mm = 0; next
+        }
         sub(/^[ \t]+/, "", t)
         if (mm && t != "" && t !~ /^%%/) {
           # only the diagram types the pages use and that were render-tested
-          if (mm == 1) { mm = 2; if (t !~ /^(flowchart|graph|sequenceDiagram|erDiagram|classDiagram)([ \t]|$)/) report("mermaid-type") }
+          if (mm == 1) {
+            mm = 2; mtype = t; sub(/[ \t].*$/, "", mtype)
+            if (t !~ /^(flowchart|graph|sequenceDiagram|erDiagram|classDiagram)([ \t]|$)/) report("mermaid-type")
+          }
           if (count(t, "\"") % 2) report("mermaid-quote")
+          nbox += boxes(t)
         }
         next
       }
       if (t ~ /^```/ || t ~ /^~~~/) {
         fence = substr(t, 1, 3)
         mm = (t ~ /^(```+|~~~+)[ \t]*mermaid[ \t]*$/)
+        mmline = FNR; nbox = 0; split("", box)
         if (depth > 0) report("details-markdown")
         next
       }
+      # the marks finish() reads the kind of page from
+      if (line ~ /^- \*\*Asked:\*\*/) isrun = 1
+      if (h1 == "" && line ~ /^# /) h1 = line
+      if (line ~ /^Status: (planned|building|built|verified|blocked)/) isissue = 1
+      if (line ~ /^Status: (built|verified)/) isdone = 1
+      if (line ~ /Your answer:[ \t]*$/ && !noanswer) noanswer = FNR
+      if (index(line, "part of the [app map](")) isfeature = 1
+      if (line == "## Concepts") concepts = 1
       # ignore inline code first (a `<pre>` named in prose opens nothing), then quoted code
-      code = line; gsub(/`[^`]*`/, "", code); code = strip_pre(code); gsub(/<code>[^<]*<\/code>/, "", code)
+      code = line; gsub(/`[^`]*`/, "", code); code = strip(code, "pre", "<pre[ >]", "</pre>"); gsub(/<code>[^<]*<\/code>/, "", code)
       links(code)
       opens = count(code, "<details[ >]"); closes = count(code, "</details>")
       start = depth
+      # the words a reader sees: not code fences (skipped above), toggles, <pre> or comments
+      if (start == 0 && opens == 0) nwords += words(strip(strip(shown(line), "shown-pre", "<pre[ >]", "</pre>"), "comment", "<!--", "-->"))
       if (code ~ /<details[^>]*[ \t]open([ \t=>]|$)/) report("details-open")
       if (start > 0 && opens > 0) report("details-nested")
       else if (start > 0 && line !~ /^[ \t]*<\/details>[ \t]*$/) {
@@ -773,7 +885,7 @@ cmd_lint_page() {
       prev = kind; prevlen = length(line)
       depth += opens - closes; if (depth < 0) depth = 0
     }
-    END { exit bad }
+    END { if (NR) finish(page); exit bad }
   ' "$@" > "$out" || rc=$?
   while IFS= read -r line; do
     if [[ "$line" == $'\001'* ]]; then

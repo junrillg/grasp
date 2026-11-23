@@ -8,7 +8,8 @@ project's own rules (its `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`) win over t
 - Integration branch, branch name pattern and remote come from `.grasp.md`. Default name:
   `TYPE/KEY-short-name`, with `feat` for new behaviour and `fix` for a bug; text issues use a
   slug.
-- Fetch first, branch from the fresh integration branch.
+- Fetch first, branch from the fresh integration branch. With no remote, skip the fetch and
+  branch from the local integration branch.
 - The working tree has tracked changes: show them; the user chooses commit, stash or discard.
 - The issue already has a branch: an open pull request on it means add commits on top; a merged
   one means ask before resetting (show the commits first); anything unclear means ask.
@@ -26,6 +27,14 @@ project's own rules (its `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`) win over t
   lowered coverage floor.
 - **Comments: default to none.** One line of why when the code cannot say it.
 - Leave unrelated problems for their own issue; list them in the report.
+- **Keep the page live.** At the first edit, set the issue page's status line to
+  `Status: building`. Each time a step of its "Steps" list is finished (what the step names is
+  true: a "failing test" step when the test exists and fails for the right reason, a code step
+  when its test passes; two steps proven by one test are ticked together), tick
+  that box (`- [x]`) before starting the next one: one small edit, no subagent, no lint run. A
+  step that turned out different keeps its box and gains "(changed: why)". This is how someone
+  with the page open in Obsidian follows the build. With `--notebook off` there is no page: say
+  each finished step in one line in the conversation instead.
 
 ## 3. Checks
 
