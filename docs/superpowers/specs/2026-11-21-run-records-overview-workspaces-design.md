@@ -110,7 +110,9 @@ by trial runs, which is evidence it can be followed, not a guarantee every agent
   with `/hooks`, ask for a small code change, and let it finish. Expected: Codex is sent back
   once with "no run record in ...", then writes the record.
 - Run setup in the owner's own working copies of a real top project. Deferred by the owner on
-  2026-11-21: the sub-repositories were mid-work. Everything short of that is done: setup with
+  2026-11-21: the sub-repositories were mid-work. Asked again on 2026-11-23 and kept deferred by
+  the owner: the first `/grasp` run in a project runs setup by itself, so it will happen when
+  real work starts there. Everything short of that is done: setup with
   all its writes ran on local clones of that workspace (the wrapper and both sub-repositories,
   about 3,000 files each). The two real instruction files (756 and 838 lines) kept every byte and
   gained the block; the wrapper's `.gitignore` rules were anchored and the page folders stopped
