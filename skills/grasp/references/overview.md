@@ -41,7 +41,7 @@ one click away. Never grow the app map to explain a feature; write or patch its 
   arrows.
 - `features/README.md` (a "Core features" table and an "Issues" table) is created with the first
   feature page or issue page, not before, by whichever step writes that page first (setup step
-  8, a run's step 3, `page` or `review`). The same step adds the "See the Features table" line to
+  8, a run's step 3, `page`, `review`, or `verify` when the issue has no page yet). The same step adds the "See the Features table" line to
   the app map's "Features built" section; until then that section holds only its run records
   line, and the app map is itself the list. This small edit is allowed whatever the issue
   changed: it is not one of the patches "Keeping it current" limits.

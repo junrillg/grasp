@@ -29,7 +29,7 @@
 ## Code
 
 - integration branch: {develop | main}
-- branch pattern: {TYPE/KEY-short-name}
+- branch pattern: {TYPE/KEY-short-name; a text issue has no key: TYPE/short-name}
 - pull request host command: {e.g. "gh", or a project wrapper}
 
 ## Checks (run one at a time, in this order)

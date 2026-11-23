@@ -28,7 +28,7 @@ task.
 | `--step` | `work`, `verify`, `review`, `resolve`, with `page` | no | `work` | Which skill is calling, so `page` knows which part of the page to write. |
 | `record` | subcommand | no | none | Write or update the run record for the task in this conversation: asked, changed, checked, problems, next. Nothing else: no code, commits or tracker writes. The block that `setup` adds to `AGENTS.md` makes every agent run do this. |
 | `"NAME"` | quoted text, with `record` | no | named after what changed | The record's short name. |
-| `map` | subcommand | no | none | Build or refresh the overview only: the app map, a page for each core feature that needs one and, at the top of a workspace, the workspace map and each sub-project's app map. |
+| `map` | subcommand | no | none | Build or refresh the overview only: the app map, a page for each core feature that needs one and, at the top of a workspace, the workspace map and the app map of each sub-project that is new or stale. |
 | `setup` | subcommand | no | none | Set grasp up in this project: tracker (live-tested), checks, app, docs folder, learning links, illustrations yes/no, the run-record block in `AGENTS.md` or `CLAUDE.md`, the project's own workflow skills, and the overview of the app. In a top folder with sub-projects it covers each one. Runs by itself when `.grasp.md` is missing. |
 | `update` | subcommand | no | none | Pull the latest grasp for this install, then refresh the block in every connected skill. |
 | `help` | first word | no | none | Also `--help`, `-h`. Print usage and stop. |
@@ -272,8 +272,8 @@ section that answers it. With no person in the run, never wait: write "not asked
   to the issue page, then `grasp-tools record-index`. Always, also when the run failed or stopped
   early; every blocker met goes in its Problems line.
 - Patch the app map only if the issue added or changed a core feature, a connection between
-  features, a container, module, external service, data store, a step of the main request
-  path, a rule that must hold or a glossary word ([references/overview.md](references/overview.md)). A changed core feature also gets its
+  features, a piece (a container, module, external service or data store), a step of the main
+  request path, a rule that must hold or a glossary word ([references/overview.md](references/overview.md)). A changed core feature also gets its
   feature page patched. One line in `decisions.md` for a new decision (created on first use,
   beside the app map; in a workspace, in the sub-project's own notebook folder; its line format
   and where it is linked from are in [references/notebook.md](references/notebook.md)); one line in the
@@ -318,9 +318,10 @@ from the current state and do nothing else: no code, no commits, no pushes, no t
    [references/review.md](references/review.md) "The issue page" says.
 4. The calling skill did the build, so nobody ticked the steps live: in the after half, tick each
    step the diff shows as done and explain every other one in "Planned and built".
-5. Run `grasp-tools lint-page`, then report the page path in one line. Questions (prediction,
-   explain-back) are asked only when a person is in the conversation; `page` itself never waits:
-   it writes "Your answer: not asked (no person in the run)" unless an answer is already there.
+5. Run `grasp-tools lint-page`, then report the page path in one line. `page` never waits for
+   the prediction or the explain-back: it writes "Your answer: not asked (no person in the run)"
+   unless an answer is already there, sets the status, and prints the question in its report
+   when a person is in the conversation.
 
 ## `record` subcommand
 
@@ -349,7 +350,7 @@ connected skills and in `AGENTS.md` or `CLAUDE.md`) after a yes.
 
 Build or refresh the overview as [references/overview.md](references/overview.md) describes,
 then stop: the app map, a page for each core feature that needs one, and at the top of a
-workspace the workspace map and each sub-project's app map. Show the feature list for
+workspace the workspace map and the app map of each sub-project that is new or stale. Show the feature list for
 confirmation before writing pages.
 
 ## References

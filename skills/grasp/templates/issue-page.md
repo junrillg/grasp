@@ -61,7 +61,7 @@ flowchart LR
 
 ## Before and after
 
-{Caption: what changed on screen, one line, or "No visible change" and drop the table. A change that shows only in another project: drop the table and make the caption "{what will show} in {project}. Not captured."} (after; the table is for UI changes only, the "Check it yourself" toggle below stays for every change: it holds the evidence)
+{Caption: what changed on screen, one line, or "No visible change" and drop the table. A change that shows only in another project: drop the table and the "After, at" line, and make the caption "{what will show} in {project}. Not captured."} (after; the table is for UI changes only, the "Check it yourself" toggle below stays for every change: it holds the evidence)
 
 | Before | After |
 | ------ | ----- |
@@ -141,7 +141,7 @@ flowchart LR
 ## Explain it back
 
 1. {a "why", "what breaks if" or "trace this request" question} (after)
-   - Your answer: {filled after they reply}
+   - Your answer: {their words; `skipped`; or `not asked (no person in the run)`}
 
 <details><summary>Model answer</summary>
 <p>{2 to 4 lines}</p>

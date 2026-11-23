@@ -75,7 +75,8 @@ Both subcommands leave the issue page (see [notebook.md](notebook.md)) matching 
 - **No page yet, issue adds behaviour:** create it with the status line and the after half from
   [templates/issue-page.md](../templates/issue-page.md), written from the issue, the pull
   request body and the diff. Leave out the before half and "your guess vs what happened": the
-  author's predictions are not known. Add the Features row and the docs router row.
+  author's predictions are not known. Add the Features row (the docs router lists that table,
+  never single pages).
 - **Page exists:** update only the sections the pull request (`review`) or the fixes
   (`resolve`) change: "In one line", Before and after, How it works (diagram, walkthrough, files
   touched), Decision, and the "Check it yourself" toggle. Add a changed decision to the

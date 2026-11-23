@@ -6,8 +6,8 @@ project's own rules (its `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`) win over t
 ## 1. Branch
 
 - Integration branch, branch name pattern and remote come from `.grasp.md`. Default name:
-  `TYPE/KEY-short-name`, with `feat` for new behaviour and `fix` for a bug; text issues use a
-  slug.
+  `TYPE/KEY-short-name`, with `feat` for new behaviour and `fix` for a bug; a text issue has no
+  key, so its branch is `TYPE/short-name`.
 - Fetch first, branch from the fresh integration branch. With no remote, skip the fetch and
   branch from the local integration branch.
 - The working tree has tracked changes: show them; the user chooses commit, stash or discard.

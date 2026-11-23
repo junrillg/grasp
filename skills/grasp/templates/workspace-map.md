@@ -28,7 +28,7 @@ that file was read; a connection guessed from a name (an env var called `API_URL
 | ------- | ---- | ---------- | ---- | -------- | ----------- |
 | {name} | {repository or package} | {main language and framework} | {what only this project does, one line} | [app map]({path to its app-map.md}) | `{short sha}` |
 
-{Only in a small workspace, where the projects get no app maps of their own: a "Core features" section here, one table: feature, project, where it starts; and a "Concepts" section shaped as on the app map template (one visible line per concept, the long explanation and checked links in a toggle). Then drop the Overview column above.}
+{Only in a small workspace, where the projects get no app maps of their own: a "Core features" section here, one table: feature, project, where it starts; and a "Concepts" section shaped as on the app map template (one visible line per concept, the long explanation and checked links in a toggle). Add a "Features built" section as on the app map template too, since this page stands in for the app map. Then drop the Overview column above.}
 
 ## How they connect
 

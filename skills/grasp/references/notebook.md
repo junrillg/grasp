@@ -56,8 +56,9 @@ docs/
 The folder is the one confirmed with the user at setup and saved in `.grasp.md`; never write
 somewhere else without asking. If `docs/` already has its own layout or router, fit into it and
 say where. **The router:** a project's `docs/README.md` is how people and agents find a page.
-When it exists, add one row per new page (a question in the left column, the link in the
-right). When it does not, create it on the first write with the pages above, after asking.
+When it exists, it gets one row for each entry page (the app map or workspace map, the Features
+table, Run records; a question in the left column, the link in the right), never one per issue
+or feature page. When it does not, create it on the first write with the pages above, after asking.
 
 **Markdown that renders everywhere.** Obsidian, GitHub and static sites (VitePress, MkDocs)
 share only plain Markdown, so the pages use only that:
@@ -86,7 +87,7 @@ share only plain Markdown, so the pages use only that:
   `CLAUDE.md`, `.grasp.md` or a `SKILL.md`: those are instructions, not pages. Fix every line it prints: a toggle
   that won't render, a link to a file that isn't there (`dead-link`), a diagram type outside the
   tested ones (`mermaid-type`), an unclosed quote in a diagram (`mermaid-quote`), prose wrapped
-  by hand (`hard-wrap`), a page git would silently skip (`git-ignored`), more visible words than the page's kind allows (`too-long`: fold or cut), a diagram with more than 20 boxes (`too-many-boxes`: split it), an issue page, app map or feature page without its Concepts section (`no-concepts`), or a built or verified issue page whose explain-back has no answer (`no-answer`: ask, or write `skipped`). It prints nothing when the page is clean.
+  by hand (`hard-wrap`), a page git would silently skip (`git-ignored`), more visible words than the page's kind allows (`too-long`: fold or cut), a diagram with more than 20 boxes (`too-many-boxes`: split it), an issue page, app map or feature page without its Concepts section (`no-concepts`), or a built or verified issue page whose explain-back has no answer (`no-answer`: ask and write their words, `skipped`, or `not asked (no person in the run)`). It prints nothing when the page is clean.
 
 **Notion** (`--notebook notion`, needs a Notion tool): the same layout as pages. Create the
 parent and children on first run and save their IDs in `.grasp.md`. Edit with targeted updates
@@ -292,7 +293,9 @@ into `CLAUDE.md` or `AGENTS.md`.
 
 ## Token budget
 
-- **One subagent per page write**: Sonnet for a new page or the app map, Haiku for a patch. The
+- **One subagent per page write**: Sonnet for a new page or the app map, Haiku for a patch (the
+  first overview is the one exception: the subagent that explored a project writes its app map
+  and feature pages, since it already holds the traces). The
   main thread keeps only the page path or link. For a small change whose context the main thread already
   holds (a diff of a few files), write the page inline: a subagent would cost more to brief. This
   line decides wherever a step says "with one subagent". Whoever writes the page also searches
@@ -322,8 +325,12 @@ people can do later without the AI, so it is not skipped silently:
   "Your answer:" is empty.
 - A vague or wrong answer: point to the section that answers it and offer one more try. Never
   quiz twice more than that, never grade.
-- No person in the run (`page` called by a connected skill, a headless run, `--notebook off` in
-  a script): never wait. Write `Your answer: not asked (no person in the run)` and set the status.
+- No person in the run (a headless run), and always for `page` (a connected skill is still
+  working): never wait. Write `Your answer: not asked (no person in the run)` and set the
+  status. `page` still prints the question in its report when a person is there; a reply in the
+  same conversation is written under the question.
+- With `--notebook off` there is no page: ask in the conversation, wait for the answer or "skip"
+  the same way, and write nothing.
 - While waiting, the rest of step 7 that needs no answer (the run record, the report) is done; a
   session that ends first leaves the page at `building` with the question open, which is true.
 
