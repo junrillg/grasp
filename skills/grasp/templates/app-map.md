@@ -128,6 +128,6 @@ sequenceDiagram
 
 ## Features built
 
-{Once a feature page or an issue page exists: "See the Features table", linked to `features/README.md`: one row per issue, each linking to its page.}
+{Once a feature page or an issue page exists: "See the Features table", linked to `features/README.md`: one row per issue, each linking to its page. Until then, write only the run records line below.}
 
 What agents did, task by task, is in [Run records]({runs/README.md, or ../runs/README.md when a workspace shares one folder}).

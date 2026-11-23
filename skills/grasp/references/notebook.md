@@ -37,7 +37,11 @@ docs/
     README.md                    the parent: what each page is, in reading order
     app-map.md
     workspace-map.md             only at the top of a workspace
-    decisions.md                 created with the first decision, one line each
+    decisions.md                 created with the first decision and linked from this README
+                                 (a workspace sub-project has no README: link it from its
+                                 app map's "Features built" section);
+                                 one line each: `- YYYY-MM-DD: {picked} over {rejected},
+                                 because {why}. [page](features/KEY-short-name.md)`
     glossary.md                  only once the app map's Glossary outgrows the page
     features/
       README.md                  the Features table
@@ -65,8 +69,8 @@ share only plain Markdown, so the pages use only that:
   `[[wikilinks]]`, `![[embeds]]`, block refs, `==highlight==` or `%%comments%%`.
 - Diagrams as ```mermaid fences. In a flowchart, quote every node and edge label that holds
   `( ) : / [ ]` (`A["GET /orders"]`, `-->|"step 7: record"|`); sequence diagram messages take no
-  quotes. Validate each one (a Mermaid validator tool if connected, otherwise the project's doc
-  build) before saying done. With neither, `lint-page` still checks the diagram type and its
+  quotes. Validate each one (a Mermaid validator tool if connected and short in its answer,
+  otherwise the project's doc build; read the verdict only) before saying done. With neither, `lint-page` still checks the diagram type and its
   quotes: say in the report that the diagrams were not rendered.
 - Images in an `assets/` folder beside the page, linked `![what it shows](assets/KEY-what.png)`.
   Never hotlink an image from a tracker, Notion or a signed URL: those links expire.
@@ -196,8 +200,9 @@ unticked step unexplained.
 
 Only for changes someone can see. After-only by default, the cheapest path:
 
-1. Start the app with the run command in `.grasp.md` (`## App`). No run command yet: ask once and
-   save it.
+1. Start the app with the run command in `.grasp.md` (`## App`). No run command yet, or `run:`
+   says "UI, no start command known": ask once and save it; with no answer, or no person in the
+   run, write "Not captured" and go on. `run:` says "no UI": there is nothing to capture.
 2. Capture: `npx playwright screenshot --viewport-size=1280,800 URL assets/KEY-after.png`, from
    the page's folder. Playwright missing: offer to skip; never install it without a yes.
 3. Read the PNG once to confirm it shows the right screen. Retake once if not, otherwise skip.
@@ -234,7 +239,9 @@ at most 6 links in all.
 - Search with the concept name only, never project, client or issue text.
 - Keep a link only if `grasp-tools check-link URL` prints `ok`. Use the title and channel it
   prints for YouTube, and the final URL and course title it prints for LinkedIn Learning; never
-  invent a title. A title that does not name the concept is the wrong video: drop it. For a docs
+  invent a title. A video title that does not name the concept is the wrong video: drop it. A
+  course is wider than a video: its title must name the concept or the field it belongs to (a
+  course on HTTP for the concept "status codes"). For a docs
   page it prints the final URL only: use the page's own heading as you read it when you opened
   the page, and keep no docs link you did not open.
 - After each link say who made it, where it lives and whether it's free or paid, and end the
@@ -261,8 +268,12 @@ means ask once, then save it).
 - Generate it with whatever image tool is available. With the Codex CLI, the form that worked in
   grasp's own trial, run from the `assets/` folder: `codex exec --skip-git-repo-check -s
   workspace-write -C "$PWD" --enable image_generation "PROMPT" < /dev/null`, where the prompt
-  names the file to save and says "short labels, spelled exactly, no other text". The
-  `< /dev/null` matters: without it the command waits on stdin forever. Read the PNG before
+  names the file to save and says "short labels, spelled exactly, no other text" and "this
+  image is one step of another agent's task, and that agent writes the task's run record: write
+  none yourself and change no other file" (a second agent started in the project reads the
+  block in `AGENTS.md` and would otherwise leave a record of its own; delete one if it appears).
+  The `< /dev/null` matters: without it the command waits on stdin forever. It can take several
+  minutes: give the command a timeout of at least five. Read the PNG before
   linking it, regenerate once if the text is garbled or the idea
   wrong, otherwise go without. Save it to the page's `assets/` folder (`KEY-idea.png`,
   `app-map.png`, `workspace-map.png`); the alt text says what the picture shows.

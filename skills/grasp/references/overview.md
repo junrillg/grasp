@@ -19,7 +19,7 @@ one click away. Never grow the app map to explain a feature; write or patch its 
 **Scale with the app.** A page nobody needs is noise, and noise is what makes docs unread:
 
 - **A small project gets the app map alone.** Small means under about 15 source files, counted
-  per project. No feature pages, whatever the features look like. This rule wins over the next.
+  per project: files of code only, not tests, manifests, lock files, styles, config or docs. No feature pages, whatever the features look like. This rule wins over the next.
 - In a larger project, a feature whose whole path is one or two short files gets **no feature
   page**: its row in "Core features" and the app map's pictures already say it. Write a feature
   page only when there is a path worth tracing: three or more files or steps between where it
@@ -33,12 +33,18 @@ one click away. Never grow the app map to explain a feature; write or patch its 
   wins over every line that says "write the app map".
 - **Never draw the same arrows twice.** In a workspace, the workspace map owns the pictures that
   cross projects ("How they connect", "One journey"). A sub-project's app map then draws only its
-  own inside: its "One request" stops at its own edge, and "The pieces" is dropped when the
-  project is a single piece. A feature that crosses two projects is split at the edge: each
+  own inside: its "One request" stops at its own edge (the last arrow is the call that leaves
+  the project, named, with no arrows drawn inside the other project), and "The pieces" is dropped
+  when the project is a single piece (one process or one bundle with no store, queue or outside
+  service of its own). A feature that crosses two projects is split at the edge: each
   project's page traces its own half and links the other half, and neither redraws the other's
   arrows.
 - `features/README.md` (a "Core features" table and an "Issues" table) is created with the first
-  feature page or issue page, not before. Until then the app map is the list.
+  feature page or issue page, not before, by whichever step writes that page first (setup step
+  8, a run's step 3, `page` or `review`). The same step adds the "See the Features table" line to
+  the app map's "Features built" section; until then that section holds only its run records
+  line, and the app map is itself the list. This small edit is allowed whatever the issue
+  changed: it is not one of the patches "Keeping it current" limits.
 
 The overview lives in the notebook only. Never paste it into `CLAUDE.md` or `AGENTS.md`: a long
 generated context file loaded into every session costs tokens and has been measured to lower
@@ -133,12 +139,16 @@ the feature list.
    the app"), from the traces already made. No second research pass. With the first feature page,
    create `features/README.md`: a "Core features" table (feature, page) and an "Issues" table
    with the header `| Issue | What | Status | Pull request | Page |` and no rows yet. The
-   notebook's own `README.md` is three lines on what the folder is, then the pages in reading
+   notebook's own `README.md` is one short paragraph on what the folder is (one line in the
+   file, never wrapped by hand), then the pages in reading
    order as a numbered list. The pages link the run records: when that folder has no
    `README.md` yet (a `/grasp map` before any record), build it with `grasp-tools record-index`.
-8. **Diagrams.** Validate each one with a Mermaid validator tool if one is connected, or the
-   project's doc build. With neither, `grasp-tools lint-page` still checks the diagram type and
-   its quotes; say in the report that the diagrams were not rendered.
+8. **Diagrams.** Validate each one with a Mermaid validator tool if one is connected and
+   answers with a short verdict, or with the project's doc build; the main thread does this, since
+   subagents often have no such tool. Read only the verdict: a validator that returns a rendered
+   image or pages of output is not worth its tokens, so skip it. With none, `grasp-tools
+   lint-page` still checks the diagram type, its quotes and its box count; say in the report
+   that the diagrams were not rendered.
 
 Ask the user one thing before writing when the code can't say it: who uses the app and what for,
 if the README is silent. Show the feature list and let them fix names or drop rows; it is their
@@ -154,6 +164,9 @@ vocabulary.
   feels wrong, about monthly, and after a big refactor.
 - To see what moved since a page was verified: `git diff --name-only <its sha>..HEAD`, compared
   with the files the page names.
+- "Verified at" and `mapped at` name the commit the code was read at. A later commit that only
+  adds grasp's own files (`.grasp.md`, the instruction file, the pages) does not make a map
+  stale: a map is stale only when that diff lists a source file.
 
 ## Workspaces: a top folder with several projects
 
@@ -210,11 +223,14 @@ here.
 0. **Check the page paths are not git-ignored** ("Not git-ignored" above), one path per
    sub-project folder, before exploring anything. A wrapper that ignores its sub-repositories by
    name fails this every time; settle it with the user first, so no exploring is wasted.
-1. **Each sub-project**: its app map and feature pages, as above, one subagent per sub-project,
-   run in parallel (they only read). Each subagent hands back the page paths, the feature list,
-   and what the project exposes and consumes: endpoints served and called, packages published and
+1. **Each sub-project**, in two passes. Explore: one subagent per sub-project, in parallel,
+   read-only, each handing back the proposed feature list, the concepts, and what the project
+   exposes and consumes (below). Confirm the lists with the user (setup step 8.2). Write: resume
+   the same subagent, or start one per sub-project with its hand-back, to write that project's
+   app map and feature pages and hand back the page paths. What a project exposes and consumes: endpoints served and called, packages published and
    imported, queues and topics, data stores, env values that point at a sibling.
-2. **The workspace map** at the top, built from those hand-backs, without re-reading code. Draw a
+2. **The workspace map** at the top, written by one subagent given those hand-backs (or inline
+   when they are short), without re-reading code. Draw a
    connection only when a file shows it, strongest evidence first:
    - a workspace or path dependency in a manifest;
    - `docker-compose` service links, or an env value that is a URL to a sibling service;
@@ -232,8 +248,10 @@ here.
 - The top `.grasp.md` holds what is shared: the tracker, the notebook folder, `run records:` and
   the `## Projects` table (path, kind, notebook folder, the commit mapped at). Where the top
   folder has no code of its own, Checks and App say "see each project".
-- Each sub-repository gets its own `.grasp.md` (its checks, app, branch and tracker project can
-  differ; ask only what differs from the top) and its own run-record block in its own `AGENTS.md`
+- Each sub-repository gets its own complete `.grasp.md`: a run started inside it reads that one
+  file and never the top one, so the shared answers (tracker, learning, illustrations, obsidian)
+  are repeated in it, and only what differs is asked (its checks, app, branch and tracker
+  project). It also gets its own run-record block in its own `AGENTS.md`
   ([records.md](records.md)). Run the helper for it with `--config <project>/.grasp.md`.
 - With one vault at the top, a sub-repository's `.grasp.md` points there:
   `markdown folder: ../docs/how-it-works/<project>`, `run records: ../docs/how-it-works/runs`,
@@ -249,5 +267,6 @@ A top folder that is not a git repository can still hold the workspace map and a
 say plainly that those pages are not under version control, and suggest the one place they would
 be (a wrapper repository, or the main sub-repository's docs).
 
-Later, `/grasp map` at the top refreshes the workspace map and any sub-project whose commit
-moved since "mapped at"; `/grasp map` inside a sub-project refreshes only that project.
+Later, `/grasp map` at the top refreshes the workspace map and any sub-project that is stale
+since "mapped at" (a source file changed, as "Keeping it current" defines it; a commit of
+grasp's own files alone is not stale); `/grasp map` inside a sub-project refreshes only that project.

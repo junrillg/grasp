@@ -21,7 +21,7 @@
 - stop hook: {the settings file holding the Stop hook, e.g. .claude/settings.local.json; or none}
 - docs router: {docs/README.md, or none}
 - obsidian: {yes | no; yes means setup wrote .obsidian/app.json in the docs root}
-- docs repo: {same | path of a separate docs repository, e.g. a workspace wrapper}
+- docs repo: {same | path of a separate docs repository, e.g. a workspace wrapper | none (the folder is not a git repository)}
 - notion parent: {page id, only for target notion}
 - notion features: {page id, only for target notion}
 - notion app map: {page id, only for target notion}
@@ -44,7 +44,7 @@
 
 ## App
 
-- run: {command that starts the app, e.g. npm run dev, or "no UI"}
+- run: {command that starts the app, e.g. npm run dev; "no UI"; or "UI, no start command known"}
 - url: {e.g. http://localhost:3000}
 
 ## Learning

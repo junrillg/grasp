@@ -117,7 +117,7 @@ record_block_text() {
   printf '%s%s' \
     "<!-- grasp:start b=$BLOCK_FORMAT v=$v step=record dir=$d -->" "$e" \
     "## Run records (grasp)" "$e" \
-    "Before your final message on any task that changed files in this repository, write one run record:" "$e" \
+    "Before your final message on any task that changed files in this project, write one run record:" "$e" \
     "\`$d/YYYY-MM-DD-short-name.md\`. It is part of the task, also when you were told to change only" "$e" \
     "certain files. One file per task; the same task continued updates its file." "$e" \
     ${shared[@]+"${shared[@]}"} \
@@ -853,13 +853,19 @@ cmd_lint_page() {
       # the words a reader sees: not code fences (skipped above), toggles, <pre> or comments
       if (start == 0 && opens == 0) nwords += words(strip(strip(shown(line), "shown-pre", "<pre[ >]", "</pre>"), "comment", "<!--", "-->"))
       if (code ~ /<details[^>]*[ \t]open([ \t=>]|$)/) report("details-open")
+      if (start == 0 && opens > 0) {   # the opening line: its summary is inside the HTML block too
+        bt = substr(line, index(line, "<details")); gsub(/<code>[^<]*<\/code>/, "", bt)
+        if (bt ~ /`[^`]+`/) report("details-markdown")
+      }
       if (start > 0 && opens > 0) report("details-nested")
       else if (start > 0 && line !~ /^[ \t]*<\/details>[ \t]*$/) {
         if (line ~ /^[ \t]*$/) report("details-blank-line")
         else if (code ~ /\[!(WARNING|CAUTION)\]/) report("warning-in-toggle")
         else {
           m = code; sub(/^[ \t]+/, "", m)
-          if (m ~ /^(#|[-*+] |[0-9]+\. |\||>|!\[)/ || code ~ /\[[^]]*\]\([^)]*\)/ || code ~ /\*\*[^*]+\*\*/)
+          # backticks outside <pre> and <code>: Obsidian shows them as typed inside an HTML block
+          bt = strip(line, "bt-pre", "<pre[ >]", "</pre>"); gsub(/<code>[^<]*<\/code>/, "", bt)
+          if (m ~ /^(#|[-*+] |[0-9]+\. |\||>|!\[)/ || code ~ /\[[^]]*\]\([^)]*\)/ || code ~ /\*\*[^*]+\*\*/ || bt ~ /`[^`]+`/)
             report("details-markdown")
         }
       }

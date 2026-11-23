@@ -236,7 +236,9 @@ the fix itself is a real choice.
 Write the "before" half of the issue page ([templates/issue-page.md](templates/issue-page.md))
 with one subagent (or inline for a small change, as the token budget in
 [references/notebook.md](references/notebook.md) decides): the plan as 3 to 6 steps, the pictures, and the concepts the change leans on
-(one visible line each, the longer explanation and checked links folded). Then ask the user its
+(one visible line each, the longer explanation and checked links folded). The first issue page
+in a notebook also creates `features/README.md` and adds the Features table line to the app map
+("Scale with the app" in [references/overview.md](references/overview.md)). Then ask the user its
 prediction question. Do not wait for the answer to go
 on. With `--plan`, stop here and report.
 
@@ -270,10 +272,11 @@ section that answers it. With no person in the run, never wait: write "not asked
   to the issue page, then `grasp-tools record-index`. Always, also when the run failed or stopped
   early; every blocker met goes in its Problems line.
 - Patch the app map only if the issue added or changed a core feature, a connection between
-  features, a container, module, external service, data store, or a step of the main request
-  path ([references/overview.md](references/overview.md)). A changed core feature also gets its
+  features, a container, module, external service, data store, a step of the main request
+  path, a rule that must hold or a glossary word ([references/overview.md](references/overview.md)). A changed core feature also gets its
   feature page patched. One line in `decisions.md` for a new decision (created on first use,
-  beside the app map; in a workspace, in the sub-project's own notebook folder); one line in the
+  beside the app map; in a workspace, in the sub-project's own notebook folder; its line format
+  and where it is linked from are in [references/notebook.md](references/notebook.md)); one line in the
   app map's Glossary for a new domain word.
 - Unless `--no-comment`, draft one short tracker comment (verdict first, link to the pull
   request, what to re-test), show it, and post only on yes.

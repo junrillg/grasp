@@ -61,7 +61,7 @@ flowchart LR
 
 ## Before and after
 
-{Caption: what changed on screen, one line, or "No visible change" and drop the table.} (after; the table is for UI changes only, the "Check it yourself" toggle below stays for every change: it holds the evidence)
+{Caption: what changed on screen, one line, or "No visible change" and drop the table. A change that shows only in another project: drop the table and make the caption "{what will show} in {project}. Not captured."} (after; the table is for UI changes only, the "Check it yourself" toggle below stays for every change: it holds the evidence)
 
 | Before | After |
 | ------ | ----- |
@@ -132,8 +132,7 @@ flowchart LR
 
 {Visible while planned or building. Once built, move it into the "Your guess" toggle below.} (before)
 
-- Which parts will change? → {user's guess, or "skipped"}
-- What is most likely to break? → {user's guess, or "skipped"}
+- {The one question that was asked, e.g. "Which parts will change?" or "What is most likely to break?"} → {user's guess, or "skipped"}
 
 <details><summary>Your guess vs what happened: {one-line verdict}</summary>
 <p>{the predictions, then one or two lines comparing them with the diff} (after)</p>

@@ -31,7 +31,8 @@ Run `grasp-tools projects` from the folder setup was started in. No output: this
 go to step 1. Any output: this is a workspace. Follow "Workspaces" in [overview.md](overview.md):
 show the list, ask which sub-projects to cover and where their pages go, then run steps 1 to 7
 for the top folder first and for each sub-repository after it, asking a sub-repository only what
-differs from the top (its tracker project, its checks, its branch). Step 8 covers them all.
+differs from the top (its tracker project, its checks, its app, its branch). Step 8 covers them
+all.
 
 Every folder an agent may be started in gets its own `.grasp.md` and its own run-record block:
 the top folder and each sub-repository ("one repository, one block" means never two blocks in
@@ -70,11 +71,14 @@ what they see in the tracker.
 
 Detect lint, test and build commands from `package.json` scripts, `pyproject.toml`, `Makefile`
 or CI files, and confirm them. Ask for the command that starts the app and the URL it serves
-(for screenshots, [notebook.md](notebook.md)); "no UI" is a valid answer.
+(for screenshots, [notebook.md](notebook.md)); "no UI" is a valid answer, and so is "UI, no
+start command known".
 
 Detect the rest of `## Code` and `## Voice` and confirm it in the same message, never as four
 questions: the integration branch (the remote's default branch; with no remote, the current
-branch), the branch pattern (from recent branch names), the pull request command (`gh`, `glab`,
+branch), the branch pattern (from recent branch names; `TYPE/KEY-short-name` when there are none
+to learn from, where a text issue has no key and its branch is `TYPE/short-name`), the pull
+request command (`gh`, `glab`,
 a project wrapper, or "none"), and the project's rules on voice and attribution (from the
 project's own `AGENTS.md` or `CLAUDE.md`, not a personal one; "none written" is fine). With no
 tracker, `comments:` is `never`.
@@ -180,8 +184,9 @@ not want it refreshed. When setup started by itself in front of another run (the
 `/grasp ISSUE` in a repository), ask first: write the overview now, or later with `/grasp map`?
 The issue the user came for should not wait on it unless they choose so.
 
-1. Explore as "Exploring the code" describes, one subagent per app (per sub-project in a
-   workspace, in parallel).
+1. Explore as steps 1 to 6 of "Exploring the code" describe, one subagent per app (per
+   sub-project in a workspace, in parallel). Nothing is written yet: its step 7 comes at 3 below,
+   after the user has confirmed the list.
 2. Show the user the feature list (at most 9 core features, in their words) and let them rename
    or drop rows. Say which features will get a page of their own ("Scale with the app" in
    overview.md decides; a small project gets none) and ask whether to write those now

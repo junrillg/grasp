@@ -493,6 +493,17 @@ test_lint_instruction_file_is_not_a_run_record() {
   assert_eq "" "$("$TOOLS" lint-page "$t/AGENTS.md" | grep -e too-long -e no-concepts)" "an instruction file is never too-long"
 }
 
+test_lint_flags_backticks_inside_a_toggle() {
+  # Obsidian shows backticks inside an HTML block as typed, so code in a toggle must be <code>
+  local t; t=$(new_tmp)
+  printf '# Note\n\n<details><summary>Why</summary>\n<p>Run `npm test` first.</p>\n</details>\n' > "$t/bad.md"
+  printf '# Note\n\n<details><summary>Why</summary>\n<p>Run <code>npm test</code> first.</p>\n<pre><code>echo `date`</code></pre>\n</details>\n\nRun `npm test`.\n' > "$t/good.md"
+  assert_eq "$t/bad.md:4: details-markdown" "$("$TOOLS" lint-page "$t/bad.md")" "backticks in a toggle are Markdown"
+  printf '# Note\n\n<details><summary>Why `npm test` runs first</summary>\n<p>It is fast.</p>\n</details>\n' > "$t/summary.md"
+  assert_eq "$t/summary.md:3: details-markdown" "$("$TOOLS" lint-page "$t/summary.md")" "backticks in a toggle title are Markdown too"
+  assert_eq "" "$("$TOOLS" lint-page "$t/good.md")" "code tags, backticks inside pre, and backticks outside a toggle are fine"
+}
+
 test_lint_flags_no_answer()      { _lint_expect no-answer "bad-no-answer.md:14: no-answer"; }
 
 test_lint_no_answer_only_once_built() {
@@ -674,7 +685,7 @@ test_record_block_from_0_3_0_is_stale() {
   cat > "$p/AGENTS.md" <<'EOF'
 <!-- grasp:start b=1 v=0.3.0 step=record dir=docs/how-it-works/runs -->
 ## Run records (grasp)
-Before your final message on any task that changed files in this repository, write one run record:
+Before your final message on any task that changed files in this project, write one run record:
 `docs/how-it-works/runs/YYYY-MM-DD-short-name.md`. It is part of the task, also when you were told to change only
 certain files. One file per task; the same task continued updates its file.
 Start it with `# YYYY-MM-DD: short name` and `Status: done` (or `partial`, `blocked`, `failed`), then

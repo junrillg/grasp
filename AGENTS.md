@@ -1,6 +1,6 @@
 <!-- grasp:start b=1 v=0.4.0 step=record dir=docs/how-it-works/runs -->
 ## Run records (grasp)
-Before your final message on any task that changed files in this repository, write one run record:
+Before your final message on any task that changed files in this project, write one run record:
 `docs/how-it-works/runs/YYYY-MM-DD-short-name.md`. It is part of the task, also when you were told to change only
 certain files. One file per task; the same task continued updates its file.
 Start it with `# YYYY-MM-DD: short name` and `Status: done` (or `partial`, `blocked`, `failed`), then
