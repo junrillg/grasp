@@ -1,6 +1,6 @@
 # Review and resolve pull requests
 
-Verified at `d6454c6` with uncommitted changes, 2026-11-21 · part of the [app map](../app-map.md)
+Verified at `dc9a389` with uncommitted changes, 2026-11-21 · part of the [app map](../app-map.md)
 
 **In one line:** Review a pull request against its issue and the project's rules, or work its review threads in one new commit; both update the issue page.
 

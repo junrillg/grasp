@@ -1,6 +1,6 @@
 # Work an issue
 
-Verified at `d6454c6` with uncommitted changes, 2026-11-21 · part of the [app map](../app-map.md)
+Verified at `dc9a389` with uncommitted changes, 2026-11-21 · part of the [app map](../app-map.md)
 
 **In one line:** Give grasp an issue and it works it in seven steps, waits for your pick before any code, and leaves a before and after page.
 

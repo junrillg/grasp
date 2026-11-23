@@ -1,6 +1,6 @@
 # Verify a fix
 
-Verified at `d6454c6` with uncommitted changes, 2026-11-21 · part of the [app map](../app-map.md)
+Verified at `dc9a389` with uncommitted changes, 2026-11-21 · part of the [app map](../app-map.md)
 
 **In one line:** Prove an existing fix works with fresh evidence, without changing any code, and fill the after half of its page.
 

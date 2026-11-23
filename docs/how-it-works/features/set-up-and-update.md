@@ -1,6 +1,6 @@
 # Set up and update
 
-Verified at `d6454c6` with uncommitted changes, 2026-11-21 · part of the [app map](../app-map.md)
+Verified at `dc9a389` with uncommitted changes, 2026-11-21 · part of the [app map](../app-map.md)
 
 **In one line:** Install grasp, run `setup` to save a project's settings, switch on run records and write the overview, and run `update` for a new version.
 

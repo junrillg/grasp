@@ -1,6 +1,6 @@
 # App overview
 
-Verified at `d6454c6` with uncommitted changes, 2026-11-21 · part of the [app map](../app-map.md)
+Verified at `dc9a389` with uncommitted changes, 2026-11-21 · part of the [app map](../app-map.md)
 
 **In one line:** grasp reads the code and writes an app map, a page per core feature and, for several projects, a workspace map.
 

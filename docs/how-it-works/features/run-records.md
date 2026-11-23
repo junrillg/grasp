@@ -1,6 +1,6 @@
 # Run records
 
-Verified at `d6454c6` with uncommitted changes, 2026-11-21 · part of the [app map](../app-map.md)
+Verified at `dc9a389` with uncommitted changes, 2026-11-21 · part of the [app map](../app-map.md)
 
 **In one line:** Every agent task that changed files leaves a five-line record, and one table lists them all, newest first.
 

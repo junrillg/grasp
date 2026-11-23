@@ -1,6 +1,6 @@
 # Connect your own skills
 
-Verified at `d6454c6` with uncommitted changes, 2026-11-21 · part of the [app map](../app-map.md)
+Verified at `dc9a389` with uncommitted changes, 2026-11-21 · part of the [app map](../app-map.md)
 
 **In one line:** Your project's own work, verify, review and resolve skills keep their job and call grasp only for the learning page.
 

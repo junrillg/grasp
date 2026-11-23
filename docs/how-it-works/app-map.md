@@ -1,6 +1,6 @@
 # grasp: app map
 
-**Verified at:** `d6454c6` with uncommitted changes, 2026-11-21 · **Patched by:** nothing yet
+**Verified at:** `dc9a389` with uncommitted changes, 2026-11-21 · **Patched by:** nothing yet
 
 ## What it is for
 
