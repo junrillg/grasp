@@ -1,11 +1,14 @@
 # Issue page template
 
 One page per issue, one layout for both halves. Title: `KEY: short name` (for a text issue, a
-short name). The before half is written when the plan is agreed: the status line, both
-sentences, the owner block, where it fits, the ideas, the diagram and steps, and the visible
-`## Steps` and `## Predict`. The after half patches the same sections and fills the folds under
-`## More detail`. Rules for every part are in [notebook.md](../references/notebook.md). Fill every
-`{...}`. Delete a line that has nothing true to say instead of padding it.
+short name). The before half is written when the plan is agreed: the status line,
+`## In two sentences`, `## For the owner`, `## Where it fits` and `## Ideas this leans on` as
+planned, plus the visible `## Steps` and `## Predict`. `## How it works` (with its link to the
+code page) and the `Checked against:` line are written when the page reaches `built`. The after
+half patches the same sections and fills the folds under `## More detail`. Rules for every part
+are in [notebook.md](../references/notebook.md). Fill every `{...}`. Delete a line that has
+nothing true to say instead of padding it, except in the owner block: its five lines always stay,
+reading "none" when there is nothing to say.
 
 **Length:** target 300 visible words, never over 400. Toggles and code are not counted.
 **Visible:** the status line, both sentences, the owner block, one line of where it fits, one line
@@ -58,6 +61,8 @@ Checked against: `{repo}@{base}..{head}`, `{repo}@{base}..{head}` on {YYYY-MM-DD
 
 {One line: where this issue sits in the app, and what it touches. Under it, the change map from `grasp-tools change-map`, with this issue's parts highlighted.}
 
+{Only with `Feature: none`, this line:} Part of the [app map]({the path to app-map.md from this page, e.g. ../app-map.md}); no feature page covers it.
+
 ## Ideas this leans on
 
 - **Design · {design idea}:** {one line: the architecture pattern or system design concept behind this change}
@@ -105,7 +110,7 @@ flowchart LR
 <p><b>Questions asked:</b> {a conceptual question the person asked during the run. Omit this line when there was none.}</p>
 </details>
 <details><summary>Planned and built: {n} of {m} steps as planned</summary>
-<ol><li>{each planned step, and what was built instead when it changed}</li></ol>
+<ol><li>{each planned step, and what was built instead, and why, when it changed or was not done; after a resolve, one item per review finding it fixed}</li></ol>
 <p>{At built: the guess against what happened, in one or two lines.}</p>
 </details>
 <details><summary>Proof it works: {n} of {m} acceptance points pass</summary>

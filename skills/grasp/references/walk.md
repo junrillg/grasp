@@ -27,11 +27,18 @@ Rules that hold for the whole walk:
    More than one match: ask which. None: say so, point at `/grasp ISSUE` or `/grasp explain`,
    and stop. A walk never writes a page that does not exist. A page that lives in Notion is read
    and edited with the Notion tool; the fold is the same.
-2. The page must be at standard 2: its status line holds `Standard: 2` (or `Standard: 2 short`).
-   Then run `grasp-tools sync --only KEY` (`NAME` for a feature or explain page) and read its row.
-   `stale` or `below-standard` in the states: say so in one line and offer `/grasp repair KEY`
-   first. Walk only after a yes, and only after the repair. With no `sync` in this install, check
-   the status line by hand and say the page's age was not checked.
+2. An issue page or an `explain` page must be at standard 2: its status line holds `Standard: 2`
+   (or `Standard: 2 short`). A feature page has no standard number. Then run
+   `grasp-tools sync --only KEY --docs DIR --repo DIR [--repo DIR]... [--heads FILE]` (`NAME` for
+   a feature or explain page), built as "`/grasp sync`" in [upkeep.md](upkeep.md) builds it:
+   `--docs` from `.grasp.md`, every project as a `--repo`, and `--heads` when the pull request
+   host can be read (without it the row cannot say `stale`: say so). Read its row. `stale` or
+   `below-standard` in the states: say so in one line and offer `/grasp repair KEY` first. Walk
+   only after a yes, and only after the repair.
+   A feature page with no walk markers or no `Walk:` field (written before 0.5.0): before the
+   first question, add the empty walk block from
+   [feature-page.md](../templates/feature-page.md) at the end of the page and ` · Walk: not
+   walked` to its "Verified at" line, and say so.
 3. A page that shows `Not pinned yet:` (its `Checked against:` head reads `uncommitted` and its
    walkthrough has no code) cannot be walked. Say so, and point at `/grasp repair NAME --only code`
    after the commit. Stop.
@@ -144,11 +151,17 @@ Do all of this after the last answer, in one pass, with the person's exact words
    and checked by "One specific video and one page to read" in
    [notebook.md](notebook.md) (`grasp-tools check-link` on every video). When the page already
    has an idea for that gap, add nothing and say which one it is. Walk ideas may take a page past
-   its usual limit of 3 ideas; say so in the report. On a feature page the lesson goes under
-   `## Concepts`, in that page's own format, with the same checked video and page.
+   its usual limit of 3 ideas; say so in the report. A short page has no ideas section: it gains
+   an `## Ideas this leans on` section, above `## More detail`, for its gap lessons. On a feature
+   page the lesson goes under `## Concepts`, in that page's own format, with the same checked
+   video and page.
 5. **Check.** Run `grasp-tools lint-page PAGE` on the page. Fix what the walk added (a link with
    no check date, a visible line that is too long: shorten your own new line, never the person's
    words). Report anything else it prints.
+
+6. **Run record.** A walk changes files, so it ends by writing one run record by
+   [records.md](records.md): Asked is the walk, Changed the answers recorded and the gaps found,
+   Checked the lint result of the page.
 
 Leave the files uncommitted unless the project's rules say a run commits its pages.
 

@@ -49,8 +49,10 @@ full before page. Spec-first tools show long specs for small tasks are not read.
 
 Written by one subagent (Sonnet) from the restatement, the picked approach and rejected ones, and
 what "What the writer reads" in [notebook.md](notebook.md) lists. Shape is in
-[templates/issue-page.md](../templates/issue-page.md): at the pick, sections 1 to 4 as planned,
-with Steps and Predict, a target of 300 visible words with the rest folded. Run
+[templates/issue-page.md](../templates/issue-page.md): at the pick, `## In two sentences`,
+`## For the owner`, `## Where it fits` and `## Ideas this leans on` as planned, with `## Steps` and
+`## Predict` ("Standard 2" in [notebook.md](notebook.md)), a target of 300 visible words with the
+rest folded. Run
 `grasp-tools lint-page` on it, as [notebook.md](notebook.md) says.
 
 Two sections of the before half carry the understanding:

@@ -15,7 +15,8 @@ work on Markdown notebooks only and stop. With no `.grasp.md`, run `setup` first
 Settings read from `.grasp.md`, once, at the start of either command:
 
 - `markdown folder`: the notebook folder, passed as `--docs`. In a workspace, each project's
-  `notebook folder` from `## Projects`.
+  `notebook folder` from `## Projects`: a workspace with one notebook folder per project runs the
+  helper once per folder, and prints one table.
 - `## Projects`: every row is a `--repo`. In a single project there is no such section: pass the
   repository root.
 - `sync scope`: `project` or `mine`. Missing means `project`.
@@ -28,12 +29,15 @@ Settings read from `.grasp.md`, once, at the start of either command:
 Reports. Writes only what the helper generates. Never edits prose.
 
 1. **The keys.** Read the tracker. `project`: every issue of the tracker project that has a pull
-   request, whoever built it. `mine`: only those assigned to the account `setup` tested. Write one
-   key per line to a temporary file (`mktemp`).
+   request, whoever built it. `mine`: only those assigned to the account the reader is signed in
+   as, asked of the tracker itself ("The account" in [trackers.md](trackers.md)). When that
+   cannot be told, use `project` and say so in one note. Write one key per line to a temporary
+   file (`mktemp`), in the tracker's own form; the helper finds a page by its title key or file
+   name, in any case, and reads `owner/repo#42` as `42`.
 2. **The heads.** For each key that has a page (a file `KEY-*.md` in the notebook folder), find its
    pull request in each repository (the branch name or title holds the key; with several in one
    repository, the most recently updated). Write `KEY<TAB>REPO<TAB>SHA` per line to a second
-   temporary file. `REPO` is the repository folder's name. `SHA` is the merge commit once the pull
+   temporary file. `REPO` is the repository's folder name (the main checkout's, when in a worktree). `SHA` is the merge commit once the pull
    request is merged, otherwise its head. Do not compare commits yourself: the helper decides
    stale from file contents, by the pinning rule in [notebook.md](notebook.md) "A snapshot and a
    living page".
@@ -50,9 +54,10 @@ Reports. Writes only what the helper generates. Never edits prose.
    link. Output is one tab-separated row per issue page and feature page, then one per missing
    key: `KEY`, `STATES`, `PATH`, `DETAIL`. It exits 0 whatever the states. A note on stderr that
    names a file it refused to write into is repeated to the person.
-5. **Print.** A table grouped by feature (a feature page is the head of its group; issue pages
-   whose `Feature:` is `none`, and pages written by `explain`, go under "No feature page"), worst
-   first inside each group, in the order of the states below. Columns: key, states, what is
+5. **Print.** A table grouped by feature. The helper's rows carry no feature: read the `Feature:`
+   field of each issue page, the file in the `PATH` column, to group them. A feature page is the
+   head of its group; issue pages whose `Feature:` is `none`, and pages written by `explain`, go
+   under "No feature page". Worst first inside each group, in the order of the states below. Columns: key, states, what is
    wrong. With `FEATURE` named, print only that group; the helper still refreshes the generated
    lists everywhere. End with one line of counts, for example `31 pages: 2 missing, 3 stale,
    1 below standard, 5 not walked, 22 ok`. A page with two states counts in both.
@@ -68,7 +73,7 @@ States, in the order the helper prints them:
 | ----- | ------- | ---------- |
 | `missing` | The tracker has a card with a pull request and there is no page | `repair KEY` writes it |
 | `stale` | Issue page: code in its own pull request changed after the pin. Feature page: a file it names changed after its `Verified at` commit | `repair` |
-| `below-standard` | Old or no Standard, no code sub-page, not pinned, or a lint, snippet or coverage finding | `repair`, see the table below |
+| `below-standard` | Old or no Standard, an old `explain` pair, no code sub-page, not pinned or no range, nothing changed in the range, or a lint, snippet or coverage finding | `repair`, see the table below |
 | `bad-link` | A lesson link fails `check-link` (only with `--links`) | `repair KEY --only links` |
 | `changed-since` | Later issues edited its files. Information, not a fault | nothing |
 | `not-walked` | Nobody has walked the page. Information, not a fault | `/grasp walk` |
@@ -80,7 +85,8 @@ States, in the order the helper prints them:
 
 | DETAIL | Fixed by |
 | ------ | -------- |
-| `no Standard field`, `Standard N, current 2` | rewriting the page |
+| `no Standard field`, `Standard N, current 2`, `old explain page (NAME-files.md)` | rewriting the page ("Existing pages" in [notebook.md](notebook.md)) |
+| `no range on the Checked against line`, `coverage: nothing changed in the range` | rewriting the page, pinned again by "A snapshot and a living page" |
 | `no code sub-page` | writing the sub-page, and the link to it from the page |
 | `lint: RULE` | rewriting the file the rule is about. Run `grasp-tools lint-page` on the page and its sub-page to see which |
 | `coverage: MISSING REPO/path` | rewriting the code sub-page so the file is in its list (a short page: the page) |
@@ -88,12 +94,14 @@ States, in the order the helper prints them:
 | `not pinned to a commit` | `--only code`, after the work is committed ("A page about uncommitted work" below) |
 | `REPO: PATH changed after the pin` | rewriting the page, and pinning it again |
 | `bad-link` with an address, `N ideas without a video`, `N ideas without a page` | `--only links` |
+| `not built yet` | not a fault: the page is `planned` or `building`. Its build finishes it |
+| `link not checked: timeout ADDRESS` | not a fault: the link did not answer in time. Run with `--links` again later |
 | `REPO not given`, `coverage partly checked: REPO not given` | not the page's fault. Needs a person: pass that repository as `--repo`, or add it to `## Projects` |
 | `unreachable REPO@SHA` | not the page's fault. Needs a person: that commit is not in the clone. Fetch it, after a yes |
 | `coverage could not run: REASON`, `lint could not run: REASON` | not the page's fault. Needs a person: fix the cause named in REASON. Do not rewrite |
 
 A row can show a finding that is a note while its state is `ok` (a repository not given, an
-unreachable commit, ideas without a video or a page). Print it. It is repaired only when the table says a
+unreachable commit, ideas without a video or a page, not built yet, a link that timed out). Print it. It is repaired only when the table says a
 repair fixes it.
 
 ## `/grasp repair`
@@ -103,7 +111,8 @@ pushes and never writes to the tracker. The new pages are left uncommitted unles
 rules say otherwise.
 
 Flags: `--only page|code|links` limits the repair to one part. `--dry-run` prints the findings and
-stops. `--force` rewrites a page that is already clean. A quoted reason after the target is a
+stops; it never writes anything, for one issue or a batch: no page, no generated list, no run
+record. `--force` rewrites a page that is already clean. A quoted reason after the target is a
 finding supplied by the person.
 
 The target decides which part below applies:
@@ -136,7 +145,9 @@ The target decides which part below applies:
 4. **Write.** One subagent writes the pages by [notebook.md](notebook.md) "Standard 2" and its
    templates. An old page is never written over: steps 1 and 2 of "What a rewrite keeps from the
    old page" in "Standard 2" come first, so the subagent reads the old page, then writes
-   `PAGE.new`. Without `--only`, `repair` always writes the whole page again, from the card, the
+   `PAGE.new`. Its `Status:` is `verified` only when a Proof row was run in this session or read
+   from the pull request's checks; otherwise `built`. Without `--only`, `repair` always writes the
+   whole page again, from the card, the
    pull request and the code at the pinned commit (an old page may have no working note). It never
    patches a sentence of the old text grasp wrote. The exception is what that subsection carries
    over (the walk, an old explain-back answer, the prediction guess, "Questions asked",
@@ -152,16 +163,20 @@ The target decides which part below applies:
    (skipped only when the target file does not exist), the "Earlier explain-back" entry, and only
    then the old file replaced.
 6. **Other records.** For each folder in `other records`, link every file that mentions the key
-   (`grep -rlF KEY FOLDER`) in the "Open and not verified" fold, as a link of the fold's own HTML
+   (`grep -rlwF KEY FOLDER`, so `SHOP-1` does not find `SHOP-12`) in the "Open and not verified" fold, as a link of the fold's own HTML
    form. None, or `none`: skip.
 7. **Parts.** `--only page` rewrites the issue page and leaves its sub-page alone. `--only code`
-   rewrites the page's `Checked against:` line by the pinning rule in [notebook.md](notebook.md) "A
-   snapshot and a living page" (and removes a `Not pinned yet:` line if there is one), and rewrites
-   the sub-page; it changes nothing else on the issue page. `--only links`
-   rewrites no prose: it rechecks every lesson link with `grasp-tools check-link`, replaces a failed
-   one in place with a link chosen by "One specific video and one page to read" in
-   [notebook.md](notebook.md), and fills an idea whose fold says `No checked video yet` or `No
-   checked page yet` by the same rules. The other documents of the card are not touched.
+   rewrites the code sub-page, and re-pins the page only when its prose cannot be wrong: when the
+   head is `uncommitted` ("A page about uncommitted work" below), or when every file of the page's
+   range is the same at the old pin and the new one (`git diff --quiet OLD NEW -- FILES`, with
+   FILES from `git diff --name-only BASE OLD`). Then it rewrites the `Checked against:` line by the
+   pinning rule in [notebook.md](notebook.md) "A snapshot and a living page" and changes nothing
+   else on the issue page. Otherwise it changes nothing and reports `needs a person: the code
+   changed after the pin, run /grasp repair KEY`. `--only links` rewrites no prose: it rechecks
+   every lesson link with `grasp-tools check-link`, replaces a failed one in place with a link
+   chosen by "One specific video and one page to read" in [notebook.md](notebook.md), and fills an
+   idea whose fold says `No checked video yet` or
+   `No checked page yet` by the same rules. The other documents of the card are not touched.
 8. **Check.** Run the three checks of "Standard 2" on the real files, then `grasp-tools sync --only
    KEY` again with the same files. Report one line: `KEY repaired`, or `KEY needs a person: REASON`
    when a check still prints something or the row still shows `missing`, `stale`, `below-standard`
@@ -199,8 +214,9 @@ of `KEY`, and so does step 4's order: the old page is read first and the new one
 
 ### A feature, or `--all`
 
-1. Run `sync` as above, on the whole notebook, with `--links` only when the person asked for links.
-   For `FEATURE`, keep that feature's rows.
+1. Run `grasp-tools sync --no-write` as above, on the whole notebook, with `--links` only when the
+   person asked for links. For `FEATURE`, keep that feature's rows. Nothing is written before the
+   yes: the only writing `sync` of a repair run is the one in "Closing a run", after the repairs.
 2. Count: pages to rewrite (`missing`, `stale`, `below-standard`), pages that only need their links
    (`bad-link`, counted only when links were checked; otherwise say `links not checked` and
    promise no link repairs), and pages that need a person (the table above). With `--force`, every page

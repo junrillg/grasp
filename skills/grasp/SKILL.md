@@ -42,7 +42,7 @@ task.
 | `update` | subcommand | no | none | Pull the latest grasp for this install, then refresh the block in every connected skill. |
 | `walk` | subcommand | no | none | A short guided session on one page: real code lines, one question at a time, your own answers and the gaps written on the page. Takes an issue, a feature or the name of an `explain` page. Never blocks anything. |
 | `sync` | subcommand | no | none | Report the state of every page: missing, stale, below standard, a dead lesson link, changed since, not walked. Writes only the generated issues lists and the `Changed since by:` lines; never edits prose. Markdown notebooks only. |
-| `FEATURE` | feature name, with `sync` or `repair` | no | all features | Limit `sync`'s table, or `repair`, to one feature. |
+| `FEATURE` | feature name, with `sync` or `repair` | no | `sync`: all features; `repair`: none, it asks which | Limit `sync`'s table, or `repair`, to one feature. |
 | `repair` | subcommand | no | none | Fix what `sync` found, by writing pages again: one issue's documents, an `explain` page, one feature, or everything. A walk and its answers are always kept. Never changes code, commits or tracker writes. |
 | `NAME` | page name, with `repair` | no | none | An `explain` page: it has no issue key. |
 | `--all` | flag, with `repair` | no | off | Repair every page. Shows the count and asks first. |
@@ -181,9 +181,9 @@ BY DEFAULT
   2 Grasp     restate it, ask what is unclear one question at a time, show 2-3 approaches
               with a recommendation, and wait for your pick
   3 Before    write the "before" half of the issue's learning page: the plan as 3 to 6
-              steps, diagrams first (where it fits, expected flow, the decision), the
-              ideas it leans on, the design idea first (one line each, the long
-              explanation, one checked video and one page to read folded); one prediction question
+              steps, where it fits, the ideas it leans on, the design idea first (one
+              line each, the long explanation, one checked video and one page to read
+              folded); one prediction question
   4 Build     branch, test first, smallest change, the project's own checks; the page says
               "building" and each step is ticked as it finishes, so you can follow along
   5 Verify    fresh evidence only: checks, the test failing without the fix, the behaviour seen
@@ -331,7 +331,7 @@ the fix itself is a real choice. A conceptual question the user asks here is log
 Write the "before" half of the issue page ([templates/issue-page.md](templates/issue-page.md))
 with one subagent (or inline for a small change, as the token budget in
 [references/notebook.md](references/notebook.md) decides): the plan as 3 to 6 steps, the pictures, and the ideas the change leans on, the design idea first
-(one visible line each, the longer explanation, one checked video and one page to read folded). At the pick the page has its sections 1 to 4, with Steps and Predict ([Standard 2](references/notebook.md)). The first issue page
+(one visible line each, the longer explanation, one checked video and one page to read folded). At the pick the page has `## In two sentences`, `## For the owner`, `## Where it fits` and `## Ideas this leans on` as planned, with `## Steps` and `## Predict`; `## How it works` comes at `built` ("Standard 2" in [references/notebook.md](references/notebook.md)). The first issue page
 in a notebook also creates `features/README.md` and adds the Features table line to the app map
 ("Scale with the app" in [references/overview.md](references/overview.md)). Then ask the user its
 prediction question. Do not wait for the answer to go
@@ -359,13 +359,17 @@ Fill the "after" half of the same page and its code sub-page
 [references/notebook.md](references/notebook.md) says. The writer reads the repository, not only
 the diff. A small change or a bug gets a short page. Before calling it written, run
 `grasp-tools lint-page` on both files, `snippet-check` on the sub-page and `coverage` on both:
-each prints nothing or the count line only. Add or update the row in the Features table (the docs
-router lists that table, never single issue pages). Set the status to `built`, or `verified` when
+each prints nothing or the count line only. The list of issues in `features/README.md` is
+generated, never edited by hand: step 7 runs `grasp-tools sync` (the docs router lists that page,
+never single issue pages). Set the status to `built`, or `verified` when
 the gate passed. End the step with one line, `Walk ready: /grasp walk KEY`. Never start a walk and
 never wait for one.
 
 ### 7. Close out
 
+- Run the writing `grasp-tools sync`, built as "`/grasp sync`" in
+  [references/upkeep.md](references/upkeep.md) builds it, so the generated issues lists show this
+  issue. Never add a row to them by hand.
 - Write the run record ([references/records.md](references/records.md)): the five lines, linked
   to the issue page, then `grasp-tools record-index`. Always, also when the run failed or stopped
   early; every blocker met goes in its Problems line.
@@ -470,7 +474,8 @@ Follow [references/setup.md](references/setup.md): scope (one project or a works
 sub-projects), tracker, a live tracker test, checks and app, docs location, learning links, the
 run-record block, connecting this project's own skills, and the overview. One question at a
 time. Writes `.grasp.md`; grasp's marked block in `AGENTS.md` or `CLAUDE.md` and at the end of
-each picked skill's `SKILL.md` (nothing else in those files changes); the app map, the
+each picked skill's `SKILL.md` (nothing else in those files changes, except what setup's
+second-writer step changes, with your yes); the app map, the
 architecture page, a page for each core feature that needs one and, in a workspace, the workspace
 map; and its own run record.
 

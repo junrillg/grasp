@@ -78,10 +78,12 @@ report and never run it (this overrides the first-run rule in SKILL.md). The hel
 - **The session first:** what was asked, each decision and what was rejected, commands and their
   result lines, every problem and its fix, what is left.
 - **Git, per repository:** the changed files, committed, uncommitted and untracked, and the diff
-  of each. `SOURCE` decides the range: a pull request (its body, checks and head or merge commit),
-  a branch against the merge base with the integration branch, `BASE..HEAD` as given, or this
-  session's commits and working tree. `REPO` in `REPO@BASE..HEAD` is the repository folder's
-  name ([notebook.md](notebook.md), "A snapshot and a living page"). When the work was committed
+  of each. `SOURCE` decides the range: a pull request (its body, checks and head or merge commit;
+  a merged one has the range "A snapshot and a living page" gives a merged pull request), a branch
+  against the merge base with the integration branch, `BASE..HEAD` as given, or this
+  session's commits and working tree. `REPO` in `REPO@BASE..HEAD` is the repository's folder
+  name, the main checkout's when in a worktree ([notebook.md](notebook.md), "A snapshot and a living
+  page"). When the work was committed
   straight onto the integration branch, `BASE` is the commit that branch was at before the work's
   first commit; when the session and the log do not tell, ask.
 - **Then, what git does not see:** settings in a web console, installed tools, permissions, steps a

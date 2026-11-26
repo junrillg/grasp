@@ -56,6 +56,10 @@ opening it. Writes are one task comment, like any tracker.
 other as "not tested in this project". When a later read fails, name the part that failed and
 offer to re-run only that test.
 
+**The account.** `sync scope: mine` needs the account the reader is signed in as. Ask the tracker
+itself, never guess it from git: its own "me" call (the GitHub CLI's `api user`, Jira's `myself`,
+the MCP tool's current-user call). When the reader cannot tell, say so.
+
 If no reader works (tool not connected, not signed in), say which one is missing and how to
 connect it, and offer to continue from pasted text. Never handle a token yourself and never
 print one.

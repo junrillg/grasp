@@ -13,7 +13,7 @@ One space per project, set in `.grasp.md`:
 <Project>: how it works          parent page
   App map                        one page: the whole app, its core features, how they connect
   Architecture                   one page: the design, why, what breaks first, lessons
-  Features                       a table: issue, what, status, pull request, page
+  Features                       the core features, and the list of issues sync generates
     Feature name                 a page for each larger core feature: how it works today
     KEY: short name              one page per issue, before half + after half
   Run records                    a table: every agent task, newest first
@@ -46,7 +46,7 @@ docs/
                                  because {why}. [page](features/KEY-short-name.md)`
     glossary.md                  only once the app map's Glossary outgrows the page
     features/
-      README.md                  the Features table
+      README.md                  the Features table: core features, and the issues sync lists
       feature-name.md            a page for each larger core feature
       KEY-short-name.md          one page per issue (a text issue has no key: short-name.md)
       KEY-short-name-code.md     its code sub-page (not on a short page)
@@ -172,10 +172,16 @@ them; this section holds only what a template cannot show.
 - **Questions asked:** a conceptual question the person asked during the understand step is logged
   as the last paragraph inside the "Why it was built this way" fold, as HTML:
   `<p><b>Questions asked:</b> ...</p>`. Leave the line out when they asked none.
-- The before half is unchanged in purpose. At the pick, the attended flow writes sections 1 to 4 as
-  planned, with Steps and Predict, and `--plan` stops there. Steps stay visible and are ticked
-  while the status is `building`; once built they move into the "Planned and built" fold. The
-  illustration rule ("Illustrations") is unchanged.
+- **The before half.** At the pick, the attended flow writes `## In two sentences`, `## For the
+  owner`, `## Where it fits` and `## Ideas this leans on` as planned, plus `## Steps` and
+  `## Predict`, and `--plan` stops there. `## How it works` (with its link to the code sub-page)
+  and the `Checked against:` line are written when the page reaches `built`. Steps stay visible
+  and are ticked while the status is `building`; once built they move into the "Planned and built"
+  fold. The illustration rule ("Illustrations") is unchanged.
+- **`Feature:`** is the row of `## Features` in `.grasp.md` whose `covers` matches the changed
+  files or the issue. With no such table, it is the feature page under `features/` that names the
+  changed part. With none, it is `Feature: none`, and the page links up to the app map instead
+  (the template's line for it).
 - Predict stays in the attended flow. There is no explain-back on the page or in the workflow: the
   walk replaces it. A page with no walk is not a lint failure, and the walk fold changes only when
   a walk runs. After the after half, the report ends with `Walk ready: /grasp walk KEY`; the run
@@ -245,10 +251,14 @@ is pinned to.
 ## A snapshot and a living page
 
 - An issue page is a snapshot of one change, pinned to a commit per repository in its `Checked
-  against:` line, as `REPO@BASE..HEAD` with `REPO` the repository folder's name. One range for each
-  repository the change touches. `BASE` is the merge base with the integration branch. `HEAD` is the
-  merge commit when the page is written after the pull request merged. Otherwise it is the pull
+  against:` line, as `REPO@BASE..HEAD` with `REPO` the repository's folder name (the main
+  checkout's, when in a worktree). One range for each repository the change touches. While the
+  pull request is open, `BASE` is the merge base with the integration branch and `HEAD` is the pull
   request's last commit that changes anything outside the notebook folder (the last code commit).
+  For a pull request that is already merged, `BASE` is the first parent of the merge commit (for a
+  squash, the commit before it) and `HEAD` is the merge or squash commit.
+- The page gets its `Checked against:` line when it reaches `built`: a page still `planned` or
+  `building` has no pin and no code sub-page yet.
 - Work not committed yet is pinned as `REPO@BASE..uncommitted`; see "Work that is not committed yet" in [explain.md](explain.md).
 - A later commit that only touches the notebook, the page itself included, does not move the pin.
 - Its code blocks never move to a later commit.
@@ -259,7 +269,8 @@ is pinned to.
 - An issue page is stale only when code in its own pull request changed after the pin. `sync`
   decides that by comparing file contents between the pinned commit and the pull request's current
   head or merge commit, never by comparing commit ids, so neither the page's own commit nor a merge
-  by itself makes a page stale.
+  by itself makes a page stale. A later commit that changes only Markdown files or the notebook,
+  or base-branch changes a merge commit brings in, never make it stale.
 - `repair` re-pins a page to the current commit by the same rule when it rewrites the page.
 
 ## Short pages
@@ -272,7 +283,7 @@ own.
   `## Every changed file` list on the page itself. It has no ideas section, no "Where it fits" and no
   code sub-page.
 - The three checks above still run, on the page alone.
-- The Features table still gets its row, and the run record is never skipped for a task that
+- `sync` still lists it among the issues, and the run record is never skipped for a task that
   changed files.
 
 ## Change map and depth
@@ -332,21 +343,17 @@ A flowchart is `LR` only when it is a short chain (up to about 5 boxes in a row,
 otherwise `TB`. Obsidian fits a diagram to the page width, so a wide one renders with text too
 small to read, while a tall one stays full size.
 
-The code walkthrough numbers its steps to match the diagram's numbers, so step 3 in the toggle is
-arrow 3 in the picture. Lines in `<pre><code>` don't wrap: keep each under about 70 characters.
-Each step: one line on what it does, a commit-SHA permalink to the lines
-(`https://github.com/OWNER/REPO/blob/SHA/path#L10-L14`; GitHub never expands these inside `.md`
-files, so add the excerpt), and 3 to 8 lines of the real code in `<pre><code>`. At most 5 steps.
-A repository with no remote has no permalink: name the path and lines in `<code>` with the short
-commit (`cart.js#L10-L14 at ed2a932`) and no link.
-Quote flowchart labels that hold `( ) : / [ ]`, and validate each diagram as "Markdown that
-renders everywhere" says.
+The code walkthrough is on the code sub-page
+([templates/issue-code-page.md](../templates/issue-code-page.md)): one `### N. Title` per step of
+"How it works" (4 to 7), in the same order and with the same numbers as the diagram, and its code
+only through `grasp-tools snippet`. Quote flowchart labels that hold `( ) : / [ ]`, and validate
+each diagram as "Markdown that renders everywhere" says.
 
-The before half's "How it works" shows the expected flow; the after half replaces it with what
-was built. What differs from the plan goes in "Planned and built": the caption counts the steps
-built as planned, and the table has one row per step that changed or was not done (planned, built
-instead, why). A step that was not done is also the run record's Next line. Never leave an
-unticked step unexplained.
+What differs from the plan goes in the "Planned and built" fold, as the template shows: its title
+counts the steps built as planned, and its list holds each planned step, with what was built
+instead, and why, when it changed or was not done (after a `resolve`, one more item per review
+finding it fixed, [review.md](review.md)). A step that was not done is also the run
+record's Next line. Never leave an unticked step unexplained.
 
 ## Screenshots
 
@@ -389,7 +396,8 @@ A short page has no ideas section.
 ### Choosing the other ideas
 
 - Read `## Reader` in `.grasp.md`. Teach an idea when it is under `new to`, in the gap table, or
-  absent from `knows well`. Skip an idea that is under `knows well`.
+  absent from `knows well`. Skip an idea that is under `knows well`. No `## Reader` section: "Old
+  `.grasp.md` files" in [setup.md](setup.md).
 - At most 3 ideas on an issue page, with the design idea counted. At most 8 on an `explain` page.
 - Each idea is one visible line and one fold of 3 to 5 lines tied to this code, not a textbook
   definition. The one exception is a design idea the reader profile lists under `knows well`: its
@@ -399,7 +407,9 @@ A short page has no ideas section.
 ### One specific video and one page to read
 
 Every idea gets one specific video and one page to read, in the format of the template. Search with
-the idea plus the project's stack: technology names, never the project's own name. Never name a project, client, person or issue in a web search or an image prompt; this holds on every page, the illustrations included.
+the idea plus the project's stack: technology names, never the project's own name.
+Never name a project, client, person or issue in a web search or an image prompt; this holds on
+every page, the illustrations included.
 
 - **The video** is one YouTube video or one video inside a LinkedIn Learning course. LinkedIn
   Learning is allowed when `.grasp.md` says `linkedin learning: yes`, and, for `explain` with
@@ -533,4 +543,4 @@ into `CLAUDE.md` or `AGENTS.md`.
   skipped for a task that changed files.
 - **Load references per step**: read a reference file only when its step starts.
 - **Check once**: after writing, run the three checks in "Standard 2", then read the page once (fetch it for Notion) and
-  confirm the title, status line, diagrams, toggles, any screenshot and the Features row are there.
+  confirm the title, status line, diagrams, toggles and any screenshot are there.
