@@ -147,7 +147,8 @@ Commands:
                            Standard, no Checked against line or no range on it, not pinned to
                            a commit, no KEY-code.md sub-page, lint-page, snippet-check or
                            coverage findings, nothing changed in the range of a built page,
-                           or an old explain page (NAME.md beside NAME-files.md). A page still
+                           or an old explain page (NAME.md beside NAME-files.md, when NAME.md
+                           is neither an issue nor a feature page). A page still
                            planned or building is "not built yet": its range, sub-page,
                            coverage, snippets and stale state are not checked. bad-link (only
                            with --links): a lesson link in "## Ideas this leans on" fails
@@ -1382,14 +1383,16 @@ walk_span() {
   ' "$1"
 }
 
-# has_explain_back FILE: a "## Explain it back" section (the layout before standard 2) holds a
-# "Your answer:" in the person's own words, not pending, skipped, not asked, or empty
+# has_explain_back FILE: an explain-back section (the layouts before standard 2: headed "Explain it
+# back" or "Explain-back", at any level, in any case) holds a "Your answer:" in the person's own
+# words. Unanswered is exactly pending, skipped or empty, or "not asked (...)".
 has_explain_back() {
   awk '{ l = $0; sub(/\r$/, "", l) }
-    l ~ /^## / { in_s = (l ~ /^## Explain it back[ \t]*$/); next }
+    l ~ /^#+[ \t]/ { h = tolower(l); sub(/^#+[ \t]+/, "", h); sub(/[ \t]+$/, "", h)
+                     in_s = (h == "explain it back" || h == "explain-back"); next }
     in_s && (i = index(l, "Your answer:")) {
       a = tolower(substr(l, i + 12)); gsub(/`/, "", a); gsub(/^[ \t]+|[ \t]+$/, "", a)
-      if (a != "" && a !~ /^(pending|skipped|not asked)/) { f = 1; exit }
+      if (a != "" && a != "pending" && a != "skipped" && index(a, "not asked (") != 1) { f = 1; exit }
     }
     END { exit !f }' "$1"
 }
@@ -1899,7 +1902,8 @@ cmd_sync() {
   local rel kind key title std short checked date ranges feat featname walk idea novideo verified cursince nopage status res name
   while IFS=$'\037' read -r rel kind key title std short checked date ranges feat featname walk idea novideo verified cursince nopage status; do
     # NAME.md beside NAME-files.md is an explain page in the layout before standard 2
-    if [[ $kind != code && -f "$docs/${rel%.md}-files.md" ]]; then
+    # only when NAME.md is neither an issue nor a feature page: those keep their own rows
+    if [[ $kind == other && -f "$docs/${rel%.md}-files.md" ]]; then
       name=${rel##*/}; name=${name%.md}
       [[ -z "$only" ]] || sy_match "$only" "$name" "$rel" || continue
       res=below-standard; [[ "$walk" == walked* ]] || res+=,not-walked

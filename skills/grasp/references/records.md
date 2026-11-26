@@ -34,7 +34,7 @@ In a workspace where several projects share one folder, start the short name wit
 - **Update, don't add** when the same task continues (same branch, same issue, or the user says
   "continue"): patch the lines that changed and the status. One task, one record.
 - **Skip** a question, a read-only look, and a run whose only writes were notebook pages, except
-  `walk` and `explain`: their pages are the work, so they always leave one.
+  the grasp subcommands listed under "`/grasp record`" below, which always leave one.
 
 `grasp-tools record-check` applies the same rule mechanically: it exits 1 when the uncommitted
 tree or this branch's commits changed files outside the notebook folder and no record was added
@@ -109,7 +109,8 @@ tracker writes.
 Every grasp subcommand that does work ends with this, because its outcome is what people ask
 about later: the full workflow at step 7, `verify` (Changed: "nothing; the fix for KEY was
 verified", or what failed), `review` (the findings count, and whether anything was posted),
-`resolve` after its commit, `setup` and `map` for what they wrote, `walk` (Changed: the answers
+`resolve` after its commit, `setup` and `map` for what they wrote, `explain` (also for older work
+whose only writes are notebook pages), `walk` (Changed: the answers
 recorded and the gaps found; Checked: the lint result of the page), `repair` (one record for the whole run, written by the
 main thread and listing every page it rewrote or could not; subagents write none), and `sync` when it changed a file. Only `page` and `record`
 themselves don't: `page` is called by a skill that is still working.

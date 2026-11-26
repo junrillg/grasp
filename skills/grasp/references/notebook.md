@@ -206,14 +206,19 @@ Every run that rewrites a page that already exists does these steps in this orde
 holds the person's own words and things that cannot be made again; a rewrite never drops them.
 
 1. **Read first.** Before writing anything, read from the old page: the walk block (between the
-   walk markers); an answered `## Explain it back` with its question (the person's own words, not
-   `pending`, `skipped`, `not asked ...` or empty); the person's guess under `## Predict`; the
-   "Questions asked" line; every screenshot with its caption; the illustration.
+   walk markers); an answered explain-back section (headed `Explain it back` or `Explain-back`, at
+   any heading level) with its question (the person's own words, not `pending`, `skipped`,
+   `not asked (...)` or empty); the person's guess under `## Predict`; the "Questions asked" line;
+   every screenshot with its caption; the illustration. For an old `explain` pair, also from
+   `NAME-files.md`: its "Not in git" rows and its look-up tables (routes, tables and columns,
+   setting and environment variable names, packages with version and why, error codes).
 2. **Write the new page to `PAGE.new`**, in the same folder, so relative links stay right. Carry
    into it the screenshots with their captions, the illustration, the prediction guess (in the
    "Planned and built" fold) and "Questions asked" (the last paragraph of the "Why it was built
    this way" fold), the person's words unchanged except for HTML escaping. Copy the `Changed since
-   by:` line and an issues block as they are.
+   by:` line and an issues block as they are. From an old `NAME-files.md`, the "Not in git" rows go
+   into `NAME-code.md` under `## Not in git` and the look-up tables under `## Things people look
+   up`, unchanged in content.
 3. **Carry the walk:** `grasp-tools keep-walk OLD PAGE.new`. Skip it only when the target file does
    not exist. On exit 1 stop: leave the old page as it is and report `needs a person: the walk
    could not be carried over`, naming the new file. It notes on stderr when the old page holds an
@@ -233,8 +238,9 @@ holds the person's own words and things that cannot be made again; a rewrite nev
    ```
 
 5. **Only then replace the old file** with `PAGE.new`. The code sub-page holds none of these:
-   replace it directly. An old `NAME-files.md` beside an `explain` page is replaced by
-   `NAME-code.md`: delete it once the three checks pass on the new pair.
+   replace it directly. Delete an old `NAME-files.md` only after the new pair passes its three
+   checks and those two sections have been copied; if either section cannot be placed, keep the
+   file and report it.
 
 ## What the writer reads
 

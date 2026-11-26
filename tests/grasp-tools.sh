@@ -2020,4 +2020,24 @@ test_sync_on_a_mixed_notebook_exits_0_and_settles() {
   assert_eq "$sum1" "$sum2" "a second run changes nothing"
 }
 
+test_sync_two_feature_pages_named_like_a_pair_keep_their_rows() {
+  local d p f out; read -r d p <<<"$(sync_fix)"; f="$d/features"; : > "$d/app-map.md"
+  printf '# Upload\n\nVerified at `0000000`, 2026-11-20 · Walk: not walked · part of the [app map](../app-map.md)\n\n## Concepts\n\nx\n' > "$f/upload.md"
+  printf '# Upload files\n\nVerified at `0000000`, 2026-11-20 · Walk: not walked · part of the [app map](../app-map.md)\n\n## Concepts\n\nx\n' > "$f/upload-files.md"
+  out=$(gt sync --docs "$d" --repo "$p" --no-write 2>/dev/null)
+  [[ "$out" != *"old explain page"* ]] || _fail "two feature pages are not an old pair: $out"
+  [[ -n "$(row upload "$out")" ]] || _fail "upload.md keeps its row"
+  [[ -n "$(row upload-files "$out")" ]] || _fail "upload-files.md keeps its row"
+}
+test_keep_walk_notes_explain_back_under_any_heading() {
+  local t h; t=$(new_tmp)
+  walk_page "$t/new.md" "not walked" "<details>empty</details>"
+  for h in '### Explain it back' '## Explain-back' '### Explain-back' '## explain it back'; do
+    printf '# SHOP-12: x\n\n%s\n\n1. Why pieces?\n   - Your answer: so one failure resends one piece\n' "$h" > "$t/old.md"
+    assert_contains "$(gt keep-walk "$t/old.md" "$t/new.md" 2>&1 >/dev/null)" "has an explain-back answer" "noted under: $h"
+  done
+  printf '# SHOP-12: x\n\n## Explain it back\n\n1. Why?\n   - Your answer: pending requests pile up otherwise\n' > "$t/old.md"
+  assert_contains "$(gt keep-walk "$t/old.md" "$t/new.md" 2>&1 >/dev/null)" "has an explain-back answer" "an answer that starts with pending is still an answer"
+}
+
 run_tests "${1:-.}"

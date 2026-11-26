@@ -46,7 +46,7 @@ task.
 | `repair` | subcommand | no | none | Fix what `sync` found, by writing pages again: one issue's documents, an `explain` page, one feature, or everything. A walk and its answers are always kept. Never changes code, commits or tracker writes. |
 | `NAME` | page name, with `repair` | no | none | An `explain` page: it has no issue key. |
 | `--all` | flag, with `repair` | no | off | Repair every page. Shows the count and asks first. |
-| `--only` | `page`, `code`, `links`, with `repair` | no | all three | Touch one part of one issue's documents: the issue page, the code sub-page (and pin it), or the lesson links. `links` rewrites no prose. |
+| `--only` | `page`, `code`, `links`, with `repair` | no | all three | Touch one part of one issue's documents: the issue page, the code sub-page, or the lesson links. `code` pins the page only from `uncommitted` or when the code did not change after the pin; otherwise it stops and tells you to run a full repair. `links` rewrites no prose. |
 | `--dry-run` | flag, with `repair` | no | off | Print the findings and stop. Writes nothing. |
 | `--force` | flag, with `repair` | no | off | Rewrite a page that is already clean. |
 | `"REASON"` | quoted text, with `repair` | no | none | What you think is wrong. It is checked against the code first; the page changes only where the code agrees. |
@@ -111,8 +111,10 @@ FLAGS
   --base REF        ref. With explain check only. Default: the page's own ranges, else the integration branch.
   --all             off. With repair only: every page. Shows how many pages and asks first.
   --only VALUE      page, code or links. With repair only. Default: the issue page, its code
-                    sub-page and the links. page: the issue page. code: the code sub-page,
-                    and pin the page to its commit. links: recheck every lesson link, replace
+                    sub-page and the links. page: the issue page. code: rewrite the code
+                    sub-page; pin the page only from "uncommitted" or when the code did not
+                    change after the pin, otherwise stop and say to run a full repair.
+                    links: recheck every lesson link, replace
                     a failed one, fill an idea with no checked video; no prose is rewritten.
   --dry-run         off. With repair only: print what is wrong and stop. Nothing is written.
   --force           off. With repair only: rewrite a page that is already clean.
@@ -241,7 +243,9 @@ IT WILL ASK YOU
     system design ideas before pages are written; in a workspace, which sub-projects to
     cover and where their pages go
   - update: to refresh stale blocks in connected skills (diff shown first), and what to do
-    with a connected skill that moved; plugin installs ask you to run the plugin update
+    with a connected skill that moved; plugin installs ask you to run the plugin update;
+    the reader questions when .grasp.md has no Reader profile; whether to remove an old
+    hand-kept issues table from features/README.md
   - before installing Playwright for a screenshot, or signing in to a protected screen
 
 REFERENCES
@@ -370,7 +374,8 @@ never wait for one.
 
 - Run the writing `grasp-tools sync`, built as "`/grasp sync`" in
   [references/upkeep.md](references/upkeep.md) builds it, so the generated issues lists show this
-  issue. Never add a row to them by hand.
+  issue. Never add a row to them by hand. Not with `--notebook off`, and not for a Notion
+  notebook: `sync` works on Markdown notebooks only.
 - Write the run record ([references/records.md](references/records.md)): the five lines, linked
   to the issue page, then `grasp-tools record-index`. Always, also when the run failed or stopped
   early; every blocker met goes in its Problems line.
@@ -426,7 +431,7 @@ from the current state and do nothing else: no code, no commits, no pushes, no t
 4. The calling skill did the build, so nobody ticked the steps live: in the after half, tick each
    step the diff shows as done and explain every other one in "Planned and built".
 5. Run the three checks from step 6 and the writing `grasp-tools sync` of step 7 (it writes only
-   what it generates), then report the page path in one line. `page` never waits
+   what it generates; skipped as step 7 says for `--notebook off` and Notion), then report the page path in one line. `page` never waits
    for the prediction and never starts a walk: it sets the status and, on an after half, ends
    with `Walk ready: /grasp walk KEY`.
 
