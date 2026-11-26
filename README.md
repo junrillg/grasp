@@ -22,7 +22,7 @@
 </p>
 
 <p align="center">
-  <a href=".claude-plugin/plugin.json"><img src="https://img.shields.io/badge/version-0.4.0-f59e0b" alt="Version 0.4.0"></a>
+  <a href=".claude-plugin/plugin.json"><img src="https://img.shields.io/badge/version-0.5.0-f59e0b" alt="Version 0.5.0"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-16a34a" alt="MIT license"></a>
   <a href="#quick-start"><img src="https://img.shields.io/badge/agents-Claude%20Code%20·%20Codex%20·%20Cursor%20·%20Gemini%20CLI-1c1917" alt="Works with Claude Code, Codex, Cursor and Gemini CLI"></a>
 </p>
@@ -37,9 +37,11 @@ flowchart LR
   S["/grasp setup"] --> O["Overview<br/>app map · architecture · feature pages · workspace map"]
   S --> B["Block in AGENTS.md<br/>every agent run records itself"]
   B --> R["Run records<br/>one small page per task"]
-  I["/grasp ISSUE"] --> P["Issue page<br/>before · after · explain back"]
+  I["/grasp ISSUE"] --> P["Issue page + code page<br/>before · after · walk ready"]
   I --> R
   P -.->|patches| O
+  P --> W["/grasp walk<br/>questions on the real code"]
+  Y["/grasp sync · repair"] -.->|finds and fixes stale pages| P
 ```
 
 | Page | The question it answers | Written |
@@ -47,8 +49,15 @@ flowchart LR
 | **App map** and **feature pages** | What is this app, what can it do, how does each feature work, how do they connect? | By `setup`, refreshed by `map`, patched when an issue changes the shape |
 | **Architecture page** | What is the design called, why is it built this way, what breaks first, and where do I learn those ideas? | With the app map, once the app is past about 15 source files |
 | **Workspace map** | How do these projects (frontend, backend, infra...) fit together? | By `setup` in a top folder that holds several projects, with an app map per sub-project |
-| **Issue page** | What did this change do, how, and why that way? | By a `/grasp ISSUE` run: a before half, then an after half |
+| **Issue page** and its **code page** | What did this change do, how, and why that way? Which line does what? | By a `/grasp ISSUE` run: a before half, then an after half; the code page holds every changed file and the walkthrough |
+| **Explain page** | What did this setup, pipeline or session do, with no issue to hang it on? | By `/grasp explain` |
 | **Run record** | What did the agent do in that session, was it checked, what went wrong, what is left? | By every agent run that changed files, grasp or not |
+
+Issue pages follow one page standard, shown in the status line of each page (`Standard: 2`). A page
+opens with two sentences and an owner block, is pinned to the commits it was checked against, and
+keeps its code on a separate code page that `grasp-tools` fills from the commit, so the page
+cannot show code that was not there. `sync` reports pages written to an older standard or that no
+longer match their files, and `repair` rewrites them.
 
 Start at `docs/how-it-works/runs/README.md` for "what has been happening", and at
 `docs/how-it-works/app-map.md` for "how does this work".
@@ -61,7 +70,7 @@ flowchart LR
   G -->|you pick| B[Before page<br/>plan · where it fits · predict]
   B --> D[Build<br/>test first · checks]
   D --> V[Verify<br/>fresh evidence · gate]
-  V --> A[After page<br/>screenshot · walkthrough · decision · explain back]
+  V --> A[After page<br/>owner block · how it works · proof · walk ready]
   A --> M[Close<br/>run record · app map patched if the shape changed]
 ```
 
@@ -72,13 +81,16 @@ BY DEFAULT
   1 Intake    read the issue, comments and attachments (read only)
   2 Grasp     restate it, ask what is unclear one question at a time, show 2-3 approaches
               with a recommendation, and wait for your pick
-  3 Before    write the "before" half of the issue's learning page: diagrams first (where
-              it fits, expected flow, the decision), detail folded; one prediction question
-  4 Build     branch, test first, smallest change, the project's own checks
+  3 Before    write the "before" half of the issue's learning page: the plan as 3 to 6
+              steps, diagrams first (where it fits, expected flow, the decision), the
+              ideas it leans on, the design idea first (one line each, the long
+              explanation, one checked video and one page to read folded); one prediction question
+  4 Build     branch, test first, smallest change, the project's own checks; the page says
+              "building" and each step is ticked as it finishes, so you can follow along
   5 Verify    fresh evidence only: checks, the test failing without the fix, the behaviour seen
-  6 After     write the "after" half: screenshot, how it works with a numbered code
-              walkthrough, decision, blockers, up to 3 checked learning links; then one
-              explain-back question
+  6 After     write the "after" half: owner block, how it works, a code sub-page, proof,
+              planned and built side by side, blockers; three commands check it; then
+              `Walk ready: /grasp walk KEY`
   7 Close     write the run record; patch the app map and the feature page if the issue
               changed how the app is put together; report
 ```
@@ -91,8 +103,12 @@ BY DEFAULT
 | **Any tracker** | Jira, GitHub Issues, ClickUp, Linear, GitLab, Azure DevOps, any other tool you can connect, a `.md` file or plain quoted text, all read through one intake contract. `setup` reads one real issue to prove the tracker works in your project. |
 | **Builds test-first** | Branch per project convention, failing test first, smallest change, the project's own checks. Asks before any push, pull request or tracker write. |
 | **Verifies with evidence** | "Verified" means a check ran green in this run and its result is quoted. `verify` proves an existing fix without touching code. |
-| **Leaves a visual learning page** | One page per issue in the repository's root `docs/` (Obsidian-compatible Markdown, listed in the docs router), or in Notion on request. You can scan it in a minute: each section is a caption and a picture (where it fits, a before/after screenshot, how it works, the decision), with the detail folded underneath: a numbered code walkthrough, files touched, how to check it. Blockers are never folded. The plan is a list of 3 to 6 steps, ticked while the agent builds, so the page shows progress live; after the build, "Planned and built" says what was built instead and why. Each page names the concepts it leans on: one line each, with the longer explanation and live-checked lessons (docs, YouTube, LinkedIn Learning) in a toggle. It ends with an explain-back question that waits for your answer or "skip": the page is marked built only then. |
-| **Keeps pages short** | `lint-page` fails a page with more visible words than its kind allows (run record 150, issue page 400, feature page 350, architecture page 900, app map 1,100), a diagram with more than 20 boxes, no Concepts section, an architecture page with no lesson, or a built page whose explain-back was never answered. Long text goes in a toggle, never on the page. |
+| **Leaves a visual learning page** | Two pages per issue in the repository's root `docs/` (Obsidian-compatible Markdown, listed in the docs router), or in Notion on request. The issue page opens with a two-sentence summary and an owner block (what was asked, what users can now do, the risk, what is not done, what needs a decision), then where it fits, the ideas it leans on and a diagram with numbered steps, with the detail folded underneath. The code page lists every changed file and walks the code with real lines. Blockers are never folded. The plan is a list of 3 to 6 steps, ticked while the agent builds, so the page shows progress live; after the build, "Planned and built" says what was built instead and why. |
+| **Keeps pages short** | `lint-page` fails a page with more visible words than its kind allows (run record 150, issue page 400, feature page 350, architecture page 900, app map 1,100), a diagram with more than 20 boxes, a page with no ideas or Concepts section, an architecture page with no lesson, or an issue page missing its owner block, its design idea or its code page. Long text goes in a toggle, never on the page. |
+| **Pulls code, never retypes it** | A page gets code only through `grasp-tools snippet`, which prints the lines as committed with a permalink, so a page never shows code that was not there. `snippet-check` finds a fence that was edited, and `coverage` proves the pages name every file the change touched. Each page is pinned to the commits it was checked against. |
+| **Teaches through the design idea** | Each issue page names the architecture or system design idea the change rests on first, then at most two more it leans on. Each idea is one visible line, with a fold that ties it to this code, one specific YouTube or LinkedIn Learning video (checked live, with its check date) and one page to read. |
+| **Walks you through the code** | `walk` is a short session you start on a finished page: 5 to 7 questions, one at a time, each after the real code lines. It says right or names the gap, then writes your answers, the gaps and a checked lesson for each gap on the page. It never scores and never blocks anything. |
+| **Finds and fixes stale pages** | `sync` reports every page as missing, stale, below the standard, holding a dead lesson link, changed since by a later issue, or not walked, and writes nothing but its own generated lists. `repair` rewrites what it found from the card, the pull request and the code, and keeps your walk. |
 | **Reviews and resolves pull requests** | `review PR` checks a pull request against its issue and the project's written rules and reports verified findings; `resolve PR` works the review threads in one new commit. Both update the issue page so it says what the code does now. |
 | **Explains the app** | `setup` reads the code and writes an app map: what the app is for, its core features in the users' words, a picture of how the features connect, the pieces, and one request traced end to end. A feature with a path worth tracing gets its own short page; a small app gets the map alone, so the pages scale with the code. Every row names the file it came from; what couldn't be confirmed is listed as "Not sure yet", not drawn as fact. The app map names up to five concepts a newcomer must know, each with a folded explanation and checked lessons. With `illustrations: yes` (asked once at setup) the app map, the architecture page, the workspace map and each issue page open with one generated illustration. |
 | **Teaches the architecture and system design** | The architecture page names the design, draws which part may call which and what happens on a failure, and lists each design choice with what it buys and what it costs. The system design ideas behind it are each explained with an everyday picture, where this code does it and when not to use it, then a table of live-checked YouTube and LinkedIn Learning lessons, easiest first. An app with a UI also gets its design system: tokens, components, rules. |
@@ -151,7 +167,11 @@ More examples:
 /grasp resolve 42               work the review threads on your pull request
 /grasp page PROJ-123 --step verify   refresh the page after your own verify skill ran
 /grasp record                   write down what this session did, in five lines
+/grasp explain                  explain what this session did, with no issue
 /grasp map                      refresh the overview of the app and its features
+/grasp walk PROJ-123            answer questions about the code of a finished page
+/grasp sync                     what is out of date? a table; no prose is touched
+/grasp repair PROJ-123 --dry-run   list what is wrong with that card's pages, change nothing
 /grasp update                   pull the latest grasp, refresh connected skills
 ```
 
@@ -193,11 +213,13 @@ flowchart LR
   S --> N[notebook.md<br/>3 · 6 · 7 · page]
   S --> R[records.md<br/>7 · record · AGENTS.md block]
   S --> O[overview.md<br/>map · workspaces]
+  S --> E[explain.md · walk.md · upkeep.md<br/>explain · walk · sync · repair]
   S --> SU[setup.md<br/>setup · update]
-  N --> P[templates<br/>issue page · app map · architecture<br/>feature page · workspace map · run record · .grasp.md]
+  N --> P[templates<br/>issue page · app map · architecture<br/>issue code page · feature page · workspace map · run record · .grasp.md]
   O --> P
+  E --> P
   R --> P
-  SU --> G[bin/grasp-tools<br/>connect · status · refresh · record-index<br/>record-check · projects · check-link · lint-page]
+  SU --> G[bin/grasp-tools<br/>connect · status · refresh · record-index<br/>record-check · projects · check-link · lint-page<br/>snippet · snippet-check · coverage · keep-walk · sync]
   N --> G
   R --> G
 ```
@@ -206,8 +228,8 @@ flowchart LR
 | --- | --- |
 | [`skills/grasp/SKILL.md`](skills/grasp/SKILL.md) | Arguments, help, the rules for every run and the seven-step workflow |
 | [`skills/grasp/references/`](skills/grasp/references/) | One file per step, loaded only when that step runs |
-| [`skills/grasp/templates/`](skills/grasp/templates/) | The issue page, the app map, the architecture page, the feature page, the workspace map, the run record and the `.grasp.md` project settings |
-| [`skills/grasp/bin/grasp-tools`](skills/grasp/bin/grasp-tools) | The exact, testable steps: connect, disconnect, block, status, refresh, record-index, record-check, projects, check-link, lint-page, version. Needs only bash, sed, awk, curl and git |
+| [`skills/grasp/templates/`](skills/grasp/templates/) | The issue page and its code page, the app map, the architecture page, the feature page, the workspace map, the run record and the `.grasp.md` project settings |
+| [`skills/grasp/bin/grasp-tools`](skills/grasp/bin/grasp-tools) | The exact, testable steps: connect, disconnect, block, status, refresh, record-index, record-check, projects, check-link, lint-page, change-map, snippet, snippet-check, coverage, keep-walk, sync, version. Needs only bash, sed, awk, curl and git |
 | [`tests/`](tests/) | Plain-bash tests for `grasp-tools` and the skill docs, plus the Obsidian render check |
 | [`.claude-plugin/`](.claude-plugin/) | Plugin and marketplace manifests for Claude Code |
 | [`install.sh`](install.sh) | Links or copies the skill into each agent's skills folder |
@@ -216,8 +238,9 @@ flowchart LR
 
 Every design choice traces to research notes in [docs/research](docs/research/README.md):
 delegating the thinking is what loses understanding, a short spec before the build beats a long
-one nobody reads, and one prediction question plus one explain-back question help memory. The
-same notes list the open gaps: treat the prediction question as a cheap bet, not a proven one.
+one nobody reads, and answering questions about the real code builds understanding where reading
+a finished explanation does not. The same notes list the open gaps: treat the prediction question
+as a cheap bet, not a proven one.
 
 - [Learning pages](docs/research/learning-pages.md)
 - [Comprehension before the build, and the app map](docs/research/comprehension-before-and-app-map.md)
@@ -225,10 +248,12 @@ same notes list the open gaps: treat the prediction question as a cheap bet, not
 - [Visual pages](docs/research/visual-pages.md), including the Obsidian and GitHub render test
 - [Run records and overviews](docs/research/run-records-and-overviews.md): why an instruction
   block alone isn't enough, and what a first-day overview needs
+- [Understanding first](docs/research/understanding-first.md): why the walk, code pulled by command
+  and `sync` and `repair` exist
 
 ## Status
 
-Version 0.4.0, [MIT licensed](LICENSE). To change the skill, edit `skills/grasp/` and try it from a linked
+Version 0.5.0, [MIT licensed](LICENSE). To change the skill, edit `skills/grasp/` and try it from a linked
 install (`./install.sh --project <a test repo>`) with `/grasp <issue> --plan`.
 
 Run the tests (bash only, no installs):

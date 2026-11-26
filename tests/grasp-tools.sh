@@ -41,7 +41,7 @@ test_help_lists_all_commands() {
 expected_block() {
   local step=$1 eol=${2:-$'\n'}
   printf '%s%s' \
-    "<!-- grasp:start b=1 v=0.4.0 step=$step -->" "$eol" \
+    "<!-- grasp:start b=1 v=0.5.0 step=$step -->" "$eol" \
     "## Learning page (grasp)" "$eol" \
     "When this skill has finished its own work, run grasp's \`page\` subcommand for the same issue or" "$eol" \
     "pull request with \`--step $step\` (\`/grasp page <issue or PR> --step $step\`, or \`/grasp:grasp page ...\`" "$eol" \
@@ -77,7 +77,7 @@ test_connect_appends_block_and_row() {
   want=$(mktemp)
   { cat "$FIX/skills/plain/SKILL.md"; printf '\n'; expected_block work; } > "$want"
   assert_file_eq "$want" "$p/.claude/skills/plain/SKILL.md" "block appended after one blank line"
-  assert_contains "$(cat "$p/.grasp.md")" "| .claude/skills/plain | work | 0.4.0 |" "row recorded"
+  assert_contains "$(cat "$p/.grasp.md")" "| .claude/skills/plain | work | 0.5.0 |" "row recorded"
 }
 
 test_connect_twice_is_idempotent() {
@@ -98,9 +98,9 @@ test_connect_replaces_block_when_step_changes() {
   gt --config "$p/.grasp.md" connect .claude/skills/plain work >/dev/null
   gt --config "$p/.grasp.md" connect .claude/skills/plain verify >/dev/null
   assert_eq 1 "$(grep -c 'grasp:start' "$p/.claude/skills/plain/SKILL.md")" "still one block"
-  assert_eq 1 "$(grep -c 'grasp:start b=1 v=0.4.0 step=verify' "$p/.claude/skills/plain/SKILL.md")" "block now verify"
+  assert_eq 1 "$(grep -c 'grasp:start b=1 v=0.5.0 step=verify' "$p/.claude/skills/plain/SKILL.md")" "block now verify"
   assert_eq 1 "$(grep -c '^| .claude/skills/plain |' "$p/.grasp.md")" "still one row"
-  assert_contains "$(cat "$p/.grasp.md")" "| .claude/skills/plain | verify | 0.4.0 |" "row updated"
+  assert_contains "$(cat "$p/.grasp.md")" "| .claude/skills/plain | verify | 0.5.0 |" "row updated"
 }
 
 test_connect_preserves_crlf_and_text_above() {
@@ -150,7 +150,7 @@ test_connect_creates_section_in_old_grasp_md() {
   gt --config "$p/.grasp.md" connect .claude/skills/plain work >/dev/null
   want=$(mktemp)
   { cat "$FIX/grasp-md/old.md"
-    printf '\n## Connected skills\n\n| skill | step | grasp version |\n| ----- | ---- | ------------- |\n| .claude/skills/plain | work | 0.4.0 |\n'
+    printf '\n## Connected skills\n\n| skill | step | grasp version |\n| ----- | ---- | ------------- |\n| .claude/skills/plain | work | 0.5.0 |\n'
   } > "$want"
   assert_file_eq "$want" "$p/.grasp.md" "section created at end of old .grasp.md"
   gt --config "$p/.grasp.md" connect .claude/skills/crlf verify >/dev/null
@@ -164,7 +164,7 @@ test_connect_twice_into_new_grasp_md() {
   gt --config "$p/.grasp.md" connect .claude/skills/plain work >/dev/null
   gt --config "$p/.grasp.md" connect .claude/skills/crlf review >/dev/null
   want=$(mktemp)
-  printf '## Connected skills\n\n| skill | step | grasp version |\n| ----- | ---- | ------------- |\n| .claude/skills/plain | work | 0.4.0 |\n| .claude/skills/crlf | review | 0.4.0 |\n' > "$want"
+  printf '## Connected skills\n\n| skill | step | grasp version |\n| ----- | ---- | ------------- |\n| .claude/skills/plain | work | 0.5.0 |\n| .claude/skills/crlf | review | 0.5.0 |\n' > "$want"
   assert_file_eq "$want" "$p/.grasp.md" ".grasp.md created with both rows under the header"
   assert_eq 2 "$(gt --config "$p/.grasp.md" status | grep -c $'\tok$')" "status lists both"
 }
@@ -175,7 +175,7 @@ test_connect_into_empty_template_table() {
   sed -n '/^## Connected skills/,$p' "$ROOT/skills/grasp/templates/grasp-config.md" > "$p/.grasp.md"
   gt --config "$p/.grasp.md" connect .claude/skills/plain work >/dev/null
   gt --config "$p/.grasp.md" connect .claude/skills/crlf review >/dev/null
-  assert_eq "$(printf '| .claude/skills/plain | work | 0.4.0 |\n| .claude/skills/crlf | review | 0.4.0 |')" "$(tail -n 2 "$p/.grasp.md")" "rows appended under the template's empty table"
+  assert_eq "$(printf '| .claude/skills/plain | work | 0.5.0 |\n| .claude/skills/crlf | review | 0.5.0 |')" "$(tail -n 2 "$p/.grasp.md")" "rows appended under the template's empty table"
   assert_exit 0 "status ok, no placeholder row" -- "$TOOLS" --config "$p/.grasp.md" status
 }
 
@@ -215,7 +215,7 @@ test_connect_section_without_table() {
   printf '# grasp settings\n\n## Connected skills\n\nNone yet.\n\n## Voice\n\n- plain\n' > "$p/.grasp.md"
   gt --config "$p/.grasp.md" connect .claude/skills/plain work >/dev/null
   want=$(mktemp)
-  printf '# grasp settings\n\n## Connected skills\n\n| skill | step | grasp version |\n| ----- | ---- | ------------- |\n| .claude/skills/plain | work | 0.4.0 |\n\nNone yet.\n\n## Voice\n\n- plain\n' > "$want"
+  printf '# grasp settings\n\n## Connected skills\n\n| skill | step | grasp version |\n| ----- | ---- | ------------- |\n| .claude/skills/plain | work | 0.5.0 |\n\nNone yet.\n\n## Voice\n\n- plain\n' > "$want"
   assert_file_eq "$want" "$p/.grasp.md" "table added under the heading"
   printf '# grasp settings\n\n## Connected skills\n' > "$p/.grasp.md"
   gt --config "$p/.grasp.md" connect .claude/skills/plain work >/dev/null
@@ -891,7 +891,7 @@ test_example_has_sections() {
 
 # ---- run records: the block in AGENTS.md / CLAUDE.md ----
 
-RECORD_MARKER='<!-- grasp:start b=1 v=0.4.0 step=record dir=docs/how-it-works/runs -->'
+RECORD_MARKER='<!-- grasp:start b=1 v=0.5.0 step=record dir=docs/how-it-works/runs -->'
 
 test_connect_record_appends_block_to_agents_md() {
   local p out body
@@ -908,7 +908,7 @@ test_connect_record_appends_block_to_agents_md() {
   for f in '**Asked:**' '**Changed:**' '**Checked:**' '**Problems:**' '**Next:**'; do
     assert_contains "$body" "$f" "block lists field $f"
   done
-  assert_contains "$(cat "$p/.grasp.md")" "| AGENTS.md | record | 0.4.0 |" "row recorded"
+  assert_contains "$(cat "$p/.grasp.md")" "| AGENTS.md | record | 0.5.0 |" "row recorded"
   assert_eq $'AGENTS.md\trecord\tok' "$(gt --config "$p/.grasp.md" status)" "status ok"
 }
 
@@ -999,7 +999,7 @@ test_record_folder_comes_from_config_and_goes_stale() {
   p=$(new_project)
   printf '\n## Notebook\n\n- run records: ../docs/how-it-works/runs\n' >> "$p/.grasp.md"
   gt --config "$p/.grasp.md" connect AGENTS.md record >/dev/null
-  assert_eq '<!-- grasp:start b=1 v=0.4.0 step=record dir=../docs/how-it-works/runs -->' "$(head -n 1 "$p/AGENTS.md")" "marker holds the configured folder"
+  assert_eq '<!-- grasp:start b=1 v=0.5.0 step=record dir=../docs/how-it-works/runs -->' "$(head -n 1 "$p/AGENTS.md")" "marker holds the configured folder"
   assert_contains "$(cat "$p/AGENTS.md")" '`../docs/how-it-works/runs/YYYY-MM-DD-short-name.md`' "block path uses it"
   sed -i.bak 's|^- run records: .*|- run records: notes/runs|' "$p/.grasp.md"
   assert_eq $'AGENTS.md\trecord\tstale' "$(gt --config "$p/.grasp.md" status)" "a moved folder makes the block stale"
@@ -1079,21 +1079,21 @@ test_run_records_value_is_trimmed() {
   p=$(new_project)
   printf -- '\n- run records: notes/runs/  \n' >> "$p/.grasp.md"
   gt --config "$p/.grasp.md" connect AGENTS.md record >/dev/null
-  assert_eq '<!-- grasp:start b=1 v=0.4.0 step=record dir=notes/runs -->' "$(head -n 1 "$p/AGENTS.md")" "trailing slash and spaces dropped"
+  assert_eq '<!-- grasp:start b=1 v=0.5.0 step=record dir=notes/runs -->' "$(head -n 1 "$p/AGENTS.md")" "trailing slash and spaces dropped"
 }
 
 test_connect_import_makes_claude_md_load_agents_md() {
   local p want
   p=$(new_project)
   assert_eq "connected CLAUDE.md import" "$(gt --config "$p/.grasp.md" connect CLAUDE.md import)" "connect prints confirmation"
-  want=$(mktemp); printf '<!-- grasp:start b=1 v=0.4.0 step=import -->\n@AGENTS.md\n<!-- grasp:end -->\n' > "$want"
+  want=$(mktemp); printf '<!-- grasp:start b=1 v=0.5.0 step=import -->\n@AGENTS.md\n<!-- grasp:end -->\n' > "$want"
   assert_file_eq "$want" "$p/CLAUDE.md" "a missing CLAUDE.md is created with only the import"
   gt --config "$p/.grasp.md" connect CLAUDE.md import >/dev/null
   assert_file_eq "$want" "$p/CLAUDE.md" "second connect changes nothing"
   assert_eq $'CLAUDE.md\timport\tok' "$(gt --config "$p/.grasp.md" status)" "status lists it"
   printf '# My rules\n\nUse tabs.\n' > "$p/CLAUDE.md"
   gt --config "$p/.grasp.md" connect CLAUDE.md import >/dev/null
-  assert_eq "$(printf '# My rules\n\nUse tabs.\n\n<!-- grasp:start b=1 v=0.4.0 step=import -->\n@AGENTS.md\n<!-- grasp:end -->')" "$(cat "$p/CLAUDE.md")" "an existing CLAUDE.md keeps its text"
+  assert_eq "$(printf '# My rules\n\nUse tabs.\n\n<!-- grasp:start b=1 v=0.5.0 step=import -->\n@AGENTS.md\n<!-- grasp:end -->')" "$(cat "$p/CLAUDE.md")" "an existing CLAUDE.md keeps its text"
   gt --config "$p/.grasp.md" disconnect CLAUDE.md >/dev/null
   assert_eq "$(printf '# My rules\n\nUse tabs.')" "$(cat "$p/CLAUDE.md")" "disconnect restores it"
 }
@@ -1104,7 +1104,7 @@ test_block_with_old_text_is_stale() {
   gt --config "$p/.grasp.md" connect AGENTS.md record >/dev/null
   gt --config "$p/.grasp.md" connect .claude/skills/plain work >/dev/null
   sed -i.bak 's/one short plain sentence each/one sentence each/' "$p/AGENTS.md"
-  sed -i.bak 's/grasp:start b=1 v=0.4.0 step=work/grasp:start b=1 v=0.2.0 step=work/' "$p/.claude/skills/plain/SKILL.md"
+  sed -i.bak 's/grasp:start b=1 v=0.5.0 step=work/grasp:start b=1 v=0.2.0 step=work/' "$p/.claude/skills/plain/SKILL.md"
   assert_eq "$(printf 'AGENTS.md\trecord\tstale\n.claude/skills/plain\twork\tok')" "$(gt --config "$p/.grasp.md" status)" "changed wording is stale; an older version number alone is not"
   gt --config "$p/.grasp.md" refresh >/dev/null
   assert_contains "$(cat "$p/AGENTS.md")" "one short plain sentence each" "refresh restores the current text"
@@ -1122,7 +1122,7 @@ test_record_and_skill_rows_live_together() {
 test_record_broken_marker_is_refused() {
   local p before
   p=$(new_project)
-  printf '# Rules\n\n<!-- grasp:start b=1 v=0.4.0 step=record dir=x -->\nmine\n' > "$p/AGENTS.md"
+  printf '# Rules\n\n<!-- grasp:start b=1 v=0.5.0 step=record dir=x -->\nmine\n' > "$p/AGENTS.md"
   before=$(mktemp); cp "$p/AGENTS.md" "$before"
   assert_exit 1 "connect refuses a start marker with no end" -- "$TOOLS" --config "$p/.grasp.md" connect AGENTS.md record
   assert_file_eq "$before" "$p/AGENTS.md" "user text untouched"
@@ -1499,7 +1499,7 @@ test_install_copy_writes_source() {
   "$ROOT/install.sh" --project "$p" --copy >/dev/null
   assert_eq "$ROOT" "$(cat "$p/.claude/skills/grasp/.source" 2>/dev/null)" ".source holds the repo path (.claude)"
   assert_eq "$ROOT" "$(cat "$p/.agents/skills/grasp/.source" 2>/dev/null)" ".source holds the repo path (.agents)"
-  assert_eq "0.4.0" "$("$p/.claude/skills/grasp/bin/grasp-tools" version)" "copied grasp-tools runs"
+  assert_eq "0.5.0" "$("$p/.claude/skills/grasp/bin/grasp-tools" version)" "copied grasp-tools runs"
 }
 
 test_install_copy_twice_recopies() {
@@ -1508,7 +1508,7 @@ test_install_copy_twice_recopies() {
   "$ROOT/install.sh" --project "$p" --copy >/dev/null
   printf '0.0.1\n' > "$p/.claude/skills/grasp/VERSION"
   "$ROOT/install.sh" --project "$p" --copy >/dev/null 2>&1
-  assert_eq "0.4.0" "$(cat "$p/.claude/skills/grasp/VERSION")" "second --copy replaces grasp's own copy"
+  assert_eq "0.5.0" "$(cat "$p/.claude/skills/grasp/VERSION")" "second --copy replaces grasp's own copy"
   assert_eq "$ROOT" "$(cat "$p/.claude/skills/grasp/.source")" ".source still written"
 }
 
@@ -1525,7 +1525,7 @@ test_install_link_writes_no_source() {
   p=$(new_tmp)
   "$ROOT/install.sh" --project "$p" >/dev/null
   [[ ! -e "$ROOT/skills/grasp/.source" ]] || _fail "link install leaves no .source in the repo"
-  assert_eq "0.4.0" "$("$p/.claude/skills/grasp/bin/grasp-tools" version)" "grasp-tools runs through the symlink"
+  assert_eq "0.5.0" "$("$p/.claude/skills/grasp/bin/grasp-tools" version)" "grasp-tools runs through the symlink"
 }
 
 test_uninstall_removes_only_own_installs() {
