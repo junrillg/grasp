@@ -189,8 +189,13 @@ test_explain_is_a_full_copy() {
   for s in "this session" "BASE..HEAD" "--repo" "--docs" "--name" "--lessons" "--no-image" "check PAGE" \
            "reconstructed" "what git does not see" "Set it up" "When something goes wrong" \
            "How we built it, step by step" "## Things people look up" "## Not in git" "docs router" \
-           "change-map" "grasp-tools coverage" "never write a second set" "uncommitted" "Not pinned yet"; do
+           "change-map" "grasp-tools coverage" "never write a second set" "uncommitted" "Not pinned yet" \
+           "The change map again" "from the idea's visible line" "the architecture page became wrong" \
+           "a glossary exists" "in bold the first time"; do
     grep -qF -- "$s" "$e" || _fail "explain.md lacks: $s"
+  done
+  for s in "no logos" "on the page to read too" "No checked page yet" "A video or a page to read whose title"; do
+    grep -qF -- "$s" "$ROOT/skills/grasp/references/notebook.md" || _fail "notebook.md lacks: $s"
   done
   grep -qF "/grasp explain check" "$SKILL" || _fail "no usage line for explain check"
   ! grep -rqiF "explain-build" "$ROOT/skills/grasp" || _fail "grasp must not depend on or mention the explain-build skill"

@@ -381,8 +381,8 @@ the idea plus the project's stack.
 - The length on the Watch line is read from the video's own page, or from the course's table of
   contents for a LinkedIn Learning video. `check-link` does not print it. When it cannot be read,
   leave the length out of the line. Never guess it.
-- A video whose title does not name the idea or its field is the wrong video, whichever site it is
-  on: drop it.
+- A video or a page to read whose title does not name the idea or its field is the wrong one,
+  whichever site it is on: drop it.
 - Prefer a video that explains before it codes. For the design idea, prefer one that draws the
   system.
 - When a lesson uses an older version, another tool or another language than this code, say so in a few words on that link's line or in the fold's text.
@@ -401,6 +401,8 @@ the idea plus the project's stack.
   martinfowler.com, web.dev, developer.mozilla.org, learn.microsoft.com/azure/architecture/patterns,
   aws.amazon.com/builders-library. For the design idea try martinfowler.com,
   learn.microsoft.com/azure/architecture/patterns and aws.amazon.com/builders-library first. The page must have been opened: keep no link to a page you did not read.
+  Run `grasp-tools check-link URL` on the page to read too, and use the final address it prints. When
+  no page passes, write `<p>No checked page yet</p>`. Never leave the line out.
 - Each link line holds the title, the author or the site, and `checked YYYY-MM-DD`. A link with no
   check date fails `lint-page` (`link-undated`).
 - Links are checked when a page is written or patched, never on a schedule. With
@@ -454,7 +456,7 @@ means ask once, then save it).
 - Generate it with whatever image tool is available. With the Codex CLI, the form that worked in
   grasp's own trial, run from the `assets/` folder: `codex exec --skip-git-repo-check -s
   workspace-write -C "$PWD" --enable image_generation "PROMPT" < /dev/null`, where the prompt
-  names the file to save and says "short labels, spelled exactly, no other text" and "this
+  names the file to save and says "short labels, spelled exactly, no other text", "no logos" and "this
   image is one step of another agent's task, and that agent writes the task's run record: write
   none yourself and change no other file" (a second agent started in the project reads the
   block in `AGENTS.md` and would otherwise leave a record of its own; delete one if it appears).

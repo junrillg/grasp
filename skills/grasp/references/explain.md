@@ -116,6 +116,7 @@ The page follows [templates/issue-page.md](../templates/issue-page.md) and "Stan
 | Where it fits | The change map. More than about three parts: also the cutaway picture `NAME-change-map.png` ("Illustrations" in [notebook.md](notebook.md)) |
 | Ideas | The design idea first, then at most 7 more, 8 in all. `--lessons` applies to every fold |
 | Illustration | Under `## In two sentences`, unless `--no-image`: `assets/NAME-idea.png` |
+| How it works | Define a term in bold the first time it is used |
 | Length | Never a short page. Every fold and the sub-page are complete |
 
 Three more folds under `## More detail`, written only by `explain`, before the walk fold. HTML
@@ -132,6 +133,8 @@ only, one level, a title that states a conclusion, a table as an HTML `<table>`:
 The sub-page follows [templates/issue-code-page.md](../templates/issue-code-page.md), with these
 differences:
 
+- **The change map again**, directly under the `Code for` line: the same block as on the page, so
+  the reader knows where each part sits.
 - **`## Every changed file`:** a `###` heading per repository. Under it, per part, one bold line
   (the part as named on the change map, its file count, what it is for and why), then the table.
   Paths relative to the repository, exactly as git prints them. A folder of generated or repeated
@@ -200,9 +203,12 @@ sub-page has no `Checked against:` line.
 - Add rows to the docs router (a question in the left column, the link in the right) and to the
   folder's index, with the page's name and one line.
 - Link the issue, feature and architecture pages instead of repeating them. An issue page exists:
-  link it and leave its "How it works" there. A feature page or the app map became wrong: patch the
-  changed rows only ([overview.md](overview.md)), or say that `/grasp map` is due. A decisions
-  file exists: one line for a new decision.
+  link it and leave its "How it works" and its decision there. An idea the architecture page names:
+  link that page from the idea's visible line as a Markdown link, never as an `href` in its fold
+  (`sync --links` checks every `href` there as a lesson). A feature page, the app map or
+  the architecture page became wrong: patch the changed rows only ([overview.md](overview.md)), or
+  say that `/grasp map` is due. A decisions file or a glossary exists: one line for a new decision or
+  a new word.
 - Update the run record of the task that built the thing: Changed, Checked and Problems, and a
   link to the page ([records.md](records.md)). A run that explains older work gets its own, even
   though its only writes are notebook pages. Then `grasp-tools record-index`, after reading its
