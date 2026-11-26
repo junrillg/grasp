@@ -33,7 +33,7 @@ task.
 | `--name` | slug, with `explain` | no | named after the work | File name of the page; the sub-page adds `-code`. |
 | `--lessons` | `all`, `free`, `none`, with `explain` | no | `all`, or `free` when `.grasp.md` says `linkedin learning: no` | `free` drops LinkedIn Learning. `none` turns the lessons off. |
 | `--no-image` | flag, with `explain` | no | off, or on when `.grasp.md` says `illustrations: no` | Diagrams only, no illustration. |
-| `--base` | ref, with `explain check` | no | the integration branch | What the work is compared with. |
+| `--base` | ref, with `explain check` | no | the page's own ranges, else the integration branch | What the work is compared with. |
 | `record` | subcommand | no | none | Write or update the run record for the task in this conversation: asked, changed, checked, problems, next. Nothing else: no code, commits or tracker writes. The block that `setup` adds to `AGENTS.md` makes every agent run do this. |
 | `"NAME"` | quoted text, with `record` | no | named after what changed | The record's short name. |
 | `map` | subcommand | no | none | Build or refresh the overview only: the app map, the architecture page (not in a small app), a page for each core feature that needs one and, at the top of a workspace, the workspace map and the app map of each sub-project that is new or stale. |
@@ -93,7 +93,7 @@ FLAGS
                     linkedin learning: no), free (no LinkedIn Learning), none.
   --no-image        off (on when .grasp.md says illustrations: no). With explain only:
                     diagrams only, no illustration.
-  --base REF        ref. With explain check only. Default: the integration branch.
+  --base REF        ref. With explain check only. Default: the page's own ranges, else the integration branch.
 
 SUBCOMMANDS
   verify ISSUE|PR   prove an existing fix works with fresh evidence; fill the "after" half.

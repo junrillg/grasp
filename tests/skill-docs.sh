@@ -189,7 +189,7 @@ test_explain_is_a_full_copy() {
   for s in "this session" "BASE..HEAD" "--repo" "--docs" "--name" "--lessons" "--no-image" "check PAGE" \
            "reconstructed" "what git does not see" "Set it up" "When something goes wrong" \
            "How we built it, step by step" "## Things people look up" "## Not in git" "docs router" \
-           "change-map" "grasp-tools coverage" "never write a second set"; do
+           "change-map" "grasp-tools coverage" "never write a second set" "uncommitted" "Not pinned yet"; do
     grep -qF -- "$s" "$e" || _fail "explain.md lacks: $s"
   done
   grep -qF "/grasp explain check" "$SKILL" || _fail "no usage line for explain check"

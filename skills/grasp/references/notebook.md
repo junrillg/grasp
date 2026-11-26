@@ -212,6 +212,7 @@ is pinned to.
   repository the change touches. `BASE` is the merge base with the integration branch. `HEAD` is the
   merge commit when the page is written after the pull request merged. Otherwise it is the pull
   request's last commit that changes anything outside the notebook folder (the last code commit).
+- Work not committed yet is pinned as `REPO@BASE..uncommitted`; see "Work that is not committed yet" in [explain.md](explain.md).
 - A later commit that only touches the notebook, the page itself included, does not move the pin.
 - Its code blocks never move to a later commit.
 - A feature page describes how the feature works today, so it is patched when a later issue changes
@@ -373,6 +374,7 @@ the idea plus the project's stack.
   leave the length out of the line. Never guess it.
 - Prefer a video that explains before it codes. For the design idea, prefer one that draws the
   system.
+- When a lesson uses an older version, another tool or another language than this code, say so in a few words on that link's line or in the fold's text.
 - Add `&t=NNs` only when the start of the relevant part was read from the video's chapters or
   transcript.
 - The confirmation is `content checked` only when the chapters, the transcript or the course's

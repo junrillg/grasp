@@ -30,7 +30,7 @@ differently or adds.
 | `--lessons` | `all`, `free`, `none` | `all`; `free` when `.grasp.md` says `linkedin learning: no` | `free` drops LinkedIn Learning videos and `Course:` lines. `none` writes `<p>Lessons turned off</p>` in each idea's fold |
 | `--no-image` | flag | off; on when `.grasp.md` says `illustrations: no` | Diagrams only: no illustration and no cutaway picture |
 | `check PAGE` | subcommand | none | Run "Prove" on an existing page and write nothing |
-| `--base` | ref, with `check` | the integration branch | What the work is compared with. For a page whose work has merged into it, pass the `BASE` of the page's `Checked against:` line |
+| `--base` | ref, with `check` | the integration branch | What the work is compared with. A page with a `Checked against:` line is checked against its own ranges; `--base` is used when it has none, or when you pass it |
 
 ## Rules
 
@@ -135,14 +135,30 @@ differences:
   Paths relative to the repository, exactly as git prints them. A folder of generated or repeated
   files is one row, `` `path/to/folder/**` ``. End with a count line: the parts add up to the
   total.
-- **`## Code walkthrough`:** as on any code sub-page. A file not committed yet cannot be quoted
-  (`grasp-tools snippet` reads commits): write its row and a line saying it is not committed,
-  and patch the walkthrough after the commit.
+- **`## Code walkthrough`:** as on any code sub-page. Work not committed yet is the exception, see
+  "Work that is not committed yet" below.
 - **`## Things people look up`**, visible tables: routes, tables and columns, setting and
   environment variable names, packages with version and why, error codes. A first-column entry
   shaped like a file path must be a real file, or `coverage` reports it `STALE`.
 - **`## Not in git`**, a visible table: settings in a web console, tools installed on a machine,
   permissions, and whether each is done.
+
+#### Work that is not committed yet
+
+A page is pinned to commits, and code reaches a page only through `grasp-tools snippet`, which
+reads commits. For a repository with uncommitted or untracked work:
+
+- `Checked against:` uses the fixed word `uncommitted` as that repository's head, for example
+  `` `web@1a2b3c4..uncommitted` ``. `BASE` is still the merge base with the integration branch.
+- Every changed file still gets its row under `## Every changed file`.
+- The walkthrough is still written, one `### N. Title` per step. Each step names the file and the
+  line range in prose (`` `src/cart/total.ts` lines 10-24, not committed yet ``), with one or two
+  sentences and no fence.
+- Put one line under the status lines: `Not pinned yet: this work was not committed when the page was written.`
+- Run `coverage` with `--base` and no `--head` (step 5).
+- The report tells the person to finish the page with `/grasp repair NAME --only code` after the
+  commit: it pins the page and pulls the real lines.
+- `explain` never commits the code itself to get around this.
 
 Who writes the pages (inline or one subagent) follows the token budget in
 [notebook.md](notebook.md). The pages go to the `--docs` folder, with images in `assets/` beside
@@ -159,7 +175,7 @@ grasp-tools coverage --repo DIR --repo DIR2 [--base REF] PAGE PAGE-code.md
 ```
 
 - Everything committed: leave `--base` out. Each range is read from `Checked against:`.
-- Uncommitted or untracked files in the work: pass `--base REF`, one ref that exists in every
+- Uncommitted or untracked files in the work (a head of `uncommitted`): pass `--base REF`, one ref that exists in every
   repository (usually the integration branch). It counts those files too. With `--head`, only
   commits count.
 - Repositories that need different bases and have uncommitted work: run `coverage` once per
@@ -192,10 +208,13 @@ grasp-tools coverage --repo DIR --repo DIR2 [--base REF] PAGE PAGE-code.md
 - What is not finished, and who can finish it.
 - Which checks did not run, and any bug found.
 - With no `.grasp.md`: that `/grasp setup` is available.
+- Work not committed yet: the page is finished by `/grasp repair NAME --only code` after the commit.
 - Last line: `Walk ready: /grasp walk NAME`. Never start a walk and never wait for one.
 
 ## `check PAGE`
 
 Run step 5 on `PAGE` and report. Write nothing: no page, router row, run record or image.
-`--repo` is repeated for each repository. `--base` is passed to `coverage` as in step 5, so
-uncommitted files count too.
+`--repo` is repeated for each repository. When `PAGE` has a `Checked against:` line, run
+`coverage` with no `--base`: each repository's range is read from the page. Only when the page
+has no such line does `--base` apply, defaulting to the integration branch. An explicit `--base`
+always wins.
