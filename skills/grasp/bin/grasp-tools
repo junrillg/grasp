@@ -52,9 +52,10 @@ Commands:
                            and a repository's origin remote when it has one. A repository is
                            found up to eight folders deep, a package up to three
   check-link URL           check a learning link live. Prints "ok" and, after a tab each: a
-                           YouTube video's title and channel; a LinkedIn Learning course's
-                           final URL and title; any other page's final URL. A link that
-                           fails prints "fail REASON" and exits 1
+                           YouTube video's title and channel; a LinkedIn Learning page's
+                           final URL and title; any other page's final URL. A LinkedIn
+                           Learning address that redirects elsewhere prints "fail redirected
+                           FINAL". A link that fails prints "fail REASON" and exits 1
   lint-page FILE...        check a page renders in Obsidian and on GitHub: toggles, links to
                            files that are missing, diagram type and quotes, prose wrapped
                            by hand, and that git does not ignore the page. Also reports
@@ -720,6 +721,11 @@ cmd_check_link() {
         https://www.linkedin.com/learning/*|https://linkedin.com/learning/*) ;;
         *) echo "fail not-learning"; return 1 ;;
       esac
+      # a link that was redirected is not the page that was asked for: a video that no longer
+      # exists bounces to its course, a renamed course to its new name
+      local want=${url%%[?#]*} got=${final%%[?#]*}
+      want=${want%/}; got=${got%/}
+      [[ "$got" == "$want" ]] || { echo "fail redirected $final"; return 1; }
       # ponytail: reads a <title> that sits on one line, which is how LinkedIn serves it
       title=$(printf '%s\n' "$body" | awk -v q="'" '
         match($0, /<title[^>]*>/) {

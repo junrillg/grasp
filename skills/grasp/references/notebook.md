@@ -265,7 +265,8 @@ a course in its "Lessons" table).
 
 - Search with the concept name only, never project, client or issue text.
 - Keep a link only if `grasp-tools check-link URL` prints `ok`. Use the title and channel it
-  prints for YouTube, and the final URL and course title it prints for LinkedIn Learning; never
+  prints for YouTube, and the final URL and course title it prints for LinkedIn Learning (an
+  address that redirects prints `fail redirected FINAL`: drop it); never
   invent a title. A video title that does not name the concept is the wrong video: drop it. A
   course is wider than a video: its title must name the concept or the field it belongs to (a
   course on HTTP for the concept "status codes"). For a docs

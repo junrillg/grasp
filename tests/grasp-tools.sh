@@ -320,13 +320,30 @@ test_youtube_400_fails() {
   assert_eq "fail 400" "$out" "status reported"
 }
 
-test_linkedin_redirect_prints_final_url_and_title() {
-  local log out
+test_linkedin_renamed_course_fails_redirected() {
+  local log out rc=0
   log=$(mktemp)
-  out=$(FAKE_CURL_LOG=$log cl li-redirect "https://www.linkedin.com/learning/oauth-2-0-essentials-2")
-  assert_eq $'ok\thttps://www.linkedin.com/learning/oauth-2-0-essentials\tOAuth 2.0 Essentials' "$out" "final URL and the course title printed"
+  out=$(FAKE_CURL_LOG=$log cl li-redirect "https://www.linkedin.com/learning/oauth-2-0-essentials-2") || rc=$?
+  assert_eq 1 "$rc" "exit 1"
+  assert_eq "fail redirected https://www.linkedin.com/learning/oauth-2-0-essentials" "$out" "a renamed course is not verified"
   assert_contains "$(cat "$log")" "-L" "follows redirects"
   [[ "$(cat "$log")" != *"/dev/null"* ]] || _fail "the page is read for its title, not thrown away"
+}
+
+test_linkedin_same_address_is_ok() {
+  assert_eq $'ok\thttps://www.linkedin.com/learning/oauth-2-0-essentials\tOAuth 2.0 Essentials' \
+    "$(cl li-same "https://www.linkedin.com/learning/oauth-2-0-essentials")" "final equals requested"
+}
+
+test_linkedin_query_and_slash_are_ignored() {
+  assert_contains "$(cl li-query "https://www.linkedin.com/learning/oauth-2-0-essentials/?trk=x")" $'ok\t' "query and slash do not count"
+}
+
+test_linkedin_bounced_video_fails_redirected() {
+  local out rc=0
+  out=$(cl li-video-bounced "https://www.linkedin.com/learning/oauth-2-0-essentials/no-such-video") || rc=$?
+  assert_eq 1 "$rc" "exit 1"
+  assert_eq "fail redirected https://www.linkedin.com/learning/oauth-2-0-essentials" "$out" "a video that bounces to its course is not verified"
 }
 
 test_linkedin_title_entities_decoded() {

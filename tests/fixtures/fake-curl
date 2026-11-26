@@ -7,6 +7,9 @@ case "${FAKE_CURL_CASE:-}" in
   yt-escapes)  printf '%s\n%s' '{"type":"video","title":"He said \"hi\" \u00e9 a\/b \\ ok","author_name":"Caf\u00e9 \ud83d\ude00 TV"}' 200 ;;
   yt-400)      printf '%s\n%s' 'Bad Request' 400 ;;
   li-redirect) printf '%s\n%s' '<html><head><meta charset="utf-8"><title>OAuth 2.0 Essentials Online Class | LinkedIn Learning, formerly Lynda.com</title></head><body><svg><title>Play</title></svg></body></html>' '200 https://www.linkedin.com/learning/oauth-2-0-essentials' ;;
+  li-same)     printf '%s\n%s' '<html><head><meta charset="utf-8"><title>OAuth 2.0 Essentials Online Class | LinkedIn Learning, formerly Lynda.com</title></head><body><svg><title>Play</title></svg></body></html>' '200 https://www.linkedin.com/learning/oauth-2-0-essentials' ;;
+  li-video-bounced) printf '%s\n%s' '<html><head><meta charset="utf-8"><title>OAuth 2.0 Essentials Online Class | LinkedIn Learning, formerly Lynda.com</title></head><body><svg><title>Play</title></svg></body></html>' '200 https://www.linkedin.com/learning/oauth-2-0-essentials' ;;
+  li-query)    printf '%s\n%s' '<html><head><meta charset="utf-8"><title>OAuth 2.0 Essentials Online Class | LinkedIn Learning, formerly Lynda.com</title></head><body><svg><title>Play</title></svg></body></html>' '200 https://www.linkedin.com/learning/oauth-2-0-essentials?u=0' ;;
   li-entities) printf '%s\n%s' '<title>Dev&#39;s Guide to &quot;OAuth&quot; &amp; OpenID Online Class | LinkedIn Learning, formerly Lynda.com</title>' '200 https://www.linkedin.com/learning/devs-guide' ;;
   li-no-title) printf '%s\n%s' '<html><head></head><body>Sign in to see this course</body></html>' '200 https://www.linkedin.com/learning/oauth-2-0-essentials' ;;
   li-404)      printf '%s' '404 https://www.linkedin.com/learning/no-such-course' ;;
