@@ -93,6 +93,16 @@ Commands:
                            and, on a page named *-code.md, snippet-unmarked (a fence that is
                            not a diagram and has no marker above it). Exits 1 when anything
                            is reported
+  coverage [--repo DIR]... [--base REF] [--head REF] PAGE...
+                           prove that the pages name every file changed in each repository
+                           (default .) between BASE and HEAD (HEAD defaults to HEAD). Without
+                           --base, each repository's range is read from the "Checked against:"
+                           line of the first PAGE. A file is named when a page holds it in
+                           backticks or <code> as path, REPO/path, or under a "folder/**".
+                           Prints MISSING REPO/path for each file no page names, STALE path for
+                           a path in the first column of a table that is neither changed nor in
+                           any repository, then "N of M changed files named". Exits 1 on any
+                           MISSING or STALE, 2 on bad use, a git error or no range to read
   version                  print the grasp version
 
 Options:
@@ -937,6 +947,81 @@ cmd_snippet_check() {
   return $rc
 }
 
+# ---------- coverage ----------
+
+# cv_quoted PAGE... -> every string in backticks or <code>, one per line
+cv_quoted() {
+  { grep -ohE '`[^`]+`' "$@" | sed -e 's/^.//' -e 's/.$//'
+    grep -ohE '<code>[^<]+</code>' "$@" | sed -e 's#^<code>##' -e 's#</code>$##'
+  } || true
+}
+
+# cv_firstcol PAGE... -> each path in the first column of a table row, or in <li><code>..</code>
+cv_firstcol() {
+  awk '
+    /^\|/ { s = substr($0, 2); i = index(s, "|")
+            if (i) { cell = substr(s, 1, i - 1)
+                     while (match(cell, /`[^`]+`/)) { print substr(cell, RSTART + 1, RLENGTH - 2); cell = substr(cell, RSTART + RLENGTH) } } }
+    { t = $0; while (match(t, /<li><code>[^<]+<\/code>/)) { print substr(t, RSTART + 10, RLENGTH - 17); t = substr(t, RSTART + RLENGTH) } }' "$@"
+}
+
+# cv_range PAGE NAME -> BASE..HEAD from the page's "Checked against:" line for repository NAME
+cv_range() {
+  grep -m1 '^Checked against:' "$1" | grep -oE '`[^`@]+@[0-9a-f]+\.\.[0-9a-f]+`' |
+    awk -v n="$2" '{ s = substr($0, 2, length($0) - 2); i = index(s, "@"); if (substr(s, 1, i - 1) == n) { print substr(s, i + 1); f = 1; exit } } END { exit !f }'
+}
+
+cmd_coverage() {
+  local repos=() base='' head='' pages=() usage="usage: coverage [--repo DIR]... [--base REF] [--head REF] PAGE..."
+  local d top name b h range f changed='' present='' pg missing stale total
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --repo) [[ $# -ge 2 ]] || die 2 "--repo needs a folder"; repos+=("$2"); shift 2 ;;
+      --base) [[ $# -ge 2 ]] || die 2 "--base needs a ref"; base=$2; shift 2 ;;
+      --head) [[ $# -ge 2 ]] || die 2 "--head needs a ref"; head=$2; shift 2 ;;
+      -*) die 2 "$usage" ;;
+      *) pages+=("$1"); shift ;;
+    esac
+  done
+  [[ ${#pages[@]} -gt 0 ]] || die 2 "$usage"
+  for pg in "${pages[@]}"; do [[ -f "$pg" ]] || die 2 "no such file: $pg"; done
+  [[ ${#repos[@]} -gt 0 ]] || repos=(.)
+  for d in "${repos[@]}"; do
+    top=$(git -C "$d" rev-parse --show-toplevel 2>/dev/null) || die 2 "not a git repository: $d"
+    name=$(basename "$top"); b=$base; h=$head
+    if [[ -z "$b" ]]; then
+      range=$(cv_range "${pages[0]}" "$name") ||
+        die 2 "no range for $name: pass --base, or put \`$name@BASE..HEAD\` on a Checked against line of ${pages[0]}"
+      b=${range%%..*}; [[ -n "$h" ]] || h=${range#*..}
+    fi
+    h=${h:-HEAD}
+    git -C "$top" rev-parse -q --verify "$b^{commit}" >/dev/null 2>&1 || die 2 "no such base in $top: $b"
+    git -C "$top" rev-parse -q --verify "$h^{commit}" >/dev/null 2>&1 || die 2 "no such head in $top: $h"
+    while IFS= read -r -d '' f; do changed+="$name"$'\t'"$f"$'\n'; done < <(git -C "$top" diff --name-only --no-renames -z "$b" "$h")
+    present+=$(git -C "$top" ls-tree -r --name-only -z "$h" | tr '\0' '\n' | awk -v n="$name" '{ print n "\t" $0 }')$'\n'
+  done
+  total=$(printf '%s' "$changed" | awk 'END { print NR }')
+
+  # named: the path, REPO/path, or under a `folder/**` (with or without the REPO/ in front)
+  missing=$(awk -F'\t' '
+    FNR == NR { if ($0 ~ /\/\*\*$/) fold[++nf] = substr($0, 1, length($0) - 2); else exact[$0] = 1; next }
+    { n = $1; f = substr($0, length(n) + 2); full = n "/" f
+      if ((f in exact) || (full in exact)) next
+      for (i = 1; i <= nf; i++) if (index(f, fold[i]) == 1 || index(full, fold[i]) == 1) next
+      print "MISSING " full }' <(cv_quoted "${pages[@]}") <(printf '%s' "$changed") | sort)
+
+  # stale: a path in a first column that is not changed and not in any repository
+  stale=$(cv_firstcol "${pages[@]}" | grep -E '^[A-Za-z0-9_.@/-]+/[A-Za-z0-9_.@-]+\.[A-Za-z0-9_]+$' | sort -u |
+    awk -F'\t' 'FNR == NR { if (NF >= 2) { k[$2] = 1; k[$1 "/" $2] = 1 } next } !($0 in k) { print "STALE " $0 }' \
+      <(printf '%s\n%s\n' "$changed" "$present") -)
+
+  [[ -z "$missing" ]] || printf '%s\n' "$missing"
+  [[ -z "$stale" ]] || printf '%s\n' "$stale"
+  local nm=0; [[ -z "$missing" ]] || nm=$(printf '%s\n' "$missing" | awk 'END { print NR }')
+  printf '%d of %d changed files named\n' $((total - nm)) "$total"
+  [[ -z "$missing$stale" ]]
+}
+
 # ---------- lint-page ----------
 
 cmd_lint_page() {
@@ -1176,6 +1261,7 @@ case "$cmd" in
   change-map) cmd_change_map "$@" ;;
   snippet) cmd_snippet "$@" ;;
   snippet-check) cmd_snippet_check "$@" ;;
+  coverage) cmd_coverage "$@" ;;
   "") usage >&2; exit 2 ;;
   *) usage >&2; printf '\ngrasp-tools: unknown command: %s\n' "$cmd" >&2; exit 2 ;;
 esac

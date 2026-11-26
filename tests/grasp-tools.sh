@@ -30,7 +30,7 @@ test_unknown_command_exits_2() {
 test_help_lists_all_commands() {
   local out c
   out=$(gt -h 2>&1)
-  for c in connect disconnect block status refresh record-index record-check projects check-link lint-page change-map snippet snippet-check version; do
+  for c in connect disconnect block status refresh record-index record-check projects check-link lint-page change-map snippet snippet-check coverage version; do
     assert_contains "$out" "$c" "help lists $c"
   done
 }
@@ -747,6 +747,41 @@ test_snippet_check_unreachable_unknown_and_unmarked() {
   assert_contains "$(gt snippet-check --repo "$(new_tmp)" "$page")" "snippet-unknown-repo web" "repo not given"
   printf '```ts\nretyped\n```\n\n```mermaid\nflowchart LR\n```\n' > "$page"
   assert_eq "$page:1: snippet-unmarked" "$(gt snippet-check --repo "$p" "$page")" "a retyped fence is flagged, a diagram is not"
+}
+
+# ---- coverage ----
+
+cov_repo() {   # repo "web": main has a.ts; HEAD changes a.ts, adds "b c.ts" and deep/d.ts
+  local p; p="$(new_tmp)/web"; mkdir -p "$p/deep"; g -C "$p" init -q -b main
+  echo 1 > "$p/a.ts"; g -C "$p" add -A; g -C "$p" commit -qm base
+  echo 2 > "$p/a.ts"; echo 1 > "$p/b c.ts"; echo 1 > "$p/deep/d.ts"
+  g -C "$p" add -A; g -C "$p" commit -qm change; echo "$p"
+}
+test_coverage_all_named_across_two_pages() {
+  local p t; p=$(cov_repo); t=$(new_tmp)
+  printf '`a.ts` and <code>b c.ts</code>\n' > "$t/p.md"; printf '`deep/**`\n' > "$t/p-code.md"
+  assert_eq "3 of 3 changed files named" "$(gt coverage --repo "$p" --base HEAD~1 --head HEAD "$t/p.md" "$t/p-code.md")" "page and sub-page are read together"
+}
+test_coverage_reports_missing_with_repo_prefix() {
+  local p t out rc=0; p=$(cov_repo); t=$(new_tmp); printf '`a.ts`\n' > "$t/p.md"
+  out=$(gt coverage --repo "$p" --base HEAD~1 --head HEAD "$t/p.md") || rc=$?
+  assert_eq 1 "$rc" "exit 1"
+  assert_contains "$out" "MISSING web/b c.ts" "a path with a space is reported whole"
+  assert_contains "$out" "MISSING web/deep/d.ts" "second missing file"
+  assert_contains "$out" "1 of 3 changed files named" "count"
+}
+test_coverage_reads_the_range_from_the_page() {
+  local p t b h; p=$(cov_repo); t=$(new_tmp)
+  b=$(g -C "$p" rev-parse --short=7 HEAD~1); h=$(g -C "$p" rev-parse --short=7 HEAD)
+  printf 'Checked against: `web@%s..%s` on 2026-11-26\n\n`web/a.ts` `web/b c.ts` `web/deep/d.ts`\n' "$b" "$h" > "$t/p.md"
+  assert_eq "3 of 3 changed files named" "$(gt coverage --repo "$p" "$t/p.md")" "REPO/path form and page range"
+}
+test_coverage_stale_and_usage() {
+  local p t; p=$(cov_repo); t=$(new_tmp)
+  printf '`a.ts` `b c.ts` `deep/**`\n\n| File | Does |\n| --- | --- |\n| `src/gone.ts` | x |\n' > "$t/p.md"
+  assert_contains "$(gt coverage --repo "$p" --base HEAD~1 --head HEAD "$t/p.md")" "STALE src/gone.ts" "a named file that does not exist"
+  printf 'no range here\n' > "$t/q.md"
+  assert_exit 2 "no range anywhere" -- "$TOOLS" coverage --repo "$p" "$t/q.md"
 }
 
 # ---- page template ----
