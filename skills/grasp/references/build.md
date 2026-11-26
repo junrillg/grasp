@@ -51,6 +51,8 @@ tell the user, and do not fold an unrelated repair into this issue.
 - Stage files by path. Never `git add -A`. The run record and the pages for this task go in the
   same pull request as the code, in a commit of their own when they are written after the first
   push (docs in a separate repository: committed there, see [review.md](review.md)).
+- Write the pages after the last code commit: `Checked against:` pins that commit. A code commit
+  made later moves the head, so update the line and run the checks again.
 - One Conventional Commit subject line unless the project says otherwise.
 - Show the pull request title and body, ask, then push and open it against the integration
   branch. The body opens with the issue in one or two sentences and its link, then the changes as

@@ -48,7 +48,11 @@ Words like "should work", "looks fine", "probably" mean the gate has not passed.
 confidence percentage with what would raise it; it goes to the user, never onto a tracker.
 
 Whatever went wrong on the way (a failed check, a wrong first approach, a surprise in the code)
-goes on the page: a blocker as a visible `> [!WARNING]` under Blocker, anything else as a row in
-the "Planned and built" table. That is where the team learns the most. The same problems go, one
+goes on the page: a blocker as a visible `> [!WARNING]` under the title, anything else in the
+"Open and not verified" fold. That is where the team learns the most.
+
+The acceptance rows become the page's Proof table: one row per acceptance point, with the command
+or check and its real result line. A row comes only from a run made in this session or from the
+pull request's checks; any other row reads `not run here` in the result cell. The same problems go, one
 sentence each, in the Problems line of the run record ([records.md](records.md)), and a failed
 gate makes the record's status `partial` or `failed`, never `done`.

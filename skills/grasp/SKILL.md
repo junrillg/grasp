@@ -118,9 +118,9 @@ BY DEFAULT
   4 Build     branch, test first, smallest change, the project's own checks; the page says
               "building" and each step is ticked as it finishes, so you can follow along
   5 Verify    fresh evidence only: checks, the test failing without the fix, the behaviour seen
-  6 After     write the "after" half: screenshot, how it works with a numbered code
-              walkthrough, decision, planned and built side by side, blockers; then one
-              explain-back question, which waits for your answer or "skip"
+  6 After     write the "after" half: owner block, how it works, a code sub-page, proof,
+              planned and built side by side, blockers; three commands check it; then
+              `Walk ready: /grasp walk KEY`
   7 Close     write the run record; patch the app map and the feature page if the issue
               changed how the app is put together; report
 
@@ -142,8 +142,7 @@ IT WILL ASK YOU
   - one question at a time about anything that would change what gets built
   - which approach to take (no code before you pick)
   - before a branch reset, a push, opening a pull request, any tracker write (exact text shown)
-  - a prediction question before the build (never blocking), and an explain-back question
-    after it: the page is marked built only once you answer or type "skip"
+  - a prediction question before the build (never blocking)
   - setup (and the first run in a repo): the tracker and one real issue to test it with,
     check commands, how to start the app, where the docs go (default docs/how-it-works/),
     whether you read them in Obsidian (on yes, vault settings are written),
@@ -242,7 +241,7 @@ the fix itself is a real choice.
 Write the "before" half of the issue page ([templates/issue-page.md](templates/issue-page.md))
 with one subagent (or inline for a small change, as the token budget in
 [references/notebook.md](references/notebook.md) decides): the plan as 3 to 6 steps, the pictures, and the concepts the change leans on
-(one visible line each, the longer explanation and checked links folded). The first issue page
+(one visible line each, the longer explanation and checked links folded). At the pick the page has its sections 1 to 4, with Steps and Predict ([Standard 2](references/notebook.md)). The first issue page
 in a notebook also creates `features/README.md` and adds the Features table line to the app map
 ("Scale with the app" in [references/overview.md](references/overview.md)). Then ask the user its
 prediction question. Do not wait for the answer to go
@@ -264,15 +263,16 @@ failed gate is reported plainly and nothing is drafted as passing.
 
 ### 6. After page
 
-Fill the "after" half of the same page ([templates/issue-page.md](templates/issue-page.md),
-rules in [references/notebook.md](references/notebook.md)): the change map in "Where it fits"
-(`grasp-tools change-map`, coloured new, changed, untouched), "What changed, part by part" with
-one folded toggle per part, the screenshot (UI changes only),
-how it works with a numbered code walkthrough, the decision, "Planned and built" (what was
-built instead of the plan, and why), blockers met, the concepts corrected if the build leaned on
-something else, and the explain-back question with its answer folded away (a one-block
-`<details>` in Markdown, a toggle in Notion). Run `grasp-tools lint-page` on the page. Add or update the row in the Features table (the docs router lists that table, never single issue pages). Leave the status at `building`, ask the user the explain-back question and wait: the page becomes `built` (or `verified`) only once they answer or type "skip", and either goes under the question on the page ("Explain-back" in [references/notebook.md](references/notebook.md)). A vague or wrong answer means the code is not understood yet: point them to the
-section that answers it. With no person in the run, never wait: write "not asked" and set the status.
+Fill the "after" half of the same page and its code sub-page
+([templates/issue-page.md](templates/issue-page.md),
+[templates/issue-code-page.md](templates/issue-code-page.md)), as "Standard 2" in
+[references/notebook.md](references/notebook.md) says. The writer reads the repository, not only
+the diff. A small change or a bug gets a short page. Before calling it written, run
+`grasp-tools lint-page` on both files, `snippet-check` on the sub-page and `coverage` on both:
+each prints nothing or the count line only. Add or update the row in the Features table (the docs
+router lists that table, never single issue pages). Set the status to `built`, or `verified` when
+the gate passed. End the step with one line, `Walk ready: /grasp walk KEY`. Never start a walk and
+never wait for one.
 
 ### 7. Close out
 
@@ -316,7 +316,8 @@ What a connected skill calls when it has finished its own work. Write or patch t
 from the current state and do nothing else: no code, no commits, no pushes, no tracker writes.
 
 1. Find the issue: from the argument, or from the pull request (branch name or title holds the
-   key). Read it as step 1 does, and the page if one exists.
+   key). Read it as step 1 does, and the page if one exists. Read what "What the writer reads" in
+   [references/notebook.md](references/notebook.md) lists, as on every path.
 2. Decide the half from state, never from `--step` alone. No diff against the integration branch
    and no pull request: the before half (step 3, without the approaches discussion: use the plan
    the calling skill made, or the issue). Otherwise the after half (step 6), writing the before
@@ -327,10 +328,9 @@ from the current state and do nothing else: no code, no commits, no pushes, no t
    [references/review.md](references/review.md) "The issue page" says.
 4. The calling skill did the build, so nobody ticked the steps live: in the after half, tick each
    step the diff shows as done and explain every other one in "Planned and built".
-5. Run `grasp-tools lint-page`, then report the page path in one line. `page` never waits for
-   the prediction or the explain-back: it writes "Your answer: not asked (no person in the run)"
-   unless an answer is already there, sets the status, and prints the question in its report
-   when a person is in the conversation.
+5. Run the three checks from step 6, then report the page path in one line. `page` never waits
+   for the prediction and never starts a walk: it sets the status and, on an after half, ends
+   with `Walk ready: /grasp walk KEY`.
 
 ## `record` subcommand
 

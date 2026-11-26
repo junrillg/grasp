@@ -49,6 +49,7 @@ docs/
       README.md                  the Features table
       feature-name.md            a page for each larger core feature
       KEY-short-name.md          one page per issue (a text issue has no key: short-name.md)
+      KEY-short-name-code.md     its code sub-page (not on a short page)
       assets/                    images for the pages, KEY-what.png
     runs/
       README.md                  the table of run records, built by grasp-tools record-index
@@ -89,34 +90,34 @@ share only plain Markdown, so the pages use only that:
   `CLAUDE.md`, `.grasp.md` or a `SKILL.md`: those are instructions, not pages. Fix every line it prints: a toggle
   that won't render, a link to a file that isn't there (`dead-link`), a diagram type outside the
   tested ones (`mermaid-type`), an unclosed quote in a diagram (`mermaid-quote`), prose wrapped
-  by hand (`hard-wrap`), a page git would silently skip (`git-ignored`), more visible words than the page's kind allows (`too-long`: fold or cut), a diagram with more than 20 boxes (`too-many-boxes`: split it), an issue page, app map, architecture or feature page without its Concepts section (`no-concepts`), an architecture page with no lesson (`no-lessons`), or a built or verified issue page whose explain-back has no answer (`no-answer`: ask and write their words, `skipped`, or `not asked (no person in the run)`). It prints nothing when the page is clean.
+  by hand (`hard-wrap`), a page git would silently skip (`git-ignored`), more visible words than the page's kind allows (`too-long`: fold or cut), a diagram with more than 20 boxes (`too-many-boxes`: split it), an issue page, app map, architecture or feature page without its Concepts section (`no-concepts`; on an issue page that is `## Ideas this leans on`), an architecture page with no lesson (`no-lessons`). A Standard 2 issue page is also checked for a missing owner block (`no-owner-block`), an Asked line over 30 words (`asked-too-long`), a video link with no check date (`link-undated`), no design idea (`no-design-idea`), an idea with no video and no "No checked video yet" (`no-video`) and no code sub-page (`no-code-page`); a code sub-page for a missing file list (`no-file-list`) or walkthrough (`no-walkthrough`). It prints nothing when the page is clean.
 
 **Notion** (`--notebook notion`, needs a Notion tool): the same layout as pages. Create the
 parent and children on first run and save their IDs in `.grasp.md`. Edit with targeted updates
 (`update_content` or equivalent); never replace a whole page. Folded answers use Notion's
 `<toggle>`. Mermaid goes in a ```mermaid code block, which Notion renders. Use the same layout
-and section names as the Markdown page; Notion toggles may hold Mermaid and code. Upload
-screenshots with the Notion file tool. `lint-page` is for Markdown only. Run records stay in the
+and section names as the Markdown page, with the code sub-page as a child page; Notion toggles
+may hold Mermaid and code, and `walk` works. Upload screenshots with the Notion file tool.
+`lint-page`, `coverage` and `snippet-check` run on Markdown files only. Run records stay in the
 repository as Markdown even with a Notion notebook: the instruction block, the index and
 `record-check` all work on files.
 
-**Off**: no learning page; still ask the prediction and explain-back questions in chat. The run
+**Off**: no learning page; still ask the prediction question in chat. The run
 record is still written: it is the logbook, not a lesson.
 
 `review` and `resolve` also write to the issue page; see [review.md](review.md).
 
-One issue, one page. A later issue on the same feature patches that page and adds its link;
-never a second page. Bugs get no page of their own: add one row to the "Changes" table on the
-page of the feature they touched, or skip when there is none. Whatever a task is and
-however small, it still gets its run record ([records.md](records.md)): that is where a bug fix
-or a three-line change is written down.
+One issue, one page. A later issue on the same feature gets its own page and patches the feature
+page, never the earlier issue's page ("A snapshot and a living page"). A bug or a small change
+gets a short page ("Short pages"). Whatever a task is and however small, it also gets its run
+record ([records.md](records.md)).
 
 ## Page shapes
 
-- Issue page: [templates/issue-page.md](../templates/issue-page.md). One layout for both halves:
-  the before half fills the sections marked (before), the after half patches them and adds the
-  rest. About 150 words of visible text per half; the rest is folded. `lint-page` reports
-  `too-long` past 400 visible words on the whole page.
+- Issue page: [templates/issue-page.md](../templates/issue-page.md), and its code sub-page
+  [templates/issue-code-page.md](../templates/issue-code-page.md). One layout for both halves:
+  the before half writes the first sections, the after half patches them and fills the folds.
+  Target 300 visible words, `lint-page` reports `too-long` past 400. The rules are in "Standard 2".
 - App map: [templates/app-map.md](../templates/app-map.md). Under about 1,000 words.
 - Architecture page: [templates/architecture.md](../templates/architecture.md). How the app is
   designed and the system design ideas to learn from it. About 600 words.
@@ -133,15 +134,15 @@ the story, it has failed.
 Rules for every page:
 
 - **Picture first, caption above it, detail folded under it.** Each section is one caption line,
-  one picture (diagram or screenshot) and its toggles. Section names, in order: Steps, Where it
-  fits, Concepts, Before and after, How it works, Decision, Planned and built, Blocker, Predict,
-  Explain it back. Drop a section that has nothing true to say, except Concepts.
+  one picture (diagram or screenshot) and its toggles. Section names and order are the page's
+  template. Drop a section that has nothing true to say, except Concepts (on an issue page,
+  the owner block and the ideas).
 - **Long text is always folded.** Anything that needs more than two lines to explain (a concept,
   a reason, a history) gets one visible line that states the point and a toggle that holds the
   rest. A page never makes the reader scroll past a paragraph to reach the next picture.
 - **Visible, never folded:** the status line, "In one line", the steps and their ticks, one line
-  per concept, every caption and picture, any blocker or risk (`> [!WARNING]`), the explain-back
-  question.
+  per concept, every caption and picture, any blocker or risk (`> [!WARNING]`), the owner block of
+  an issue page.
 - Mermaid by default: it costs only its text and can be patched. The issue's box is highlighted
   in the "Where it fits" diagram (`style X fill:#fde68a`) and reuses the app map's node names.
 - Plain words. Every claim about what was built links to the pull request or a file; every
@@ -149,9 +150,89 @@ Rules for every page:
 - Mark built, not built and blocked honestly.
 - No secrets, personal data or text copied from client documents.
 
+## Standard 2
+
+Every path that writes an issue page uses the same rules and templates: `/grasp ISSUE`, `page`,
+`explain` and `repair`. The page is [templates/issue-page.md](../templates/issue-page.md) and,
+unless it is a short page, [templates/issue-code-page.md](../templates/issue-code-page.md). Follow
+them; this section holds only what a template cannot show.
+
+- Two levels only: visible, then a fold or the code sub-page. No fold inside a fold.
+- Quoted words count toward the visible limit.
+- **Asked** is the card's ask in its own words, 30 words at most; a close paraphrase where the
+  project's rules forbid quoting. A line with nothing true to say reads "none". Before and after
+  screenshots sit in the owner block when a user can see the change.
+- **Ideas:** the first is always the design idea, the architecture pattern or system design
+  concept the change rests on, named so the owner can say it to someone else. Each idea is one
+  visible line and a fold of 3 to 5 lines tied to this code, one video to watch and one page to
+  read. Keep a link only if `grasp-tools check-link` prints `ok`; never a link that was not checked.
+- **Code reaches a page only through `grasp-tools snippet FILE START END`.** Paste its output on the
+  code sub-page as it is. Never type a code block or edit one.
+- **Proof rows** come only from a run made in this session or from the pull request's checks.
+  Anything else reads `not run here` in the result cell.
+- A blocker is a visible alert at the top and is never folded. Diagram types stay as lint allows.
+- The before half is unchanged in purpose. At the pick, the attended flow writes sections 1 to 4 as
+  planned, with Steps and Predict, and `--plan` stops there. Steps stay visible and are ticked
+  while the status is `building`; once built they move into the "Planned and built" fold. The
+  illustration rule ("Illustrations") is unchanged.
+- Predict stays in the attended flow. There is no explain-back on the page or in the workflow: the
+  walk replaces it. A page with no walk is not a lint failure, and the walk fold changes only when
+  a walk runs. After the after half, the report ends with `Walk ready: /grasp walk KEY`; the run
+  never starts a walk and never waits for one.
+
+Before a page is called written, run these, and all three must print nothing or the count line only:
+
+```
+grasp-tools lint-page PAGE PAGE-code.md
+grasp-tools snippet-check --repo DIR PAGE-code.md
+grasp-tools coverage --repo DIR PAGE PAGE-code.md
+```
+
+`--repo DIR` is repeated for each repository the change touches. `coverage` without `--base`
+reads each range from the page's `Checked against:` line. A short page has no code file: pass the
+page alone.
+
+## What the writer reads
+
+The writer reads the repository, not only the diff:
+
+- the card and its comments, and the working note if one exists
+- the pull request: its body, its checks and its head or merge commit
+- the diff of each repository touched, and the files around the changed lines
+- the feature page, if there is one, and the app map
+
+Do not guess a fact that one of these answers. Read each decisive file once, at the commit the page
+is pinned to.
+
+## A snapshot and a living page
+
+- An issue page is a snapshot of one change, pinned to a commit per repository in its `Checked
+  against:` line, as `REPO@BASE..HEAD` with `REPO` the repository folder's name. `BASE` is where
+  the branch left the integration branch. `HEAD` is the merge commit once the pull request is
+  merged, and the pull request's head before that. One range for each repository the change touches.
+- Its code blocks never move to a later commit.
+- A feature page describes how the feature works today, so it is patched when a later issue changes
+  it.
+- A later issue that edits the same files does not make an issue page stale. `sync` adds a generated
+  `Changed since by:` line under `Checked against:`; no writer and no person edits it.
+- An issue page is stale only when its own pull request moved after the page was written.
+
+## Short pages
+
+A bug, or a change under about 20 changed lines that adds no behaviour, gets a short page of its
+own.
+
+- The status line says `Standard: 2 short`.
+- It holds "In two sentences", "For the owner", "How it works", the Proof fold and an
+  `## Every changed file` list on the page itself. It has no ideas section, no "Where it fits" and no
+  code sub-page.
+- The three checks above still run, on the page alone.
+- The Features table still gets its row, and the run record is never skipped for a task that
+  changed files.
+
 ## Change map and three zoom levels
 
-Any page about a change (an issue page's after half, an explain-build page) opens with the
+Any page about a change (an issue page's after half, an `explain` page) opens with the
 **change map**: the whole code base as boxes coloured by what the change did. Green is new,
 amber is changed, grey is untouched, with file counts. `grasp-tools change-map --repo DIR
 --base REF` prints it from git; rename the boxes to the app map's names, keep the folder in the
@@ -186,8 +267,7 @@ Tested in Obsidian (Reading view and Live Preview) and on GitHub (the notes are
 - **The title states a conclusion** ("Why a queue beats a cron job here"), never "Details" or
   "More". The reader decides from the title alone whether to open it.
 - **One level only:** never a toggle inside a toggle.
-- **Never fold a blocker or risk.** The one exception to "conclusion titles" is the explain-back
-  answer, titled `Model answer` so it doesn't give the answer away.
+- **Never fold a blocker or risk.**
 
 ## Diagram type follows the change
 
@@ -335,38 +415,13 @@ into `CLAUDE.md` or `AGENTS.md`.
   line decides wherever a step says "with one subagent". Whoever writes the page also searches
   for and checks its learning links; the illustration is made by the main thread after the page
   is written and linted.
-- **Narrow input**: the issue note, the picked approach, `git diff --stat` and the diff of
-  changed source files (not lock files, not generated files), the pull request body, the verify
-  results, and the app map's diagram source. Never the repository, never a fresh research pass.
+- **Narrow input**: what "What the writer reads" lists, with the diff of changed source files
+  only (not lock files, not generated files), the verify results and the app map's diagram source.
+  No fresh research pass.
 - **Patch, never regenerate**: targeted edits only. Incremental updates cost a small fraction of
   a rebuild and keep more detail.
-- **Skip** the after half for a diff under about 20 changed lines that adds no behaviour; add one
-  line to the Features table instead. The run record is never skipped for a task that changed
-  files.
+- **Small changes** get a short page ("Short pages"), never no page. The run record is never
+  skipped for a task that changed files.
 - **Load references per step**: read a reference file only when its step starts.
-- **Check once**: after writing, run `lint-page`, then read the page once (fetch it for Notion) and
+- **Check once**: after writing, run the three checks in "Standard 2", then read the page once (fetch it for Notion) and
   confirm the title, status line, diagrams, toggles, any screenshot and the Features row are there.
-
-## Explain-back
-
-After the after half is written, ask the first explain-back question, before the user opens the
-model answer, and wait for the reply. Explaining code back is the one step shown to change what
-people can do later without the AI, so it is not skipped silently:
-
-- The page stays `Status: building` until the user answers or types "skip". Then write
-  `Your answer:` with their words (or `skipped`), and set the status to `built`, or `verified`
-  when the gate passed. `lint-page` reports `no-answer` for a built or verified issue page whose
-  "Your answer:" is empty.
-- A vague or wrong answer: point to the section that answers it and offer one more try. Never
-  quiz twice more than that, never grade.
-- No person in the run (a headless run), and always for `page` (a connected skill is still
-  working): never wait. Write `Your answer: not asked (no person in the run)` and set the
-  status. `page` still prints the question in its report when a person is there; a reply in the
-  same conversation is written under the question.
-- With `--notebook off` there is no page: ask in the conversation, wait for the answer or "skip"
-  the same way, and write nothing.
-- While waiting, the rest of step 7 that needs no answer (the run record, the report) is done; a
-  session that ends first leaves the page at `building` with the question open, which is true.
-
-Also log one conceptual question the user asked during the run, if any, under "Questions asked":
-those are the moments learning happened.

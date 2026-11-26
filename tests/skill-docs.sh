@@ -154,4 +154,17 @@ test_run_record_fields_agree_everywhere() {
   for f in done partial blocked failed; do assert_contains "$rec" "\`$f\`" "records.md defines status $f"; done
 }
 
+test_writer_rules_are_stated_once() {
+  local sd="$ROOT/skills/grasp" nb="$ROOT/skills/grasp/references/notebook.md" h s
+  for h in "## Standard 2" "## What the writer reads" "## A snapshot and a living page" "## Short pages"; do
+    grep -qxF "$h" "$nb" || _fail "notebook.md lacks: $h"
+  done
+  for s in "grasp-tools snippet" "snippet-check" "grasp-tools coverage" "not run here" "reads the repository"; do
+    grep -qF "$s" "$nb" || _fail "notebook.md does not mention: $s"
+  done
+  ! grep -rqF "not asked (no person in the run)" "$sd" || _fail "the explain-back fallback is still written somewhere"
+  ! grep -qF "## Explain it back" "$sd/templates/issue-page.md" || _fail "the template still has Explain it back"
+  grep -qF "Walk ready: /grasp walk" "$SKILL" || _fail "step 6 does not end with the walk line"
+}
+
 run_tests "${1:-.}"

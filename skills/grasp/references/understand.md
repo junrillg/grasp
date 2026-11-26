@@ -45,10 +45,10 @@ full before page. Spec-first tools show long specs for small tasks are not read.
 
 ## The before half
 
-Written by one subagent (Sonnet) from: the issue note, the restatement, the picked approach and
-rejected ones, the list of files expected to change, and the app map's diagram source. Never the
-whole repository. Shape is in [templates/issue-page.md](../templates/issue-page.md): the sections
-marked (before), about 150 words of visible text with the rest folded under its picture. Run
+Written by one subagent (Sonnet) from the restatement, the picked approach and rejected ones, and
+what "What the writer reads" in [notebook.md](notebook.md) lists. Shape is in
+[templates/issue-page.md](../templates/issue-page.md): at the pick, sections 1 to 4 as planned,
+with Steps and Predict, a target of 300 visible words with the rest folded. Run
 `grasp-tools lint-page` on it, as [notebook.md](notebook.md) says.
 
 Two sections of the before half carry the understanding:
@@ -56,9 +56,9 @@ Two sections of the before half carry the understanding:
 - **Steps**: the picked approach as 3 to 6 unticked boxes (`- [ ]`), each something a person could
   check. The build ticks them one by one ([build.md](build.md)), so the page shows progress while
   the agent works.
-- **Concepts**: up to 3 ideas the change leans on, each one visible line and one toggle that holds
-  the longer explanation and the checked links ("Concepts" in [notebook.md](notebook.md)). Name
-  them before the build: a reader who does not know the idea cannot judge the plan.
+- **Ideas**: up to 3 ideas the change leans on, the first the design idea, each one visible line
+  and one toggle that holds the longer explanation and the checked links ("Standard 2" and
+  "Concepts" in [notebook.md](notebook.md)). Name them before the build: a reader who does not know the idea cannot judge the plan.
 
 The before half is also the spec: the build works from it, and the "after" half is compared
 against it in "Planned and built". If the plan changes during the build, change the step's text in
