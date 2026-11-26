@@ -29,6 +29,8 @@ questions). Never ask what the code or the issue already answers.
 
 Ask one question per message. Ask only when the answer would change what gets built; otherwise
 state your call as a proposal they can correct. Plain words, no process jargon.
+A conceptual question the person asks during this step is logged on the page under "Questions
+asked" in the "Why it was built this way" fold ("Standard 2" in [notebook.md](notebook.md)).
 
 ## Approaches: a message of its own
 

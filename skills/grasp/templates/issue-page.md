@@ -51,7 +51,7 @@ Checked against: `{repo}@{base}..{head}`, `{repo}@{base}..{head}` on {YYYY-MM-DD
 
 ## Where it fits
 
-{One line: where this issue sits in the app, and what it touches.}
+{One line: where this issue sits in the app, and what it touches. Under it, the change map from `grasp-tools change-map`, with this issue's parts highlighted.}
 
 ## Ideas this leans on
 
@@ -97,6 +97,7 @@ flowchart LR
 
 <details><summary>Why it was built this way: {the reason as a conclusion}</summary>
 <p>{the reason, and the approach picked over the one rejected, in the asker's words where possible}</p>
+<p><b>Questions asked:</b> {a conceptual question the person asked during the run. Omit this line when there was none.}</p>
 </details>
 <details><summary>Planned and built: {n} of {m} steps as planned</summary>
 <ol><li>{each planned step, and what was built instead when it changed}</li></ol>

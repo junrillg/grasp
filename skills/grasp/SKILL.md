@@ -234,7 +234,8 @@ and the app map first; restate the ask in your own words (what, for whom, why) w
 found; ask why when the issue does not say; then, in a message of its own, two or three
 approaches with trade-offs and your recommendation. Wait for the pick. A bug gets a root cause
 with file and line and a reproduction (a failing test is best) instead of approaches, unless
-the fix itself is a real choice.
+the fix itself is a real choice. A conceptual question the user asks here is logged on the page
+("Questions asked" in [references/notebook.md](references/notebook.md)).
 
 ### 3. Before page
 

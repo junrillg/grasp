@@ -140,7 +140,7 @@ Rules for every page:
 - **Long text is always folded.** Anything that needs more than two lines to explain (a concept,
   a reason, a history) gets one visible line that states the point and a toggle that holds the
   rest. A page never makes the reader scroll past a paragraph to reach the next picture.
-- **Visible, never folded:** the status line, "In one line", the steps and their ticks, one line
+- **Visible, never folded:** the status line, "In one line" (an issue page: "In two sentences"), the steps and their ticks, one line
   per concept, every caption and picture, any blocker or risk (`> [!WARNING]`), the owner block of
   an issue page.
 - Mermaid by default: it costs only its text and can be patched. The issue's box is highlighted
@@ -171,6 +171,9 @@ them; this section holds only what a template cannot show.
 - **Proof rows** come only from a run made in this session or from the pull request's checks.
   Anything else reads `not run here` in the result cell.
 - A blocker is a visible alert at the top and is never folded. Diagram types stay as lint allows.
+- **Questions asked:** a conceptual question the person asked during the understand step is logged
+  as the last paragraph inside the "Why it was built this way" fold, as HTML:
+  `<p><b>Questions asked:</b> ...</p>`. Leave the line out when they asked none.
 - The before half is unchanged in purpose. At the pick, the attended flow writes sections 1 to 4 as
   planned, with Steps and Predict, and `--plan` stops there. Steps stay visible and are ticked
   while the status is `building`; once built they move into the "Planned and built" fold. The
@@ -230,23 +233,26 @@ own.
 - The Features table still gets its row, and the run record is never skipped for a task that
   changed files.
 
-## Change map and three zoom levels
+## Change map and depth
 
-Any page about a change (an issue page's after half, an `explain` page) opens with the
-**change map**: the whole code base as boxes coloured by what the change did. Green is new,
-amber is changed, grey is untouched, with file counts. `grasp-tools change-map --repo DIR
---base REF` prints it from git; rename the boxes to the app map's names, keep the folder in the
-label, and add the arrows by hand from the code. Keep its legend line under it.
+Any page about a change (an issue page's after half, an `explain` page) shows the **change map**:
+the whole code base as boxes coloured by what the change did. Green is new, amber is changed, grey
+is untouched, with file counts. On an issue page it is the picture under `## Where it fits`, with
+this issue's parts highlighted. `grasp-tools change-map --repo DIR --base REF` prints it from git
+(boxes are folders, cut further while there are more than 18); rename the boxes to the app map's
+names, keep the folder in the label, and add the arrows by hand from the code. Keep its legend line
+under it.
 
-Then the page reads at three depths, and each depth works alone:
+An issue page has two levels, and each works alone:
 
-| Zoom | Visible |
-| ---- | ------- |
-| 30 seconds | Status, "In one line", the change map, the picture |
-| 5 minutes | One row per changed part: what it does now, why, file count; the main flow |
-| All the detail | A toggle under each part: its files as `<li><code>path</code>: what</li>`, a short excerpt, what went wrong |
+| Level | Holds |
+| ----- | ----- |
+| Visible | `## In two sentences`, the owner block, the change map, the ideas, the diagram and its steps. Target 300 words, lint limit 400 |
+| One step down | Either a fold on the page, or the code sub-page. Never a fold inside a fold |
 
-Fold detail, never cut it. A reader who opens every toggle has the whole change.
+Short facts fold on the page: why it was built this way, planned and built, proof, what is open.
+The file list and the code walkthrough go to the code sub-page. Fold detail, never cut it. A
+reader who opens every fold and the sub-page has the whole change.
 
 ## Toggles
 
@@ -372,14 +378,14 @@ migration of untouched pages.
 means ask once, then save it).
 
 - **yes**: the app map, the architecture page, the workspace map and each issue page open with one
-  generated picture that shows the idea as an everyday scene, directly under "What it is for" or "In one line".
+  generated picture that shows the idea as an everyday scene, directly under "What it is for", "In one line" or, on an issue page, "In two sentences".
   Feature pages and run records never get one.
 - **no**: diagrams only.
 - **An issue page's after half that changed more than about three parts** also gets the change map
   as a picture (`KEY-change-map.png`): a cutaway building, one room per part named as on the
   change map, walls in its colours (pale green new, amber changed, grey untouched), a
   three-swatch legend, outside systems in the basement or outside the walls. It sits directly
-  above the change map: the picture is read in seconds, the diagram gives the counts.
+  above the change map, under `## Where it fits`: the picture is read in seconds, the diagram gives the counts.
 - Generate it with whatever image tool is available. With the Codex CLI, the form that worked in
   grasp's own trial, run from the `assets/` folder: `codex exec --skip-git-repo-check -s
   workspace-write -C "$PWD" --enable image_generation "PROMPT" < /dev/null`, where the prompt

@@ -78,15 +78,15 @@ Both subcommands leave the issue page (see [notebook.md](notebook.md)) matching 
   author's predictions are not known. Add the Features row (the docs router lists that table,
   never single pages).
 - **Page exists:** update only the sections the pull request (`review`) or the fixes
-  (`resolve`) change: "In one line", Before and after, How it works (diagram, walkthrough, files
-  touched), Decision, and the "Check it yourself" toggle. Add a changed decision to the
-  decisions log.
+  (`resolve`) change: "In two sentences", the owner block, How it works (diagram and steps), the
+  code sub-page (walkthrough, files touched), the "Why it was built this way" and "Proof it works"
+  folds. Add a changed decision to the decisions log.
 - **Findings:** `review` puts each verified finding that is still open in the Blocker section as
   a visible `> [!WARNING]`, one line each, never folded. `resolve` moves each finding it fixed
   into the "Planned and built" table as a row (what the reviewer caught and how it was fixed) and removes
   its warning; a warning goes only when this run fixed it.
-- **Bug:** one row in the "Changes" table of the feature page it touches, or nothing on
-  a page. Its run record ([records.md](records.md)) is where it is written down either way.
+- **Bug:** a short page ("Short pages" in [notebook.md](notebook.md)), and its run record
+  ([records.md](records.md)).
 - **Old page layout:** a page written before the visual layout is converted while it is being
   patched anyway: rewrite its toggles into the one-block HTML form (no blank lines, HTML only,
   content unchanged) as [notebook.md](notebook.md) "Toggles" says. Never convert untouched pages.
