@@ -185,7 +185,7 @@ IT WILL ASK YOU
     the docs go, when there is no .grasp.md and no docs/ folder
   - before a branch reset, a push, opening a pull request, any tracker write (exact text shown)
   - a prediction question before the build (never blocking)
-  - walk: whether to repair a stale page first, whether to walk a page again, then one
+  - walk: whether to bring a stale page up to date first, whether to walk a page again, then one
     question at a time; "skip" moves on and "stop" saves what you answered
   - setup (and the first run in a repo): the tracker and one real issue to test it with,
     check commands, how to start the app, where the docs go (default docs/how-it-works/),

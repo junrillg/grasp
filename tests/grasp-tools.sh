@@ -1570,4 +1570,27 @@ test_keep_walk_with_nothing_to_keep() {
   assert_eq "no walk to keep" "$(gt keep-walk "$t/old.md" "$t/new.md")" "an old page with no walk is fine"
 }
 
+test_keep_walk_refuses_when_new_has_no_walk_field() {
+  local t before; t=$(new_tmp)
+  walk_page "$t/old.md" "walked 2026-11-27, 1 of 1 right" "<details><summary>Your walk</summary><p>You: a</p></details>"
+  printf '# SHOP-12: x\n\nStatus: built · Standard: 2\n\n<!-- grasp:walk:start -->\n<details>e</details>\n<!-- grasp:walk:end -->\n' > "$t/new.md"; before=$(cat "$t/new.md")
+  assert_exit 1 "refuses" -- "$TOOLS" keep-walk "$t/old.md" "$t/new.md"
+  assert_eq "$before" "$(cat "$t/new.md")" "the new page is untouched"
+}
+test_keep_walk_carries_hostile_answer_bytes() {
+  local t line; t=$(new_tmp)
+  line='<p><b>You:</b> &amp; \ | / \1 \n s/x/y/g & $(touch "'$t'/PWNED") %s %d `a` `b`</p>'
+  walk_page "$t/old.md" "walked 2026-11-27, 1 of 1 right" "$line"
+  walk_page "$t/new.md" "not walked" "<details>empty</details>"
+  assert_eq "kept" "$(gt keep-walk "$t/old.md" "$t/new.md")" "says kept"
+  grep -qxF -- "$line" "$t/new.md" || _fail "the answer line arrives byte for byte"
+  [[ ! -e "$t/PWNED" ]] || _fail "nothing in the answer was run"
+}
+test_keep_walk_refuses_an_unclosed_block_in_old() {
+  local t before; t=$(new_tmp)
+  printf '# SHOP-12: x\n\nStatus: built · Walk: walked 2026-11-27, 1 of 1 right\n\n<!-- grasp:walk:start -->\nmy words\n' > "$t/old.md"
+  walk_page "$t/new.md" "not walked" "<details>empty</details>"; before=$(cat "$t/new.md")
+  assert_exit 1 "refuses" -- "$TOOLS" keep-walk "$t/old.md" "$t/new.md"
+  assert_eq "$before" "$(cat "$t/new.md")" "the new page is untouched"
+}
 run_tests "${1:-.}"

@@ -181,6 +181,12 @@ them; this section holds only what a template cannot show.
   a walk runs. After the after half, the report ends with `Walk ready: /grasp walk KEY`; the run
   never starts a walk and never waits for one.
 
+- **A rewritten page keeps its walk.** When a page that already exists is rewritten (by `page`,
+  `explain`, `review`, `resolve`, `map` for a feature page, or a later repair), write the new text
+  to a new file, run `grasp-tools keep-walk OLD NEW`, and replace the old file only when it exits
+  0. On exit 1 stop, leave the old page as it is, and report it. The walk fold holds the person's
+  own answers; a rewrite never drops them.
+
 Before a page is called written, run these, and all three must print nothing or the count line only:
 
 ```

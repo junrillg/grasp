@@ -121,8 +121,8 @@ Commands:
                            the "Walk: ..." field of OLD's status line into NEW's. Prints "kept",
                            or "no walk to keep" when OLD has no walk block. Exits 1 and leaves
                            NEW as it was when OLD has a walk and NEW has no complete pair of
-                           markers (or OLD's block has no end marker), 2 on bad use or a
-                           missing file
+                           markers or no "Walk:" field to carry the state into (or OLD's
+                           block has no end marker), 2 on bad use or a missing file
   version                  print the grasp version
 
 Options:
@@ -1329,7 +1329,7 @@ walk_span() {
 # the block: its lines are copied as they are, so no word of the person's can change.
 cmd_keep_walk() {
   [[ $# -eq 2 ]] || die 2 "usage: grasp-tools keep-walk OLD NEW"
-  local old=$1 new=$2 os ns blk tmp field
+  local old=$1 new=$2 os ns blk tmp field rc=0
   [[ -f "$old" ]] || die 2 "no such file: $old"
   [[ -f "$new" ]] || die 2 "no such file: $new"
   os=$(walk_span "$old")
@@ -1356,9 +1356,14 @@ cmd_keep_walk() {
       j = index(rest, " · "); print pre field (j ? substr(rest, j) : (rest ~ /\r$/ ? "\r" : "")); done = 1; next
     }
     { print }
-    END { if (field != "" && !done) print "grasp-tools: " FILENAME " has no Walk: field in its first lines; the walk block was carried over, the field was not" > "/dev/stderr" }
-  ' "$new" > "$tmp"
+    END { if (field != "" && !done) exit 3 }
+  ' "$new" > "$tmp" || rc=$?
   rm -f "$blk"
+  if [[ $rc -ne 0 ]]; then
+    rm -f "$tmp"
+    [[ $rc -eq 3 ]] && die 1 "$new has no Walk: field in its first lines to carry the walk state into; the walk in $old was not carried over and $new was left as it was"
+    die 1 "cannot rewrite $new; it was left as it was"
+  fi
   write_if_changed "$tmp" "$new"
   printf 'kept\n'
 }

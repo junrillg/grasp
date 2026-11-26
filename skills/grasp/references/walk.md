@@ -12,8 +12,9 @@ Rules that hold for the whole walk:
 - **Never block.** A walk gates nothing: not a merge, not a card, not the next run. The person can
   `skip` any question and stop at any point.
 - **Never rewrite the person's words.** The only change is HTML escaping (`&` `<` `>`, and a line
-  break as `<br>`). No fixing, shortening or translating. An answer that holds a token, a key or
-  personal data is the one exception: leave that part out, write `[removed]`, and say so.
+  break as `<br>`). No fixing, shortening or translating. There is one other exception: no secret,
+  token or password ever goes on a page. An answer that holds one has that part left out and
+  `[removed]` written in its place, and the person is told what was removed.
 - **One question at a time.** Never show the next question, or any model answer, before the
   person has answered.
 - **Only real lines.** Code reaches the conversation only through `grasp-tools snippet`. Never type
@@ -116,13 +117,15 @@ Do all of this after the last answer, in one pass, with the person's exact words
    ```
 
    Kinds are written `Predict`, `Trace`, `What breaks`, `Why this`. A skipped question has
-   `<p><b>Skipped.</b></p>` in place of the You and Right lines. `N of M right` counts answered
-   questions only. A walk stopped early reads `Your walk: 2026-11-27, stopped after 3 of 6, 2 right,
+   `<p><b>Skipped.</b></p>` in place of the You and Right lines. `N of M right` is counted as in
+   step 2. A walk stopped early reads `Your walk: 2026-11-27, stopped after 3 of 6, 2 right,
    1 gap`.
 
 2. **The status line.** Set `Walk:` to `walked YYYY-MM-DD, N of M right`, or
-   `partly walked N of M` when the walk stopped early (N answered, M planned). A feature walk sets
-   it on the feature page only; the pages of its issues are not touched.
+   `partly walked N of M` when the walk stopped early. In `walked`, M is the questions asked and N
+   the ones answered right, so a skipped question counts in M and not in N. In `partly walked`, N is
+   the questions asked so far (answered or skipped) and M the questions planned. A feature walk
+   sets it on the feature page only; the pages of its issues are not touched.
 3. **The reader profile.** For each gap, add one row to the gap table under `## Reader` in
    `.grasp.md`: the idea as a person could search for it, the page's key (`SHOP-12`), the date.
    Skip a row already there for the same idea and key. No `.grasp.md`: skip and say so. No
@@ -144,11 +147,10 @@ Leave the files uncommitted unless the project's rules say a run commits its pag
 
 ## A rewritten page keeps its walk
 
-Any run that rewrites a page (`page`, `explain`, `repair`) first copies the old file aside, then
-writes the new one, then runs `grasp-tools keep-walk OLD NEW`. It copies the walk fold and the
-`Walk:` field of the old page into the new one and prints `kept`, or `no walk to keep`. Exit 1
-means the new page has no walk markers; add them from the template and run it again. Never
-finish a rewrite that lost a walk.
+Any run that rewrites a page keeps the walk with `grasp-tools keep-walk OLD NEW`. The rule, and
+what to do on exit 1, is in [notebook.md](notebook.md) "Standard 2". The command copies the walk
+fold and the `Walk:` field of the old page into the new one and prints `kept`, or `no walk to
+keep`.
 
 ## Report
 
