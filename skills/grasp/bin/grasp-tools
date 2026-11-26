@@ -201,6 +201,7 @@ block_text() {
     "When this skill has finished its own work, run grasp's \`page\` subcommand for the same issue or" "$e" \
     "pull request with \`--step $step\` (\`/grasp page <issue or PR> --step $step\`, or \`/grasp:grasp page ...\`" "$e" \
     "when grasp is installed as a plugin), so the issue's learning page shows what was done." "$e" \
+    "The issue's learning page is written by grasp alone: do not write or patch it by this skill's own rules." "$e" \
     "Skip this if grasp is not installed." "$e" \
     "<!-- grasp:end -->" "$e"
 }

@@ -179,4 +179,8 @@ test_reader_and_features_settings() {
   grep -qF "## Reader" "$ROOT/skills/grasp/references/setup.md" || _fail "setup.md does not ask for the reader profile"
 }
 
+test_setup_looks_for_a_second_writer() {
+  grep -qF "page-writing rules of its own" "$ROOT/skills/grasp/references/setup.md" || _fail "setup does not look for a second writer"
+}
+
 run_tests "${1:-.}"

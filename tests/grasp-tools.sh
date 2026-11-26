@@ -46,8 +46,17 @@ expected_block() {
     "When this skill has finished its own work, run grasp's \`page\` subcommand for the same issue or" "$eol" \
     "pull request with \`--step $step\` (\`/grasp page <issue or PR> --step $step\`, or \`/grasp:grasp page ...\`" "$eol" \
     "when grasp is installed as a plugin), so the issue's learning page shows what was done." "$eol" \
+    "The issue's learning page is written by grasp alone: do not write or patch it by this skill's own rules." "$eol" \
     "Skip this if grasp is not installed." "$eol" \
     "<!-- grasp:end -->" "$eol"
+}
+
+test_block_says_grasp_alone_writes_the_page() {
+  local s
+  for s in work verify review resolve; do
+    assert_contains "$(gt block "$s")" "written by grasp alone" "$s block"
+  done
+  [[ "$(gt block record)" != *"written by grasp alone"* ]] || _fail "the record block is unchanged"
 }
 
 # new_project: tmp dir with .claude/skills/<fixtures> and an old .grasp.md; prints its path

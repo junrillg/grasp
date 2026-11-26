@@ -182,10 +182,19 @@ learning page while keeping their own job.
    nothing else in their file changes. On a yes, for each:
    `grasp-tools connect .claude/skills/NAME STEP`. It records the skill in `.grasp.md` under
    "Connected skills".
-5. To undo one later: `grasp-tools disconnect .claude/skills/NAME`.
+5. **Look for a second writer**, for each skill just connected: read its `SKILL.md` and every file
+   under its `references/` for page-writing rules of its own, meaning any instruction to write a
+   learning page, feature page or learning note. Found none: say so and move on. Found some: show
+   the person the file and the lines, and say that the page then has two writers. Ask whether to
+   replace those lines with one line that points to the grasp block (`The issue's learning page
+   is written by grasp alone, see the block at the end of this file.`). Edit only on a yes, and
+   only those lines. On a no, leave the file as it is and say plainly that two writers remain,
+   so the page can come out written twice or in two styles.
+6. To undo one later: `grasp-tools disconnect .claude/skills/NAME`.
 
 The block makes the connected skill run `/grasp page <issue or PR> --step STEP` when it has
-finished its own work. grasp never edits a skill outside its block.
+finished its own work, and says the page belongs to grasp alone. grasp never edits a skill
+outside its block, except the lines the person agreed to replace at step 5.
 
 ### 8. Overview
 
@@ -254,6 +263,10 @@ Brings grasp up to date, then refreshes the block in every connected skill.
    - `stale` or `no-block`: show the block that will be written and run `grasp-tools refresh`
      on a yes (or `refresh TARGET` for just one). The run-record block is also `stale` when
      `run records:` in `.grasp.md` moved.
+   - Whatever the state (`ok` included), look again for a second writer in each connected skill
+     with a step other than `record`, as step 5 of setup's "Connect this project's skills" describes: page-writing
+     rules of its own can have been added since. One question at a time, an edit only on a yes,
+     and a no leaves the file and the two writers.
    - `missing`: the skill was moved or deleted. Ask whether to point grasp at its new folder
      (`disconnect` the old path, `connect` the new) or to disconnect it.
    - `broken`: the skill has a `grasp:start` line with no `grasp:end` after it, usually from a
