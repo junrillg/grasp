@@ -64,7 +64,8 @@ Commands:
                            kind of page read from its content: too-long (the words a reader
                            sees, toggles and code not counted: run record 150, issue page
                            400, feature page 350, architecture page 900, app map and
-                           workspace map 1100), no-concepts (an issue page, app map,
+                           workspace map 1100; the issues list sync writes between the
+                           grasp:issues markers is not counted), no-concepts (an issue page, app map,
                            architecture or feature page with no "## Concepts" heading),
                            no-lessons (an architecture page whose "## Lessons" holds no
                            YouTube or LinkedIn Learning link and no "No checked lesson
@@ -1203,7 +1204,7 @@ cmd_lint_page() {
       page = FILENAME; fence = ""; depth = 0; split("", inside); mm = 0; prev = "blank"; wrapped = 0
       nwords = isrun = isissue = isfeature = concepts = inlessons = lessons = 0; h1 = ""
       std2 = short = ownerhead = hasdesign = ideashead = ideadet = hasvid = iscode = filelist = walkthrough = 0
-      sect = ""; split("", own)
+      sect = ""; split("", own); gen = 0
     }
     {
       line = $0; sub(/\r$/, "", line)
@@ -1267,7 +1268,10 @@ cmd_lint_page() {
       opens = count(code, "<details[ >]"); closes = count(code, "</details>")
       start = depth
       # the words a reader sees: not code fences (skipped above), toggles, <pre> or comments
-      if (start == 0 && opens == 0) nwords += words(strip(strip(shown(line), "shown-pre", "<pre[ >]", "</pre>"), "comment", "<!--", "-->"))
+      # the issues list sync generates is not counted, like any other generated index
+      if (line ~ /^<!-- grasp:issues:start -->/) gen = 1
+      if (line ~ /^<!-- grasp:issues:end -->/) gen = 0
+      if (start == 0 && opens == 0 && !gen) nwords += words(strip(strip(shown(line), "shown-pre", "<pre[ >]", "</pre>"), "comment", "<!--", "-->"))
       if (code ~ /<details[^>]*[ \t]open([ \t=>]|$)/) report("details-open")
       if (start == 0 && opens > 0) {   # the opening line: its summary is inside the HTML block too
         bt = substr(line, index(line, "<details")); gsub(/<code>[^<]*<\/code>/, "", bt)
@@ -1593,7 +1597,7 @@ sy_join() { local sep=$1 out='' p; shift; for p in "$@"; do [[ -n "$p" ]] && out
 # std, short, checked, ranges, walk, novideo, verified) and the cmd_sync settings it reads
 # (docs, heads, links, work).
 sy_check() {
-  local page="$docs/$rel" sub='' r n b pin i cur res nb s reason='' stale='' bad='' since='' notes=() good=() skip='' partial=0 out u
+  local page="$docs/$rel" sub='' absent='' r n b pin i cur res nb s reason='' stale='' bad='' since='' notes=() good=() skip='' partial=0 out u
   [[ $kind == issue && -f "$docs/${rel%.md}-code.md" ]] && sub="$docs/${rel%.md}-code.md"
   if [[ $kind == issue ]]; then
     [[ -n "$std" ]] || reason='no Standard field'
@@ -1604,7 +1608,7 @@ sy_check() {
       if [[ "$pin" == uncommitted ]]; then
         skip+=" $n"; partial=1; [[ -n "$reason" ]] || reason='not pinned to a commit'; continue
       fi
-      if ! i=$(sy_repo "$n"); then notes+=("unreachable $n@$pin"); skip+=" $n"; partial=1; continue; fi
+      if ! i=$(sy_repo "$n"); then notes+=("unreachable $n@$pin"); skip+=" $n"; absent+=" $n"; partial=1; continue; fi
       if ! sy_commit "${SY_TOPS[$i]}" "$b"; then notes+=("unreachable $n@$b"); skip+=" $n"; partial=1; continue; fi
       if ! sy_commit "${SY_TOPS[$i]}" "$pin"; then notes+=("unreachable $n@$pin"); skip+=" $n"; partial=1; continue; fi
       good+=(--repo "${SY_TOPS[$i]}")
@@ -1635,8 +1639,10 @@ sy_check() {
     done < <(sy_snippets "$s" "$skip")
   done
   if [[ -z "$reason" && $kind == issue && ${#good[@]} -gt 0 ]]; then
-    # a repository left out (not here, or not pinned) would make its files look STALE in the others
+    # a repository left out (not given, not here, or not pinned) would make its files look STALE in
+    # the others, and coverage cannot say whose a path is: STALE is skipped for the page, MISSING kept
     out=$( ( cmd_coverage "${good[@]}" "$page" ${sub:+"$sub"} ) 2>/dev/null )
+    for n in $absent; do notes+=("coverage partly checked: $n not given"); done
     out=$(printf '%s\n' "$out" | awk -v partial=$partial '/^MISSING / || (!partial && /^STALE /) { print; exit }')
     [[ -z "$out" ]] || reason="coverage: $out"
   fi

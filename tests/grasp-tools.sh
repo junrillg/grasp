@@ -1729,4 +1729,25 @@ test_sync_bad_link_only_with_links() {
   [[ "$(row SHOP-12 "$out" | cut -f2)" != *bad-link* ]] || _fail "links are checked only with --links"
 }
 
+test_lint_generated_issue_list_is_not_counted() {
+  local d f i; d=$(new_tmp); : > "$d/app-map.md"; : > "$d/SHOP-12-x.md"; f="$d/cart.md"   # 350 words with "## Issues"
+  { kind_page feature 342; printf '\n## Issues\n\n<!-- grasp:issues:start -->\n| Issue | Design idea | State | Walk | Checked |\n| --- | --- | --- | --- | --- |\n'
+    for i in $(seq 1 40); do printf '| [SHOP-12: a long issue title here](SHOP-12-x.md) | Resumable upload | not-walked | not walked | 2026-11-20 |\n'; done
+    printf '<!-- grasp:issues:end -->\n'; } > "$f"
+  assert_eq "" "$(gt lint-page "$f")" "a generated list does not count toward the word limit"
+  sed -i.bak 's#(SHOP-12-x.md) | Resumable#(SHOP-99-gone.md) | Resumable#' "$f"; rm "$f.bak"
+  assert_contains "$(gt lint-page "$f")" "dead-link SHOP-99-gone.md" "a dead link in the list is still reported"
+}
+test_sync_absent_repo_skips_stale_keeps_missing() {
+  local d p out; read -r d p <<<"$(sync_fix)"
+  sed -i.bak 's#^Checked against: \(.*\) on#Checked against: \1, `api@1111111..2222222` on#' "$d/features/SHOP-12-x.md"; rm "$d/features/SHOP-12-x.md.bak"
+  printf '| `api/src/gone.ts` | x |\n' >> "$d/features/SHOP-12-x-code.md"
+  out=$(gt sync --docs "$d" --repo "$p" --no-write 2>/dev/null)
+  [[ "$(row SHOP-12 "$out" | cut -f2)" != *below-standard* ]] || _fail "a path of the absent repository is not STALE"
+  assert_contains "$(row SHOP-12 "$out" | cut -f4)" "coverage partly checked: api not given" "said"
+  sed -i.bak 's/| `deep\/d.ts` | x |//' "$d/features/SHOP-12-x-code.md"; rm "$d/features/SHOP-12-x-code.md.bak"
+  out=$(gt sync --docs "$d" --repo "$p" --no-write 2>/dev/null)
+  assert_contains "$(row SHOP-12 "$out" | cut -f4)" "coverage: MISSING web/deep/d.ts" "MISSING still counts for the given repository"
+}
+
 run_tests "${1:-.}"
