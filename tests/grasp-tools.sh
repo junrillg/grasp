@@ -784,6 +784,18 @@ test_coverage_stale_and_usage() {
   assert_exit 2 "no range anywhere" -- "$TOOLS" coverage --repo "$p" "$t/q.md"
 }
 
+test_coverage_without_head_sees_the_working_tree() {
+  local p t out rc=0; p=$(cov_repo); t=$(new_tmp); printf '`x.ts`\n' > "$t/p.md"
+  echo 3 > "$p/a.ts"; echo 1 > "$p/new file.ts"
+  out=$(gt coverage --repo "$p" --base HEAD "$t/p.md") || rc=$?
+  assert_eq 1 "$rc" "uncommitted work is checked, exit 1"
+  assert_contains "$out" "MISSING web/a.ts" "an edited file"
+  assert_contains "$out" "MISSING web/new file.ts" "an untracked file"
+  rc=0; out=$(gt coverage --repo "$p" --base HEAD --head HEAD "$t/p.md") || rc=$?
+  assert_eq "0 of 0 changed files named" "$out" "with --head only commits count"
+  assert_eq 0 "$rc" "and exits 0"
+}
+
 # ---- page template ----
 
 TEMPLATE="$ROOT/skills/grasp/templates/issue-page.md"

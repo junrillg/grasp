@@ -95,9 +95,10 @@ Commands:
                            is reported
   coverage [--repo DIR]... [--base REF] [--head REF] PAGE...
                            prove that the pages name every file changed in each repository
-                           (default .) between BASE and HEAD (HEAD defaults to HEAD). Without
-                           --base, each repository's range is read from the "Checked against:"
-                           line of the first PAGE. A file is named when a page holds it in
+                           (default .) since the merge base of BASE and HEAD. With --head, the
+                           commits up to it; with --base alone, the working tree too (staged,
+                           unstaged and untracked). Without --base, each repository's range is
+                           read from the "Checked against:" line of the first PAGE. A file is named when a page holds it in
                            backticks or <code> as path, REPO/path, or under a "folder/**".
                            Prints MISSING REPO/path for each file no page names, STALE path for
                            a path in the first column of a table that is neither changed nor in
@@ -973,7 +974,7 @@ cv_range() {
 
 cmd_coverage() {
   local repos=() base='' head='' pages=() usage="usage: coverage [--repo DIR]... [--base REF] [--head REF] PAGE..."
-  local d top name b h range f changed='' present='' pg missing stale total
+  local d top name b h mb range f changed='' present='' pg missing stale total
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --repo) [[ $# -ge 2 ]] || die 2 "--repo needs a folder"; repos+=("$2"); shift 2 ;;
@@ -994,11 +995,16 @@ cmd_coverage() {
         die 2 "no range for $name: pass --base, or put \`$name@BASE..HEAD\` on a Checked against line of ${pages[0]}"
       b=${range%%..*}; [[ -n "$h" ]] || h=${range#*..}
     fi
-    h=${h:-HEAD}
     git -C "$top" rev-parse -q --verify "$b^{commit}" >/dev/null 2>&1 || die 2 "no such base in $top: $b"
-    git -C "$top" rev-parse -q --verify "$h^{commit}" >/dev/null 2>&1 || die 2 "no such head in $top: $h"
-    while IFS= read -r -d '' f; do changed+="$name"$'\t'"$f"$'\n'; done < <(git -C "$top" diff --name-only --no-renames -z "$b" "$h")
-    present+=$(git -C "$top" ls-tree -r --name-only -z "$h" | tr '\0' '\n' | awk -v n="$name" '{ print n "\t" $0 }')$'\n'
+    [[ -z "$h" ]] || git -C "$top" rev-parse -q --verify "$h^{commit}" >/dev/null 2>&1 || die 2 "no such head in $top: $h"
+    mb=$(git -C "$top" merge-base "$b" "${h:-HEAD}" 2>/dev/null) || die 2 "$b and ${h:-HEAD} share no history in $top"
+    if [[ -n "$h" ]]; then   # committed work only
+      while IFS= read -r -d '' f; do changed+="$name"$'\t'"$f"$'\n'; done < <(git -C "$top" diff --name-only --no-renames -z "$mb" "$h")
+      present+=$(git -C "$top" ls-tree -r --name-only -z "$h" | tr '\0' '\n' | awk -v n="$name" '{ print n "\t" $0 }')$'\n'
+    else                     # no head: the working tree too, staged, unstaged and untracked
+      while IFS= read -r -d '' f; do changed+="$name"$'\t'"$f"$'\n'; done < <(git -C "$top" diff --name-only --no-renames -z "$mb"; git -C "$top" ls-files --others --exclude-standard -z)
+      present+=$(git -C "$top" ls-files --cached --others --exclude-standard -z | tr '\0' '\n' | awk -v n="$name" '{ print n "\t" $0 }')$'\n'
+    fi
   done
   total=$(printf '%s' "$changed" | awk 'END { print NR }')
 
