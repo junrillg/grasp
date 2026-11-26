@@ -1745,9 +1745,82 @@ test_sync_absent_repo_skips_stale_keeps_missing() {
   out=$(gt sync --docs "$d" --repo "$p" --no-write 2>/dev/null)
   [[ "$(row SHOP-12 "$out" | cut -f2)" != *below-standard* ]] || _fail "a path of the absent repository is not STALE"
   assert_contains "$(row SHOP-12 "$out" | cut -f4)" "coverage partly checked: api not given" "said"
+  assert_contains "$(row SHOP-12 "$out" | cut -f4)" "api not given" "a repository not given is named as such"
+  [[ "$(row SHOP-12 "$out" | cut -f4)" != *"unreachable api@"* ]] || _fail "a repository not given is not called unreachable"
   sed -i.bak 's/| `deep\/d.ts` | x |//' "$d/features/SHOP-12-x-code.md"; rm "$d/features/SHOP-12-x-code.md.bak"
   out=$(gt sync --docs "$d" --repo "$p" --no-write 2>/dev/null)
   assert_contains "$(row SHOP-12 "$out" | cut -f4)" "coverage: MISSING web/deep/d.ts" "MISSING still counts for the given repository"
+}
+test_sync_no_repo_of_the_page_given() {
+  local d p o out; read -r d p <<<"$(sync_fix)"; o="$(new_tmp)/shop"; mkdir -p "$o"; g -C "$o" init -q
+  out=$(gt sync --docs "$d" --repo "$o" --no-write 2>/dev/null)
+  assert_contains "$(row SHOP-12 "$out" | cut -f4)" "coverage partly checked: web not given" "said with no repository of the page given"
+  [[ "$(row SHOP-12 "$out" | cut -f4)" != *"unreachable web@"* ]] || _fail "not called unreachable"
+}
+test_sync_changed_since_line_never_makes_a_page_too_long() {
+  local d p f n; read -r d p <<<"$(sync_fix)"; f="$d/features"
+  sed -e 's/^# SHOP-12: .*/# SHOP-14: y/' -e 's/ on 2026-11-20$/ on 2026-11-25/' -e 's/SHOP-12-x-code\.md/SHOP-14-y-code.md/g' \
+    "$f/SHOP-12-x.md" > "$f/SHOP-14-y.md"
+  sed -e 's/SHOP-12: x/SHOP-14: y/g' -e 's/SHOP-12-x\.md/SHOP-14-y.md/g' "$f/SHOP-12-x-code.md" > "$f/SHOP-14-y-code.md"
+  cp "$f/SHOP-12-x.md" "$f/probe.md"; { printf '\n'; words 1000; printf '\n'; } >> "$f/probe.md"
+  n=$(gt lint-page "$f/probe.md" | sed -n 's/.*too-long \([0-9]*\) words.*/\1/p'); rm "$f/probe.md"
+  { printf '\n'; words $((400 - (n - 1000))); printf '\n'; } >> "$f/SHOP-12-x.md"
+  [[ "$(row SHOP-12 "$(gt sync --docs "$d" --repo "$p" --no-write 2>/dev/null)" | cut -f2)" != *below-standard* ]] || _fail "the page starts at its limit, clean"
+  gt sync --docs "$d" --repo "$p" >/dev/null 2>&1
+  grep -q '^Changed since by:' "$f/SHOP-12-x.md" || _fail "the line was written"
+  [[ "$(row SHOP-12 "$(gt sync --docs "$d" --repo "$p" --no-write 2>/dev/null)" | cut -f2)" != *below-standard* ]] || _fail "the line sync wrote does not make the page too long"
+}
+test_sync_coverage_that_cannot_run_is_not_clean() {
+  local d p out; read -r d p <<<"$(sync_fix)"
+  g -C "$p" tag v1 HEAD~1; g -C "$p" tag v2 HEAD
+  sed -i.bak 's/^Checked against: .* on/Checked against: `web@v1..v2` on/' "$d/features/SHOP-12-x.md"; rm "$d/features/SHOP-12-x.md.bak"
+  out=$(gt sync --docs "$d" --repo "$p" --no-write 2>/dev/null)
+  assert_contains "$(row SHOP-12 "$out" | cut -f2)" "below-standard" "a range coverage cannot read is not proven"
+  assert_contains "$(row SHOP-12 "$out" | cut -f4)" "coverage could not run: " "and says so"
+}
+test_sync_refuses_a_walk_inside_the_issues_block() {
+  local d p f err; read -r d p <<<"$(sync_fix)"; f="$d/features/cart.md"; : > "$d/app-map.md"
+  printf '# Cart
+
+part of the [app map](../app-map.md)
+
+## Concepts
+
+x
+
+<!-- grasp:issues:start -->
+old
+<!-- grasp:walk:start -->
+<details><summary>Your walk</summary><p>You: mine</p></details>
+<!-- grasp:walk:end -->
+<!-- grasp:issues:end -->
+' > "$f"
+  cp "$f" "$f.want"
+  err=$(gt sync --docs "$d" --repo "$p" 2>&1 >/dev/null)
+  assert_file_eq "$f.want" "$f" "the page is left byte for byte"
+  assert_contains "$err" "$f" "a note names the file"
+}
+test_sync_ignores_issues_markers_in_a_fence() {
+  local d p f; read -r d p <<<"$(sync_fix)"; f="$d/features/README.md"
+  printf '# Features
+
+```
+<!-- grasp:issues:start -->
+example
+<!-- grasp:issues:end -->
+```
+' > "$f"
+  gt sync --docs "$d" --repo "$p" >/dev/null 2>&1; gt sync --docs "$d" --repo "$p" >/dev/null 2>&1
+  assert_eq "example" "$(sed -n 5p "$f")" "the fenced example is kept"
+  assert_eq 2 "$(grep -c 'grasp:issues:start' "$f")" "the real block is appended once"
+  assert_contains "$(cat "$f")" "| [SHOP-12" "the real block holds the issue"
+}
+test_sync_snippet_drift_is_below_standard() {
+  local d p out c; read -r d p <<<"$(sync_fix)"; c="$d/features/SHOP-12-x-code.md"
+  sed -i.bak '/^```ts$/{n;s/.*/9/;}' "$c"; rm "$c.bak"
+  out=$(gt sync --docs "$d" --repo "$p" --no-write 2>/dev/null)
+  assert_contains "$(row SHOP-12 "$out" | cut -f2)" "below-standard" "an edited fence"
+  assert_contains "$(row SHOP-12 "$out" | cut -f4)" "snippet-drift a.ts 1-1" "named"
 }
 
 run_tests "${1:-.}"

@@ -1268,10 +1268,10 @@ cmd_lint_page() {
       opens = count(code, "<details[ >]"); closes = count(code, "</details>")
       start = depth
       # the words a reader sees: not code fences (skipped above), toggles, <pre> or comments
-      # the issues list sync generates is not counted, like any other generated index
+      # the issues list and the "Changed since by:" line sync generates are not counted
       if (line ~ /^<!-- grasp:issues:start -->/) gen = 1
       if (line ~ /^<!-- grasp:issues:end -->/) gen = 0
-      if (start == 0 && opens == 0 && !gen) nwords += words(strip(strip(shown(line), "shown-pre", "<pre[ >]", "</pre>"), "comment", "<!--", "-->"))
+      if (start == 0 && opens == 0 && !gen && index(line, "Changed since by: ") != 1) nwords += words(strip(strip(shown(line), "shown-pre", "<pre[ >]", "</pre>"), "comment", "<!--", "-->"))
       if (code ~ /<details[^>]*[ \t]open([ \t=>]|$)/) report("details-open")
       if (start == 0 && opens > 0) {   # the opening line: its summary is inside the HTML block too
         bt = substr(line, index(line, "<details")); gsub(/<code>[^<]*<\/code>/, "", bt)
@@ -1579,7 +1579,11 @@ sy_snippets() {
   local page=$1 skip=" $2 " i args=() line ln rule rest m
   for i in ${SY_NAMES[@]+"${!SY_NAMES[@]}"}; do args+=(--repo "${SY_TOPS[$i]}"); done
   [[ ${#args[@]} -gt 0 ]] || return 0
-  ( cmd_snippet_check "${args[@]}" "$page" ) 2>/dev/null | while IFS= read -r line; do
+  local out rc=0
+  out=$( ( cmd_snippet_check "${args[@]}" "$page" ) 2>"$SY_WORK/err" ) || rc=$?
+  if [[ $rc -ge 2 || ( $rc == 1 && -z "$out" ) ]]; then printf 'below\tsnippet-check could not run: %s\n' "$(sy_err)"; return 0; fi
+  [[ -n "$out" ]] || return 0
+  printf '%s\n' "$out" | while IFS= read -r line; do
     line=${line#"$page":}; ln=${line%%:*}; rest=${line#*: }; rule=${rest%% *}
     m=$(sed -n "${ln}p" "$page" | sed -n 's/^<!-- grasp:snippet repo=\([^ ]*\) .* rev=\([0-9a-f]*\) -->.*/\1 \2/p')
     [[ -n "$m" && "$skip" == *" ${m% *} "* ]] && continue
@@ -1590,6 +1594,9 @@ sy_snippets() {
   done
 }
 
+# sy_err: the first line a sub-command wrote to stderr, without the "grasp-tools: " in front
+sy_err() { sed -n '1{s/^grasp-tools: //;s/^[[:space:]]*//;s/[[:space:]]*$//;p;}' "$SY_WORK/err"; }
+
 # sy_join SEP PART...: the non-empty parts joined
 sy_join() { local sep=$1 out='' p; shift; for p in "$@"; do [[ -n "$p" ]] && out+="${out:+$sep}$p"; done; printf '%s' "$out"; }
 
@@ -1597,7 +1604,7 @@ sy_join() { local sep=$1 out='' p; shift; for p in "$@"; do [[ -n "$p" ]] && out
 # std, short, checked, ranges, walk, novideo, verified) and the cmd_sync settings it reads
 # (docs, heads, links, work).
 sy_check() {
-  local page="$docs/$rel" sub='' absent='' r n b pin i cur res nb s reason='' stale='' bad='' since='' notes=() good=() skip='' partial=0 out u
+  local page="$docs/$rel" sub='' absent='' rc=0 r n b pin i cur res nb s reason='' stale='' bad='' since='' notes=() good=() skip='' partial=0 out u
   [[ $kind == issue && -f "$docs/${rel%.md}-code.md" ]] && sub="$docs/${rel%.md}-code.md"
   if [[ $kind == issue ]]; then
     [[ -n "$std" ]] || reason='no Standard field'
@@ -1608,7 +1615,7 @@ sy_check() {
       if [[ "$pin" == uncommitted ]]; then
         skip+=" $n"; partial=1; [[ -n "$reason" ]] || reason='not pinned to a commit'; continue
       fi
-      if ! i=$(sy_repo "$n"); then notes+=("unreachable $n@$pin"); skip+=" $n"; absent+=" $n"; partial=1; continue; fi
+      if ! i=$(sy_repo "$n"); then notes+=("$n not given" "coverage partly checked: $n not given"); skip+=" $n"; absent+=" $n"; partial=1; continue; fi
       if ! sy_commit "${SY_TOPS[$i]}" "$b"; then notes+=("unreachable $n@$b"); skip+=" $n"; partial=1; continue; fi
       if ! sy_commit "${SY_TOPS[$i]}" "$pin"; then notes+=("unreachable $n@$pin"); skip+=" $n"; partial=1; continue; fi
       good+=(--repo "${SY_TOPS[$i]}")
@@ -1630,8 +1637,9 @@ sy_check() {
     esac
   fi
   if [[ -z "$reason" ]]; then
-    out=$( ( cmd_lint_page "$page" ${sub:+"$sub"} ) 2>/dev/null ); out=${out%%$'\n'*}
-    [[ -z "$out" ]] || { out=${out#"$page":}; [[ -z "$sub" ]] || out=${out#"$sub":}; out=${out#*: }; reason="lint: ${out%% *}"; }
+    rc=0; out=$( ( cmd_lint_page "$page" ${sub:+"$sub"} ) 2>"$SY_WORK/err" ) || rc=$?; out=${out%%$'\n'*}
+    if [[ $rc -ge 2 || ( $rc == 1 && -z "$out" ) ]]; then reason="lint could not run: $(sy_err)"
+    elif [[ -n "$out" ]]; then out=${out#"$page":}; [[ -z "$sub" ]] || out=${out#"$sub":}; out=${out#*: }; reason="lint: ${out%% *}"; fi
   fi
   for s in "$page" ${sub:+"$sub"}; do
     while IFS=$'\t' read -r r res; do
@@ -1641,10 +1649,12 @@ sy_check() {
   if [[ -z "$reason" && $kind == issue && ${#good[@]} -gt 0 ]]; then
     # a repository left out (not given, not here, or not pinned) would make its files look STALE in
     # the others, and coverage cannot say whose a path is: STALE is skipped for the page, MISSING kept
-    out=$( ( cmd_coverage "${good[@]}" "$page" ${sub:+"$sub"} ) 2>/dev/null )
-    for n in $absent; do notes+=("coverage partly checked: $n not given"); done
-    out=$(printf '%s\n' "$out" | awk -v partial=$partial '/^MISSING / || (!partial && /^STALE /) { print; exit }')
-    [[ -z "$out" ]] || reason="coverage: $out"
+    rc=0; out=$( ( cmd_coverage "${good[@]}" "$page" ${sub:+"$sub"} ) 2>"$SY_WORK/err" ) || rc=$?
+    if [[ $rc -ge 2 ]]; then reason="coverage could not run: $(sy_err)"
+    else
+      out=$(printf '%s\n' "$out" | awk -v partial=$partial '/^MISSING / || (!partial && /^STALE /) { print; exit }')
+      [[ -z "$out" ]] || reason="coverage: $out"
+    fi
   fi
   if [[ $links == 1 ]]; then
     while IFS= read -r u; do
@@ -1669,6 +1679,11 @@ sy_set_since() {
   GRASP_SINCE=$2 awk '
     BEGIN { v = ENVIRON["GRASP_SINCE"] }
     after { after = 0; if (index($0, "Changed since by: ") == 1) { if (v != "") print "Changed since by: " v cr; next } if (v != "") print "Changed since by: " v cr }
+    { l = $0; sub(/\r$/, "", l) }
+    fence != "" { if (index(l, fence) == 1) fence = ""; print; next }
+    l ~ /^(```|~~~)/ { fence = substr(l, 1, 3); print; next }
+    l ~ /^<!-- grasp:walk:start -->/ { w = 1 } l ~ /^<!-- grasp:walk:end -->/ { w = 0; print; next }
+    w { print; next }
     !done && /^Checked against:/ { done = after = 1; cr = ($0 ~ /\r$/ ? "\r" : "") }
     { print }
     END { if (after && v != "") print "Changed since by: " v cr }' "$f" > "$tmp"
@@ -1682,11 +1697,19 @@ sy_put_issues() {
   local f=$1 blk=$2 tmp loc
   tmp=$(mktemp "${TMPDIR:-/tmp}/grasp.XXXXXX") || die 1 "cannot create a temporary file in ${TMPDIR:-/tmp}; nothing was changed"
   [[ -f "$f" ]] || printf '# Features\n' > "$tmp"
+  # markers in a code fence or a walk block are text, not markers; a walk inside the span is refused
   [[ -f "$f" ]] && loc=$(awk '
-    /^<!-- grasp:walk:start -->/ { w = 1 } /^<!-- grasp:walk:end -->/ { w = 0; next } w { next }
-    !s && /^<!-- grasp:issues:start -->[ \t\r]*$/ { s = FNR; next }
-    s && /^<!-- grasp:issues:end -->[ \t\r]*$/ { e = FNR; exit }
-    END { if (s) print s, e + 0 }' "$f")
+    { l = $0; sub(/\r$/, "", l) }
+    fence != "" { if (index(l, fence) == 1) fence = ""; next }
+    l ~ /^(```|~~~)/ { fence = substr(l, 1, 3); next }
+    l ~ /^<!-- grasp:walk:(start|end) -->/ { if (s) { walk = 1; exit } w = (l ~ /start/); next }
+    w { next }
+    !s && l ~ /^<!-- grasp:issues:start -->[ \t]*$/ { s = FNR; next }
+    s && l ~ /^<!-- grasp:issues:end -->[ \t]*$/ { e = FNR; exit }
+    END { if (walk) print "walk"; else if (s) print s, e + 0 }' "$f")
+  if [[ "${loc:-}" == walk ]]; then
+    rm -f "$tmp"; printf 'note: %s has a walk block inside its issues block; left as it was\n' "$f" >&2; return 0
+  fi
   if [[ -n "${loc:-}" ]]; then
     if [[ "${loc#* }" == 0 ]]; then rm -f "$tmp"; printf 'note: %s has an issues start marker and no end marker; left as it was\n' "$f" >&2; return 0; fi
     awk -v blk="$blk" -v s="${loc% *}" -v e="${loc#* }" '
