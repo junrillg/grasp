@@ -79,6 +79,20 @@ Commands:
                            files; with --head REF only the commits in BASE...REF. BASE (default: origin/HEAD, origin/develop, origin/main,
                            develop, main, master, the first that exists) is resolved in
                            each repository, and so is REF
+  snippet [--repo DIR] [--rev REV] FILE START END
+                           print lines START..END of FILE as committed at REV (default HEAD,
+                           never the working tree) as a marker line, a fence and, when origin
+                           is on GitHub or GitLab, a permalink. Paste it onto a page as is.
+                           FILE is relative to the repository root. Exits 1 on a missing file,
+                           an unknown REV or a range past the end
+  snippet-check [--repo DIR]... PAGE
+                           check that every fence under a snippet marker still equals the code
+                           at its commit. Reports snippet-drift (the fence was edited),
+                           snippet-unreachable (the commit is not in the repository),
+                           snippet-unknown-repo (no --repo has that folder name; default .)
+                           and, on a page named *-code.md, snippet-unmarked (a fence that is
+                           not a diagram and has no marker above it). Exits 1 when anything
+                           is reported
   version                  print the grasp version
 
 Options:
@@ -821,6 +835,108 @@ cmd_change_map() {
   printf 'Green: new. Amber: changed. Grey: untouched. Arrows: add them by hand from the architecture.\n'
 }
 
+# ---------- snippet / snippet-check ----------
+
+# sn_repo_name DIR -> the repository folder's basename (DIR may be a sub-folder or ".")
+sn_repo_name() { local t; t=$(git -C "$1" rev-parse --show-toplevel 2>/dev/null) || t=$(cd "$1" 2>/dev/null && pwd -P) || return 1; basename "$t"; }
+
+# sn_lines DIR REV FILE A B -> lines A..B of FILE as committed at REV, never the working tree
+sn_lines() { git -C "$1" show "$2:$3" | awk -v s="$4" -v e="$5" 'NR >= s && NR <= e'; }
+
+# sn_web_base URL -> https://HOST/ORG/REPO for a GitHub or GitLab remote, else nothing
+sn_web_base() {
+  printf '%s\n' "$1" | sed -E -e 's#^[a-z+]+://##' -e 's#^[^@/]*@##' -e 's#^([^/:]+):#\1/#' -e 's#(\.git)?/*$##' |
+    awk -F/ 'NF == 3 && ($1 == "github.com" || $1 == "gitlab.com") { print "https://" $0 }'
+}
+
+cmd_snippet() {
+  local repo=. rev=HEAD pos=() top full short total body ext link name base
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --repo) [[ $# -ge 2 ]] || die 2 "--repo needs a folder"; repo=$2; shift 2 ;;
+      --rev) [[ $# -ge 2 ]] || die 2 "--rev needs a revision"; rev=$2; shift 2 ;;
+      *) pos+=("$1"); shift ;;
+    esac
+  done
+  [[ ${#pos[@]} -eq 3 && -n "${pos[0]}" && "${pos[1]}" =~ ^[1-9][0-9]*$ && "${pos[2]}" =~ ^[1-9][0-9]*$ && ${pos[1]} -le ${pos[2]} ]] ||
+    die 2 "usage: snippet [--repo DIR] [--rev REV] FILE START END   (START and END are line numbers, START <= END)"
+  local file=${pos[0]} a=${pos[1]} b=${pos[2]}
+  top=$(git -C "$repo" rev-parse --show-toplevel 2>/dev/null) || die 1 "not a git repository: $repo"
+  full=$(git -C "$top" rev-parse -q --verify "$rev^{commit}" 2>/dev/null) || die 1 "no such revision in $top: $rev"
+  short=$(git -C "$top" rev-parse --short=7 "$full")
+  [[ $(git -C "$top" cat-file -t "$full:$file" 2>/dev/null) == blob ]] || die 1 "no such file at $short in $top: $file"
+  total=$(git -C "$top" show "$full:$file" | awk 'END { print NR }')
+  [[ $b -le $total ]] || die 1 "$file has $total lines at $short, not $b"
+  body=$(sn_lines "$top" "$full" "$file" "$a" "$b")
+  name=$(basename "$top"); ext=''
+  [[ "${file##*/}" == *.* ]] && ext=${file##*.}
+  printf '<!-- grasp:snippet repo=%s file="%s" lines=%s-%s rev=%s -->\n' "$name" "$file" "$a" "$b" "$short"
+  printf '```%s\n%s\n```\n' "$ext" "$body"
+  base=$(sn_web_base "$(git -C "$top" remote get-url origin 2>/dev/null)")
+  if [[ -n "$base" ]]; then
+    link="$base/blob/$full/${file// /%20}#L$a-L$b"
+    printf '[%s lines %s-%s at %s](%s)\n' "$file" "$a" "$b" "$short" "$link"
+  fi
+}
+
+cmd_snippet_check() {
+  local repos=() names=() dirs=() page='' d i n found dir rc=0
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --repo) [[ $# -ge 2 ]] || die 2 "--repo needs a folder"; repos+=("$2"); shift 2 ;;
+      *) [[ -z "$page" ]] || die 2 "usage: snippet-check [--repo DIR]... PAGE"; page=$1; shift ;;
+    esac
+  done
+  [[ -n "$page" ]] || die 2 "usage: snippet-check [--repo DIR]... PAGE"
+  [[ -f "$page" ]] || die 2 "no such file: $page"
+  [[ ${#repos[@]} -gt 0 ]] || repos=(.)
+  for d in "${repos[@]}"; do
+    n=$(sn_repo_name "$d") || die 2 "no such folder: $d"
+    names+=("$n"); dirs+=("$d")
+  done
+
+  local mre='^<!-- grasp:snippet repo=([^ ]+) file="([^"]*)" lines=([0-9]+)-([0-9]+) rev=([0-9a-f]+) -->$'
+  local line ln=0 infence=0 bound=0 lang body= mln=0 mrepo= mfile= ma= mb= mrev= exp
+  local code=0; [[ "$page" == *-code.md ]] && code=1
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    ln=$((ln + 1))
+    if [[ $infence == 1 ]]; then
+      if [[ "$line" == '```' ]]; then
+        infence=0
+        if [[ $bound == 1 ]]; then
+          bound=0; found=-1
+          for i in "${!names[@]}"; do [[ "${names[$i]}" == "$mrepo" ]] && { found=$i; break; }; done
+          if [[ $found -lt 0 ]]; then
+            printf '%s:%d: snippet-unknown-repo %s\n' "$page" "$mln" "$mrepo"; rc=1
+          else
+            dir=${dirs[$found]}
+            if ! git -C "$dir" cat-file -e "$mrev^{commit}" 2>/dev/null; then
+              printf '%s:%d: snippet-unreachable %s@%s\n' "$page" "$mln" "$mrepo" "$mrev"; rc=1
+            else
+              exp=''
+              [[ $(git -C "$dir" cat-file -t "$mrev:$mfile" 2>/dev/null) == blob ]] && exp=$(sn_lines "$dir" "$mrev" "$mfile" "$ma" "$mb")
+              if [[ "$exp" != "${body%$'\n'}" ]]; then
+                printf '%s:%d: snippet-drift %s %s-%s\n' "$page" "$mln" "$mfile" "$ma" "$mb"; rc=1
+              fi
+            fi
+          fi
+        fi
+      else
+        body+="$line"$'\n'
+      fi
+    elif [[ "$line" == '```'* ]]; then
+      infence=1; body=''; lang=${line#'```'}
+      if [[ $mln -gt 0 && $((mln + 1)) -eq $ln ]]; then bound=1
+      elif [[ $code == 1 && "$lang" != mermaid ]]; then
+        printf '%s:%d: snippet-unmarked\n' "$page" "$ln"; rc=1
+      fi
+    elif [[ "$line" =~ $mre ]]; then
+      mln=$ln; mrepo=${BASH_REMATCH[1]}; mfile=${BASH_REMATCH[2]}; ma=${BASH_REMATCH[3]}; mb=${BASH_REMATCH[4]}; mrev=${BASH_REMATCH[5]}
+    fi
+  done < "$page"
+  return $rc
+}
+
 # ---------- lint-page ----------
 
 cmd_lint_page() {
@@ -1058,6 +1174,8 @@ case "$cmd" in
   check-link) cmd_check_link "$@" ;;
   lint-page) cmd_lint_page "$@" ;;
   change-map) cmd_change_map "$@" ;;
+  snippet) cmd_snippet "$@" ;;
+  snippet-check) cmd_snippet_check "$@" ;;
   "") usage >&2; exit 2 ;;
   *) usage >&2; printf '\ngrasp-tools: unknown command: %s\n' "$cmd" >&2; exit 2 ;;
 esac

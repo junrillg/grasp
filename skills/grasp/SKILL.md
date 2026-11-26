@@ -177,8 +177,8 @@ REFERENCES
   templates/run-record.md    one agent task
   templates/grasp-config.md  the .grasp.md project settings file
   bin/grasp-tools            helper: connect, disconnect, block, status, refresh, record-index,
-                             record-check, projects, check-link, lint-page, change-map,
-                             version
+                             record-check, projects, check-link, lint-page, change-map, snippet,
+                             snippet-check, version
                              (grasp-tools -h)
 ```
 

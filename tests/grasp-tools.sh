@@ -30,7 +30,7 @@ test_unknown_command_exits_2() {
 test_help_lists_all_commands() {
   local out c
   out=$(gt -h 2>&1)
-  for c in connect disconnect block status refresh record-index record-check projects check-link lint-page change-map version; do
+  for c in connect disconnect block status refresh record-index record-check projects check-link lint-page change-map snippet snippet-check version; do
     assert_contains "$out" "$c" "help lists $c"
   done
 }
@@ -697,6 +697,56 @@ test_change_map_no_changes_and_errors() {
   assert_exit 0 "and exits 0" -- "$TOOLS" change-map --repo "$p"
   assert_exit 1 "a missing base exits 1" -- "$TOOLS" change-map --repo "$p" --base nope
   assert_exit 1 "a folder that is not a repository exits 1" -- "$TOOLS" change-map --repo "$(new_tmp)"
+}
+
+# ---- snippet ----
+
+sn_repo() {   # a repo named "web" with one file of 30 numbered lines and one with a space
+  local p; p="$(new_tmp)/web"; mkdir -p "$p/src"
+  g -C "$p" init -q -b main
+  for i in $(seq 1 30); do echo "line $i"; done > "$p/src/total.ts"
+  cp "$p/src/total.ts" "$p/src/my file.ts"
+  g -C "$p" add -A; g -C "$p" commit -qm one; echo "$p"
+}
+
+test_snippet_prints_marker_fence_and_lines() {
+  local p out rev; p=$(sn_repo); rev=$(g -C "$p" rev-parse --short=7 HEAD)
+  out=$(gt snippet --repo "$p" src/total.ts 3 5)
+  assert_contains "$out" "<!-- grasp:snippet repo=web file=\"src/total.ts\" lines=3-5 rev=$rev -->" "marker"
+  assert_contains "$out" $'```ts\nline 3\nline 4\nline 5\n```' "fence holds exactly lines 3 to 5"
+  [[ "$out" != *"]("* ]] || _fail "no link line without a remote"
+}
+test_snippet_handles_a_path_with_a_space() {
+  local p; p=$(sn_repo)
+  assert_contains "$(gt snippet --repo "$p" "src/my file.ts" 1 1)" 'file="src/my file.ts"' "path kept whole"
+}
+test_snippet_links_a_github_remote() {
+  local p; p=$(sn_repo); g -C "$p" remote add origin git@github.com:acme/web.git
+  assert_contains "$(gt snippet --repo "$p" src/total.ts 3 5)" "https://github.com/acme/web/blob/$(g -C "$p" rev-parse HEAD)/src/total.ts#L3-L5" "permalink"
+}
+test_snippet_rejects_bad_input() {
+  local p; p=$(sn_repo)
+  assert_exit 1 "range past the end" -- "$TOOLS" snippet --repo "$p" src/total.ts 29 40
+  assert_exit 1 "missing file"      -- "$TOOLS" snippet --repo "$p" src/none.ts 1 2
+  assert_exit 1 "unknown rev"       -- "$TOOLS" snippet --repo "$p" --rev nope src/total.ts 1 2
+  assert_exit 2 "bad use"           -- "$TOOLS" snippet --repo "$p" src/total.ts 5
+}
+test_snippet_check_passes_then_reports_drift() {
+  local p page; p=$(sn_repo); page="$(new_tmp)/SHOP-12-x-code.md"
+  gt snippet --repo "$p" src/total.ts 3 5 > "$page"
+  assert_eq "" "$(gt snippet-check --repo "$p" "$page")" "a pulled block is clean"
+  sed -i.bak 's/^line 4$/line four/' "$page"
+  assert_contains "$(gt snippet-check --repo "$p" "$page")" "snippet-drift src/total.ts 3-5" "an edited block is drift"
+  assert_exit 1 "drift exits 1" -- "$TOOLS" snippet-check --repo "$p" "$page"
+}
+test_snippet_check_unreachable_unknown_and_unmarked() {
+  local p page; p=$(sn_repo); page="$(new_tmp)/SHOP-12-x-code.md"
+  gt snippet --repo "$p" src/total.ts 3 5 | sed 's/rev=[0-9a-f]*/rev=0000000/' > "$page"
+  assert_contains "$(gt snippet-check --repo "$p" "$page")" "snippet-unreachable web@0000000" "missing commit is not drift"
+  [[ "$(gt snippet-check --repo "$p" "$page")" != *snippet-drift* ]] || _fail "unreachable must not also say drift"
+  assert_contains "$(gt snippet-check --repo "$(new_tmp)" "$page")" "snippet-unknown-repo web" "repo not given"
+  printf '```ts\nretyped\n```\n\n```mermaid\nflowchart LR\n```\n' > "$page"
+  assert_eq "$page:1: snippet-unmarked" "$(gt snippet-check --repo "$p" "$page")" "a retyped fence is flagged, a diagram is not"
 }
 
 # ---- page template ----
