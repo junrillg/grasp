@@ -3,7 +3,8 @@
 One page for a core feature of the app that earns it, written when the app is first mapped: how
 the feature works today, for someone who has never opened the code. The app map lists the features; this page
 explains one. An issue page explains one change; when an issue changes how this feature works,
-patch the picture here and add a row under "Changes". File name: `{feature-name}.md` in the
+patch the picture here. The issues that built it are listed by `/grasp sync` in the `## Issues`
+block below. File name: `{feature-name}.md` in the
 `features/` folder, lowercase joined with `-`. Rules are in
 [overview.md](../references/overview.md) and [notebook.md](../references/notebook.md). About 250
 words a reader sees, tables included (not diagram source, not folded text). Fill every `{...}`; delete a
@@ -13,6 +14,8 @@ reports `no-concepts`): most pages need "Where it fits", "How it works", "Concep
 
 The walk block at the end and the `Walk:` field are written only by `/grasp walk`
 ([walk.md](../references/walk.md)); copy them as they are and never edit what is between the markers.
+The issues block is written only by `/grasp sync` ([upkeep.md](../references/upkeep.md)): copy the
+two markers and the table header as they are, and never edit what is between the markers.
 
 Write this page only when the feature has a path worth tracing: three or more files or steps. A
 feature that lives in one or two short files is explained by its row on the app map.
@@ -81,11 +84,12 @@ sequenceDiagram
 
 - {a question the code did not answer; delete the section when empty}
 
-## Changes
+## Issues
 
-| When | What changed | Page |
-| ---- | ------------ | ---- |
-| {YYYY-MM-DD} | {one line} | [{KEY or run name}]({KEY-short-name}.md) |
+<!-- grasp:issues:start -->
+| Issue | Design idea | State | Walk | Checked |
+| --- | --- | --- | --- | --- |
+<!-- grasp:issues:end -->
 
 <!-- grasp:walk:start -->
 <details><summary>Your walk: not done yet. Run /grasp walk {feature-name}</summary></details>

@@ -1,7 +1,7 @@
 ---
 name: grasp
-description: "Works one issue from any tracker (Jira, GitHub, ClickUp, Linear, GitLab, Azure DevOps, or plain text) so the team understands it before and after it is built, and keeps a record of what agents do in a repository. Understand first: restate the ask, one question at a time, two or three approaches, wait for a pick. Then build test-first, verify with fresh evidence and write a visual-first learning page (diagrams, the concepts it leans on with checked lessons, a code walkthrough, long text folded; Markdown in docs/, or Notion). `setup` live-tests the tracker, makes every agent run leave a short run record (a block in AGENTS.md or CLAUDE.md), and writes an app overview: core features, architecture and system design with lessons. Use when given an issue key, URL or description to build, fix or investigate; to verify a fix; to review a pull request or resolve its comments; to explain finished work with no issue; to record what a run did; to map an app; to be quizzed on a page; or to set up or update grasp."
-argument-hint: "ISSUE [--plan] [--notebook markdown|notion|off] [--no-comment] | verify ISSUE|PR | review PR [--post] | resolve PR | page ISSUE|PR [--step work|verify|review|resolve] | explain [SOURCE] [--repo PATH] [--docs DIR] [--name SLUG] [--lessons all|free|none] [--no-image] | explain check PAGE [--repo PATH] [--base REF] | record [\"NAME\"] | map | walk ISSUE|FEATURE|NAME | setup | update | help"
+description: "Works one issue from any tracker (Jira, GitHub, ClickUp, Linear, GitLab, Azure DevOps, or plain text) so the team understands it before and after it is built, and keeps a record of what agents do in a repository. Understand first: restate the ask, one question at a time, two or three approaches, wait for a pick. Then build test-first, verify with fresh evidence and write a visual-first learning page (diagrams, the concepts it leans on with checked lessons, a code walkthrough; Markdown in docs/, or Notion). `setup` live-tests the tracker, makes every agent run leave a short run record (a block in AGENTS.md or CLAUDE.md), and writes an app overview: core features, architecture and system design with lessons. Use when given an issue key, URL or description to build, fix or investigate; to verify a fix; to review a pull request or resolve its comments; to explain finished work with no issue; to record what a run did; to map an app; to be quizzed on a page; to repair stale pages; or to set up or update grasp."
+argument-hint: "ISSUE [--plan] [--notebook markdown|notion|off] [--no-comment] | verify ISSUE|PR | review PR [--post] | resolve PR | page ISSUE|PR [--step work|verify|review|resolve] | explain [SOURCE] [--repo PATH] [--docs DIR] [--name SLUG] [--lessons all|free|none] [--no-image] | explain check PAGE [--repo PATH] [--base REF] | record [\"NAME\"] | map | walk ISSUE|FEATURE|NAME | sync [FEATURE] | repair ISSUE|NAME|FEATURE|--all [--only page|code|links] [--dry-run] [--force] [\"REASON\"] | setup | update | help"
 ---
 
 # grasp
@@ -16,7 +16,7 @@ task.
 
 | Argument | Type | Required | Default | Meaning |
 | -------- | ---- | -------- | ------- | ------- |
-| `ISSUE` | key, URL, file path or quoted text | yes, except for `explain`, `record`, `map`, `walk`, `setup`, `update` and `help` | none | `PROJ-123`, `#42`, `owner/repo#42`, `86abc123` (ClickUp), `LIN-7`, `AB#1234` (Azure DevOps), a tracker URL, a `.md` file, or `"text"` |
+| `ISSUE` | key, URL, file path or quoted text | yes, except for `explain`, `record`, `map`, `walk`, `sync`, `repair`, `setup`, `update` and `help` | none | `PROJ-123`, `#42`, `owner/repo#42`, `86abc123` (ClickUp), `LIN-7`, `AB#1234` (Azure DevOps), a tracker URL, a `.md` file, or `"text"` |
 | `--plan` | flag | no | off | Stop after the approach is picked and the "before" page is written. No code. |
 | `--notebook` | `markdown`, `notion`, `off` | no | the `.grasp.md` setting, else `markdown` | Where the learning page goes. `markdown` writes `docs/how-it-works/` at the repository root (the folder is confirmed with you on the first run), in Markdown that renders in Obsidian, GitHub and static doc sites. `notion` needs a Notion tool. |
 | `--no-comment` | flag | no | off | Write nothing back to the tracker. |
@@ -41,6 +41,15 @@ task.
 | `setup` | subcommand | no | none | Set grasp up in this project: tracker (live-tested), checks, app, docs folder, learning links, illustrations yes/no, the run-record block in `AGENTS.md` or `CLAUDE.md`, the project's own workflow skills, and the overview of the app. In a top folder with sub-projects it covers each one. Runs by itself when `.grasp.md` is missing. |
 | `update` | subcommand | no | none | Pull the latest grasp for this install, then refresh the block in every connected skill. |
 | `walk` | subcommand | no | none | A short guided session on one page: real code lines, one question at a time, your own answers and the gaps written on the page. Takes an issue, a feature or the name of an `explain` page. Never blocks anything. |
+| `sync` | subcommand | no | none | Report the state of every page: missing, stale, below standard, a dead lesson link, changed since, not walked. Writes only the generated issues lists and the `Changed since by:` lines; never edits prose. Markdown notebooks only. |
+| `FEATURE` | feature name, with `sync` or `repair` | no | all features | Limit `sync`'s table, or `repair`, to one feature. |
+| `repair` | subcommand | no | none | Fix what `sync` found, by writing pages again: one issue's documents, an `explain` page, one feature, or everything. A walk and its answers are always kept. Never changes code, commits or tracker writes. |
+| `NAME` | page name, with `repair` | no | none | An `explain` page: it has no issue key. |
+| `--all` | flag, with `repair` | no | off | Repair every page. Shows the count and asks first. |
+| `--only` | `page`, `code`, `links`, with `repair` | no | all three | Touch one part of one issue's documents: the issue page, the code sub-page (and pin it), or the lesson links. `links` rewrites no prose. |
+| `--dry-run` | flag, with `repair` | no | off | Print the findings and stop. Writes nothing. |
+| `--force` | flag, with `repair` | no | off | Rewrite a page that is already clean. |
+| `"REASON"` | quoted text, with `repair` | no | none | What you think is wrong. It is checked against the code first; the page changes only where the code agrees. |
 | `help` | first word | no | none | Also `--help`, `-h`. Print usage and stop. |
 
 No issue and no subcommand: ask for one and stop. `review` and `resolve` take a pull request number or URL; `page` takes either; `record` takes neither.
@@ -65,6 +74,9 @@ USAGE
   /grasp record ["NAME"]
   /grasp map
   /grasp walk ISSUE|FEATURE|NAME
+  /grasp sync [FEATURE]
+  /grasp repair ISSUE|NAME|FEATURE|--all [--only page|code|links] [--dry-run]
+                [--force] ["REASON"]
   /grasp setup
   /grasp update
   /grasp help
@@ -97,6 +109,13 @@ FLAGS
   --no-image        off (on when .grasp.md says illustrations: no). With explain only:
                     diagrams only, no illustration.
   --base REF        ref. With explain check only. Default: the page's own ranges, else the integration branch.
+  --all             off. With repair only: every page. Shows how many pages and asks first.
+  --only VALUE      page, code or links. With repair only. Default: the issue page, its code
+                    sub-page and the links. page: the issue page. code: the code sub-page,
+                    and pin the page to its commit. links: recheck every lesson link, replace
+                    a failed one, fill an idea with no checked video; no prose is rewritten.
+  --dry-run         off. With repair only: print what is wrong and stop. Nothing is written.
+  --force           off. With repair only: rewrite a page that is already clean.
 
 SUBCOMMANDS
   verify ISSUE|PR   prove an existing fix works with fresh evidence; fill the "after" half.
@@ -133,6 +152,19 @@ SUBCOMMANDS
                     then writes your own answers, the gaps and a checked lesson for each
                     gap on the page. Never scores, never blocks, stops when you say so.
                     Needs a current standard 2 page.
+  sync [FEATURE]    report every page: missing, stale, below standard, dead lesson link,
+                    changed since, not walked. A table grouped by feature, worst first, and
+                    one line of counts. Writes only the generated issues lists and the
+                    "Changed since by" lines; never edits prose. Links are checked only when
+                    you say so in words. Markdown notebooks only.
+  repair TARGET     fix what sync found by writing the pages again, from the card, the pull
+                    request and the code. TARGET: an issue (key, tracker address or the path
+                    of its page), the name of an explain page, a feature, or --all. A walk
+                    and its answers are always kept. A clean page is left alone ("nothing to
+                    repair") unless you give a reason in quotes or --force. A reason is
+                    checked against the code first. No code changes, commits or tracker
+                    writes. Also finishes an explain page written before its commit:
+                    repair NAME --only code.
   setup             tracker (read live to prove it works), checks, app run command, docs
                     folder, LinkedIn Learning yes/no, illustrations yes/no; then the
                     run-record block in AGENTS.md
@@ -174,6 +206,11 @@ EXAMPLES
   /grasp record                   what did this session do? write it down in five lines
   /grasp map                      refresh the overview of the app and its features
   /grasp walk PROJ-123            answer questions about the code of a finished page
+  /grasp sync                     what is out of date? a table; no prose is touched
+  /grasp repair PROJ-123 --dry-run   safe first run: list what is wrong with that card's pages
+  /grasp repair PROJ-123 "the retry step is wrong"   check the claim, fix what the code backs
+  /grasp repair PROJ-123 --only links   replace dead lesson links, rewrite nothing else
+  /grasp repair checkout-setup --only code   finish an explain page once its work is committed
   /grasp setup                    first time in a repo: settings, run records, the overview
   /grasp update                   new grasp version: pull it and refresh connected skills
 
@@ -185,8 +222,13 @@ IT WILL ASK YOU
     the docs go, when there is no .grasp.md and no docs/ folder
   - before a branch reset, a push, opening a pull request, any tracker write (exact text shown)
   - a prediction question before the build (never blocking)
-  - walk: whether to bring a stale page up to date first, whether to walk a page again, then one
+  - walk: whether to run /grasp repair on a stale page first, whether to walk a page again, then one
     question at a time; "skip" moves on and "stop" saves what you answered
+  - sync: nothing; when the tracker or the pull request host cannot be read, it says which check
+    was skipped and goes on
+  - repair: which page, when the target matches two or none; one yes before a feature or
+    --all starts (the count is shown first); a missing repository or an unreachable commit
+    is reported, never guessed. A single issue is repaired without a count question.
   - setup (and the first run in a repo): the tracker and one real issue to test it with,
     check commands, how to start the app, where the docs go (default docs/how-it-works/),
     whether you read them in Obsidian (on yes, vault settings are written),
@@ -212,6 +254,7 @@ REFERENCES
   references/explain.md      explain: finished work with no issue, the page and code sub-page
   references/overview.md     app map, architecture page, feature pages, workspaces
   references/walk.md         walk: the guided session and what it writes on the page
+  references/upkeep.md       sync and repair: what each state means and how pages are rewritten
   references/setup.md        setup, update, connecting skills
   references/review.md       review and resolve: pull requests, and the page they update
   templates/issue-page.md    the learning page, both halves
@@ -402,6 +445,23 @@ Follow [references/walk.md](references/walk.md): check the page is current, ask 
 at a time after showing the real lines, and write the person's own answers, the gaps and a lesson
 for each gap on the page. It never scores, never blocks and never changes code.
 
+## `sync` subcommand
+
+Follow "`/grasp sync [FEATURE]`" in [references/upkeep.md](references/upkeep.md): read the tracker
+for the list of issues and each pull request's current commit, hand both to `grasp-tools sync`,
+and print its rows as a table grouped by feature, worst first, with one line of counts. A tracker
+or host that cannot be read means that check is skipped, and the person is told. It writes only the
+generated issues lists and the `Changed since by:` lines, never prose. Markdown notebooks only.
+
+## `repair` subcommand
+
+Follow "`/grasp repair`" in [references/upkeep.md](references/upkeep.md): print what is wrong
+(`grasp-tools sync --only KEY`), stop at `--dry-run`, say `nothing to repair` when there is nothing
+and no reason or `--force`, otherwise write the pages again in subagents and keep every walk with
+`grasp-tools keep-walk`. A feature or `--all` shows the count and asks first. It ends with the
+three checks and `repaired` or `needs a person: REASON`, and a run record. It never changes code,
+commits, pushes or writes to the tracker.
+
 ## `setup` subcommand
 
 Follow [references/setup.md](references/setup.md): scope (one project or a workspace of
@@ -437,5 +497,6 @@ confirmation before writing pages.
 - [references/explain.md](references/explain.md): `explain`.
 - [references/overview.md](references/overview.md): `map`, setup's overview, workspaces.
 - [references/walk.md](references/walk.md): `walk`.
+- [references/upkeep.md](references/upkeep.md): `sync` and `repair`.
 - [references/setup.md](references/setup.md): `setup`, `update` and the first run.
 - [references/review.md](references/review.md): `review` and `resolve`.

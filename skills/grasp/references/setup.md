@@ -179,17 +179,25 @@ learning page while keeping their own job.
    picked is fine.
 4. Show the block that will be added to the end of each picked skill's `SKILL.md` (the exact
    text `connect` writes, printed by `grasp-tools block STEP`), and say
-   nothing else in their file changes. On a yes, for each:
+   nothing else in their file changes, except step 5, with your yes. On a yes, for each:
    `grasp-tools connect .claude/skills/NAME STEP`. It records the skill in `.grasp.md` under
    "Connected skills".
 5. **Look for a second writer**, for each skill just connected: read its `SKILL.md` and every file
    under its `references/` for page-writing rules of its own, meaning any instruction to write a
    learning page, feature page or learning note. Found none: say so and move on. Found some: show
-   the person the file and the lines, and say that the page then has two writers. Ask whether to
-   replace those lines with one line that points to the grasp block (`The issue's learning page
-   is written by grasp alone, see the block at the end of this file.`). Edit only on a yes, and
-   only those lines. On a no, leave the file as it is and say plainly that two writers remain,
-   so the page can come out written twice or in two styles.
+   the person the file and the lines, and say that the page then has two writers. Then, by where
+   the rules were found:
+   - **In the skill's `SKILL.md`:** offer to replace those lines with one line that points to the
+     grasp block at the end of that same `SKILL.md` (`The issue's learning page is written by
+     grasp alone, see the block at the end of this file.`).
+   - **In a file under its `references/`:** that file has no grasp block, so offer two edits, each
+     with its own yes. (a) Replace the step in `SKILL.md` that sends the agent to that file with
+     a line pointing to the grasp block at the end of `SKILL.md`. (b) Mark the references file as
+     retired with one first line saying page writing now belongs to grasp, and leave its text in
+     place.
+
+   Edit only on a yes, and only those lines. On a no, leave the file as it is and say plainly that
+   two writers remain, so the page can come out written twice or in two styles.
 6. To undo one later: `grasp-tools disconnect .claude/skills/NAME`.
 
 The block makes the connected skill run `/grasp page <issue or PR> --step STEP` when it has
@@ -265,8 +273,10 @@ Brings grasp up to date, then refreshes the block in every connected skill.
      `run records:` in `.grasp.md` moved.
    - Whatever the state (`ok` included), look again for a second writer in each connected skill
      with a step other than `record`, as step 5 of setup's "Connect this project's skills" describes: page-writing
-     rules of its own can have been added since. One question at a time, an edit only on a yes,
-     and a no leaves the file and the two writers.
+     rules of its own can have been added since. Offer the edits by where the rules were found, as
+     step 5 says (in `SKILL.md`: the one pointer line; in a `references/` file: the step in
+     `SKILL.md` and the retired-file line). One question at a time, an edit only on a yes, and a
+     no leaves the file and the two writers.
    - `missing`: the skill was moved or deleted. Ask whether to point grasp at its new folder
      (`disconnect` the old path, `connect` the new) or to disconnect it.
    - `broken`: the skill has a `grasp:start` line with no `grasp:end` after it, usually from a

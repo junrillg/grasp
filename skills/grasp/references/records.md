@@ -54,6 +54,10 @@ Problems in full, and a long sentence makes a tall, unread row):
 | **Problems** | What failed, was worked around, skipped or is uncertain, or "none" | Silence about a failed attempt because a later one worked |
 | **Next** | The one thing a person should do or decide, or "nothing" | A wish list |
 
+A record for issue work links the issue page in its Changed line (one standard link, `[KEY](path)`)
+and does not repeat what the page says. The block that `setup` adds to `AGENTS.md` keeps its five
+fixed lines as they are.
+
 Status is one word: `done` (asked and checked), `partial` (some of it, or done but not checked),
 `blocked` (cannot go on without a person or access), `failed` (nothing usable changed).
 
@@ -104,7 +108,8 @@ tracker writes.
 Every grasp subcommand that does work ends with this, because its outcome is what people ask
 about later: the full workflow at step 7, `verify` (Changed: "nothing; the fix for KEY was
 verified", or what failed), `review` (the findings count, and whether anything was posted),
-`resolve` after its commit, `setup` and `map` for what they wrote. Only `page` and `record`
+`resolve` after its commit, `setup` and `map` for what they wrote, `repair` for each page it
+rewrote or could not, and `sync` when it changed a file. Only `page` and `record`
 themselves don't: `page` is called by a skill that is still working.
 
 ## The block in AGENTS.md and CLAUDE.md
