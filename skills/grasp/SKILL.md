@@ -356,7 +356,8 @@ failed gate is reported plainly and nothing is drafted as passing.
 Fill the "after" half of the same page and its code sub-page
 ([templates/issue-page.md](templates/issue-page.md),
 [templates/issue-code-page.md](templates/issue-code-page.md)), as "Standard 2" in
-[references/notebook.md](references/notebook.md) says. The writer reads the repository, not only
+[references/notebook.md](references/notebook.md) says. A page with no `Standard: 2` is rewritten,
+not patched ("Existing pages" there). The writer reads the repository, not only
 the diff. A small change or a bug gets a short page. Before calling it written, run
 `grasp-tools lint-page` on both files, `snippet-check` on the sub-page and `coverage` on both:
 each prints nothing or the count line only. The list of issues in `features/README.md` is
@@ -424,7 +425,8 @@ from the current state and do nothing else: no code, no commits, no pushes, no t
    [references/review.md](references/review.md) "The issue page" says.
 4. The calling skill did the build, so nobody ticked the steps live: in the after half, tick each
    step the diff shows as done and explain every other one in "Planned and built".
-5. Run the three checks from step 6, then report the page path in one line. `page` never waits
+5. Run the three checks from step 6 and the writing `grasp-tools sync` of step 7 (it writes only
+   what it generates), then report the page path in one line. `page` never waits
    for the prediction and never starts a walk: it sets the status and, on an after half, ends
    with `Walk ready: /grasp walk KEY`.
 

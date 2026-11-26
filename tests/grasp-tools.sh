@@ -2001,4 +2001,23 @@ test_keep_walk_notes_an_old_explain_back_answer() {
   done
 }
 
+test_sync_on_a_mixed_notebook_exits_0_and_settles() {
+  local d p f sum1 sum2 sum0; read -r d p <<<"$(sync_fix)"; f="$d/features"; : > "$d/app-map.md"
+  sed -e 's/^# SHOP-12: .*/# SHOP-14: y/' -e 's/^Status: built/Status: planned/' -e '/^Checked against:/d' -e '/^\[The code, file by file\]/d' \
+    "$f/SHOP-12-x.md" > "$f/SHOP-14-y.md"
+  printf '# Checkout setup\n\n> [!NOTE]\n> Status: built\n' > "$d/checkout.md"; printf '# files\n' > "$d/checkout-files.md"
+  mkdir -p "$d/old"; printf '# 2026-11-20: x\n\nStatus: blocked\n\n- **Asked:** x\n' > "$d/old/2026-11-20-x.md"
+  sed 's/^# SHOP-12: .*/# #42: a thing/' "$f/SHOP-12-x.md" > "$d/42-a-thing.md"
+  printf '# Cart\n\nVerified at `0000000`, 2026-11-20 · Walk: not walked · part of the [app map](../app-map.md)\n\n## Concepts\n\nx\n' > "$f/cart.md"
+  sum0=$(cd "$d" && find . -type f | LC_ALL=C sort | xargs cksum)
+  assert_exit 0 "--no-write exits 0" -- "$TOOLS" sync --docs "$d" --repo "$p" --no-write
+  assert_exit 0 "--only exits 0" -- "$TOOLS" sync --docs "$d" --repo "$p" --only checkout
+  assert_eq "$sum0" "$(cd "$d" && find . -type f | LC_ALL=C sort | xargs cksum)" "--no-write and --only write nothing"
+  assert_exit 0 "a writing run exits 0" -- "$TOOLS" sync --docs "$d" --repo "$p"
+  sum1=$(cd "$d" && find . -type f | LC_ALL=C sort | xargs cksum)
+  gt sync --docs "$d" --repo "$p" >/dev/null 2>&1
+  sum2=$(cd "$d" && find . -type f | LC_ALL=C sort | xargs cksum)
+  assert_eq "$sum1" "$sum2" "a second run changes nothing"
+}
+
 run_tests "${1:-.}"
