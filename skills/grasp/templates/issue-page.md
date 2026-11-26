@@ -16,7 +16,8 @@ toggle title states a conclusion, never "Details". Run `grasp-tools lint-page PA
 
 - `## How it works` is one diagram then 4 to 7 numbered steps, one line each, then one line that
   links the code page.
-- Each idea is one visible line, then a `<details>` with 3 to 5 lines tied to this code. Its links
+- Each idea is one visible line, then a `<details>` with 3 to 5 lines tied to this code (two lines for a design idea the reader
+  profile lists under `knows well`). Its links
   are `<a href>` followed by `· title · author · checked YYYY-MM-DD`. The first idea is the design
   idea and holds one video.
 - The Proof fold is an HTML `<table>` with the columns acceptance point, command or check, result line.
@@ -58,7 +59,7 @@ Checked against: `{repo}@{base}..{head}`, `{repo}@{base}..{head}` on {YYYY-MM-DD
 - **Design · {design idea}:** {one line: the architecture pattern or system design concept behind this change}
 <details><summary>{Design idea}: how it works here, and where to learn it</summary>
 <p>{3 to 5 lines, plain words, tied to this code and not a textbook definition}</p>
-<p>Watch: <a href="{one YouTube video, or one LinkedIn Learning video inside a course}">{title from check-link}</a> · {channel} · {n} min · {content checked | title match only} · checked {YYYY-MM-DD}</p>
+<p>Watch: <a href="{one YouTube video, or one LinkedIn Learning video inside a course}">{title from check-link}</a> · {channel}{ · n min, only when read from the video's page; otherwise leave it out} · {content checked | title match only} · checked {YYYY-MM-DD}</p>
 <p>Read: <a href="{official docs url}">{page title}</a> · {site} · checked {YYYY-MM-DD}</p>
 </details>
 - **Idea · {another idea}:** {one line. Add one only when the change leans on it. Same fold as above.}

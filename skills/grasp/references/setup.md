@@ -125,8 +125,6 @@ Then ask the reader questions, one at a time, and save the answers under `## Rea
 Then ask one question for the notebook: "Which issues does `sync` cover: this project's or only
 yours?" Save `sync scope: project` (the default) or `mine`. Leave `other records:` as `none` unless
 the user names folders whose files should be linked from an issue page when they mention its key.
-Fill `## Features` from the feature pages setup finds or writes (feature, page, what it covers). A
-project whose level 2 pages live elsewhere lists them by hand.
 
 Now write `.grasp.md` from [templates/grasp-config.md](../templates/grasp-config.md), with
 `run records:` set to `<docs folder>/runs`. The steps below read it.
@@ -212,6 +210,9 @@ The issue the user came for should not wait on it unless they choose so.
    exists, Run records) and add the same rows to the docs router. In a workspace the
    README and the router follow "Settings in a workspace" in overview.md instead. Feature pages
    are reached from the app map, not from the router. Run `grasp-tools lint-page` on each page.
+4. Fill `## Features` in `.grasp.md` from the feature pages just written or found (feature, page,
+   what it covers), and save the file. A project whose level 2 pages live elsewhere lists them by
+   hand.
 
 ### Finish
 

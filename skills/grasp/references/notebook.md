@@ -341,8 +341,8 @@ A short page has no ideas section.
   size of the diff.
 - Name it with the term a person can search for: resumable upload, idempotent write, optimistic
   locking, a queue between two services, the server as the source of truth.
-- List it even when `knows well` holds it, with a fold of two lines, because the owner has to be
-  able to name it to someone else.
+- List it even when `knows well` holds it, because the owner has to be able to name it to someone
+  else. The fold length is set under "Choosing the other ideas".
 - It is always the first idea, and the heading of the walkthrough step where it shows says so: the
   `### N. Title` heading on the code sub-page ends with the idea's name in parentheses, for example
   `### 4. Send in chunks (Resumable upload)`.
@@ -353,7 +353,8 @@ A short page has no ideas section.
   absent from `knows well`. Skip an idea that is under `knows well`.
 - At most 3 ideas on an issue page, with the design idea counted. At most 8 on an `explain` page.
 - Each idea is one visible line and one fold of 3 to 5 lines tied to this code, not a textbook
-  definition. On the issue page the ideas are written in the before half, so the plan can be
+  definition. The one exception is a design idea the reader profile lists under `knows well`: its
+  fold is two lines. On the issue page the ideas are written in the before half, so the plan can be
   judged; the after half corrects them if the build leaned on something else.
 
 ### One specific video and one page to read
@@ -365,7 +366,11 @@ the idea plus the project's stack.
   inside a LinkedIn Learning course. For LinkedIn Learning, open the course page, find the video
   whose title names the idea and use that video's own address (the course and the video, two
   parts). Never the course address, a channel, a playlist or a search page as the video. A course
-  may follow on a `Course:` line.
+  may follow on a `Course:` line, always in addition to the video line and never instead of it. It
+  is optional: `<p>Course: <a href="URL">TITLE</a> · LinkedIn Learning · checked YYYY-MM-DD</p>`.
+- The length on the Watch line is read from the video's own page, or from the course's table of
+  contents for a LinkedIn Learning video. `check-link` does not print it. When it cannot be read,
+  leave the length out of the line. Never guess it.
 - Prefer a video that explains before it codes. For the design idea, prefer one that draws the
   system.
 - Add `&t=NNs` only when the start of the relevant part was read from the video's chapters or
@@ -380,8 +385,8 @@ the idea plus the project's stack.
 - When no video passes, write `No checked video yet`. Never leave the line out.
 - **The page to read** is official documentation first. Then this fixed list: refactoring.guru,
   martinfowler.com, web.dev, developer.mozilla.org, learn.microsoft.com/azure/architecture/patterns,
-  aws.amazon.com/builders-library. For the design idea try the last three and martinfowler.com
-  first. The page must have been opened: keep no link to a page you did not read.
+  aws.amazon.com/builders-library. For the design idea try martinfowler.com,
+  learn.microsoft.com/azure/architecture/patterns and aws.amazon.com/builders-library first. The page must have been opened: keep no link to a page you did not read.
 - Each link line holds the title, the author or the site, and `checked YYYY-MM-DD`. A link with no
   check date fails `lint-page` (`link-undated`).
 - Links are checked when a page is written or patched, never on a schedule. With

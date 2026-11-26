@@ -197,7 +197,7 @@ REFERENCES
 - **Subagents explore, the main thread decides.** Read the decisive lines yourself before relying
   on a subagent's claim. Never run two heavy commands (test, build, typecheck) at once.
 - **Pages teach, they do not narrate.** Short, visual, plain words. Long text is always folded:
-  one visible line states the point, a toggle holds the rest. Every page that is not short names the design idea
+  one visible line states the point, a toggle holds the rest. Every issue page that is not short names the design idea
   it rests on and the ideas it leans on, each with a checked video and a page to read. Link to code and the pull request; never paste secrets, personal data or client
   documents into a page.
 - **Every task that changes files leaves a run record.** Big or small, finished or failed, with

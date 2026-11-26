@@ -59,7 +59,7 @@ Two sections of the before half carry the understanding:
   check. The build ticks them one by one ([build.md](build.md)), so the page shows progress while
   the agent works.
 - **Ideas**: up to 3 ideas the change leans on, the first the design idea, each one visible line
-  and one toggle that holds the longer explanation and the checked links ("Standard 2" and
+  and one toggle that holds the longer explanation, one checked video and one page to read ("Standard 2" and
   "Ideas this leans on" in [notebook.md](notebook.md)). Name them before the build: a reader who does not know the idea cannot judge the plan.
 
 The before half is also the spec: the build works from it, and the "after" half is compared
