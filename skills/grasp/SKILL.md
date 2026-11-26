@@ -113,8 +113,8 @@ BY DEFAULT
               with a recommendation, and wait for your pick
   3 Before    write the "before" half of the issue's learning page: the plan as 3 to 6
               steps, diagrams first (where it fits, expected flow, the decision), the
-              concepts it leans on (one line each, the long explanation and checked
-              YouTube or LinkedIn Learning links folded); one prediction question
+              ideas it leans on, the design idea first (one line each, the long
+              explanation, one checked video and one page to read folded); one prediction question
   4 Build     branch, test first, smallest change, the project's own checks; the page says
               "building" and each step is ticked as it finishes, so you can follow along
   5 Verify    fresh evidence only: checks, the test failing without the fix, the behaviour seen
@@ -197,8 +197,8 @@ REFERENCES
 - **Subagents explore, the main thread decides.** Read the decisive lines yourself before relying
   on a subagent's claim. Never run two heavy commands (test, build, typecheck) at once.
 - **Pages teach, they do not narrate.** Short, visual, plain words. Long text is always folded:
-  one visible line states the point, a toggle holds the rest. Every page names the concepts it
-  leans on. Link to code and the pull request; never paste secrets, personal data or client
+  one visible line states the point, a toggle holds the rest. Every page that is not short names the design idea
+  it rests on and the ideas it leans on, each with a checked video and a page to read. Link to code and the pull request; never paste secrets, personal data or client
   documents into a page.
 - **Every task that changes files leaves a run record.** Big or small, finished or failed, with
   every problem met written down ([references/records.md](references/records.md)). A record says
@@ -241,8 +241,8 @@ the fix itself is a real choice. A conceptual question the user asks here is log
 
 Write the "before" half of the issue page ([templates/issue-page.md](templates/issue-page.md))
 with one subagent (or inline for a small change, as the token budget in
-[references/notebook.md](references/notebook.md) decides): the plan as 3 to 6 steps, the pictures, and the concepts the change leans on
-(one visible line each, the longer explanation and checked links folded). At the pick the page has its sections 1 to 4, with Steps and Predict ([Standard 2](references/notebook.md)). The first issue page
+[references/notebook.md](references/notebook.md) decides): the plan as 3 to 6 steps, the pictures, and the ideas the change leans on, the design idea first
+(one visible line each, the longer explanation, one checked video and one page to read folded). At the pick the page has its sections 1 to 4, with Steps and Predict ([Standard 2](references/notebook.md)). The first issue page
 in a notebook also creates `features/README.md` and adds the Features table line to the app map
 ("Scale with the app" in [references/overview.md](references/overview.md)). Then ask the user its
 prediction question. Do not wait for the answer to go

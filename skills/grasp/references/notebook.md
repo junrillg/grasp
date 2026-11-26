@@ -162,10 +162,8 @@ them; this section holds only what a template cannot show.
 - **Asked** is the card's ask in its own words, 30 words at most; a close paraphrase where the
   project's rules forbid quoting. A line with nothing true to say reads "none". Before and after
   screenshots sit in the owner block when a user can see the change.
-- **Ideas:** the first is always the design idea, the architecture pattern or system design
-  concept the change rests on, named so the owner can say it to someone else. Each idea is one
-  visible line and a fold of 3 to 5 lines tied to this code, one video to watch and one page to
-  read. Keep a link only if `grasp-tools check-link` prints `ok`; never a link that was not checked.
+- **Ideas:** the design idea first, then at most two more, each one visible line and a fold with one
+  video and one page to read. Every rule is in "Ideas this leans on" below.
 - **Code reaches a page only through `grasp-tools snippet FILE START END`.** Paste its output on the
   code sub-page as it is. Never type a code block or edit one.
 - **Proof rows** come only from a run made in this session or from the pull request's checks.
@@ -329,48 +327,90 @@ Only for changes someone can see. After-only by default, the cheapest path:
 sign in for the test (never store credentials in `.grasp.md` or the page); otherwise skip and say
 so. Screenshots are dated snapshots: never refresh old ones automatically.
 
-## Concepts
+## Ideas this leans on
 
-Every issue page, app map, architecture page and feature page has a "Concepts" section: the ideas a reader must know
-to follow the page. Up to 3 on an issue page (concepts the change actually relies on, named in the
-plan or the diff), up to 5 on an app map or an architecture page, one or two on a
-feature page. When an issue adds or moves a piece, changes who calls whom, or picks between two
-designs, one of its concepts is the system design idea behind that choice, linked to the
-architecture page when it is named there.
+An issue page has a section `## Ideas this leans on`, and an `explain` page has the same section:
+the ideas a reader must know to follow the change. The exact block is in
+[templates/issue-page.md](../templates/issue-page.md); this section holds the rules it cannot show.
+A short page has no ideas section.
 
-- **One visible line per concept**: its name in bold, what it is in one plain sentence, and where
-  this code uses it. That line alone must be enough to keep reading.
-- **One toggle per concept** for everything longer: 3 to 8 lines that explain the idea through
-  this code (not a textbook definition), then its links. The toggle title states the concept's
-  point as a conclusion.
-- **Nothing new** is a valid answer for a small change: write "Nothing new" and name the one idea
+### The design idea
+
+- The design idea comes first on every page that is not short. It is the architecture pattern or
+  system design concept the change rests on, taken from the code and the decisions, not from the
+  size of the diff.
+- Name it with the term a person can search for: resumable upload, idempotent write, optimistic
+  locking, a queue between two services, the server as the source of truth.
+- List it even when `knows well` holds it, with a fold of two lines, because the owner has to be
+  able to name it to someone else.
+- It is always the first idea, and the heading of the walkthrough step where it shows says so: the
+  `### N. Title` heading on the code sub-page ends with the idea's name in parentheses, for example
+  `### 4. Send in chunks (Resumable upload)`.
+
+### Choosing the other ideas
+
+- Read `## Reader` in `.grasp.md`. Teach an idea when it is under `new to`, in the gap table, or
+  absent from `knows well`. Skip an idea that is under `knows well`.
+- At most 3 ideas on an issue page, with the design idea counted. At most 8 on an `explain` page.
+- Each idea is one visible line and one fold of 3 to 5 lines tied to this code, not a textbook
+  definition. On the issue page the ideas are written in the before half, so the plan can be
+  judged; the after half corrects them if the build leaned on something else.
+
+### One specific video and one page to read
+
+Every idea gets one specific video and one page to read, in the format of the template. Search with
+the idea plus the project's stack.
+
+- **The video** is one YouTube video or, when `.grasp.md` says `linkedin learning: yes`, one video
+  inside a LinkedIn Learning course. For LinkedIn Learning, open the course page, find the video
+  whose title names the idea and use that video's own address (the course and the video, two
+  parts). Never the course address, a channel, a playlist or a search page as the video. A course
+  may follow on a `Course:` line.
+- Prefer a video that explains before it codes. For the design idea, prefer one that draws the
+  system.
+- Add `&t=NNs` only when the start of the relevant part was read from the video's chapters or
+  transcript.
+- The confirmation is `content checked` only when the chapters, the transcript or the course's
+  table of contents were read and name the idea. Otherwise it is `title match only`. Never claim
+  to have watched it.
+- Run `grasp-tools check-link URL` on every video. For YouTube it prints `ok`, the title and the
+  channel: use that title and channel. For LinkedIn Learning it prints `ok`, the final address and
+  the title. `fail redirected FINAL` on a LinkedIn Learning video means the video is gone: pick
+  another video, do not fall back to the course.
+- When no video passes, write `No checked video yet`. Never leave the line out.
+- **The page to read** is official documentation first. Then this fixed list: refactoring.guru,
+  martinfowler.com, web.dev, developer.mozilla.org, learn.microsoft.com/azure/architecture/patterns,
+  aws.amazon.com/builders-library. For the design idea try the last three and martinfowler.com
+  first. The page must have been opened: keep no link to a page you did not read.
+- Each link line holds the title, the author or the site, and `checked YYYY-MM-DD`. A link with no
+  check date fails `lint-page` (`link-undated`).
+- Links are checked when a page is written or patched, never on a schedule. With
+  lessons switched off the fold says `Lessons turned off` instead of the Watch line.
+
+### Concepts on the other pages
+
+The app map, the architecture page and the feature page keep a `## Concepts` section with their own
+rules; they do not use the ideas rules above.
+
+- Up to 5 concepts on an app map or an architecture page, one or two on a feature page. Pick them
+  from what the code does, and link a concept to the architecture page when it is named there.
+- One visible line per concept: its name in bold, what it is in one plain sentence, and where this
+  code uses it. One toggle per concept for the rest: 3 to 8 lines through this code, then its
+  links, and the toggle title states the point as a conclusion.
+- Nothing new is a valid answer for a small page: write "Nothing new" and name the one concept
   already on the app map that it uses, with a link. The section stays.
-- On the issue page it is written in the before half, so the plan can be judged; the after half
-  corrects it if the build leaned on something else.
-
-### Learning links
-
-On every page but the architecture page, each concept's toggle holds at most 3 links, in this order: the official docs, one free video,
-and one LinkedIn Learning course only when `.grasp.md` says `linkedin learning: yes`. A page holds
-at most 6 links in all; an architecture page at most 15 (5 ideas: docs in the toggle, a video and
-a course in its "Lessons" table).
-
-- Search with the concept name only, never project, client or issue text.
-- Keep a link only if `grasp-tools check-link URL` prints `ok`. Use the title and channel it
-  prints for YouTube, and the final URL and course title it prints for LinkedIn Learning (an
-  address that redirects prints `fail redirected FINAL`: drop it); never
-  invent a title. A video title that does not name the concept is the wrong video: drop it. A
-  course is wider than a video: its title must name the concept or the field it belongs to (a
-  course on HTTP for the concept "status codes"). For a docs
-  page it prints the final URL only: use the page's own heading as you read it when you opened
-  the page, and keep no docs link you did not open.
-- After each link say who made it, where it lives and whether it's free or paid, and end the
-  toggle with the check date (`Links checked YYYY-MM-DD`).
-- Links are checked when a page is written or patched, never on a schedule.
-- Prefer the lesson a beginner can follow: the idea named in the title, explained before code, and
-  not tied to a language the project does not use.
-- No link found that passes: keep the concept and its explanation, and write "No checked link
-  yet" in the toggle. Never a link that was not checked.
+- Each concept's toggle holds at most 3 links, in this order: the official docs, one free video,
+  and one LinkedIn Learning course only when `linkedin learning: yes`. An app map or feature page
+  holds at most 6 links in all. An architecture page holds docs in the toggle and, in its
+  "Lessons" table, a video and a course for each concept, at most 15 links.
+- Keep a link only if `grasp-tools check-link URL` prints `ok`. Use the title and channel it prints
+  for YouTube, and the final address and title it prints for LinkedIn Learning. A video title that
+  does not name the concept is the wrong video: drop it. A course title must name the concept or
+  the field it belongs to. Keep no docs link you did not open.
+- After each link say who made it, where it lives and whether it is free or paid, and end the
+  toggle with `Links checked YYYY-MM-DD`.
+- No link found that passes: keep the concept and write "No checked link yet" in the toggle (a
+  "Lessons" cell: "No checked lesson yet"). Never a link that was not checked.
 
 ## Existing pages
 

@@ -106,15 +106,27 @@ A folder that already has `.obsidian/` is somebody's vault: change nothing in it
 Files and links, "Use [[Wikilinks]]" off). Tell the user to open that folder as a vault; never
 rename a vault from inside Obsidian, since that renames the folder on disk.
 
-### 5. Learning links and illustrations
+### 5. Learning links, reader and illustrations
 
 Ask whether the team has LinkedIn Learning. Save `linkedin learning: yes` or `no`. With `no`,
-"Concepts" lists only free material.
+every idea's video is a YouTube video and the lessons list only free material.
 
 Then ask once whether pages should open with a generated illustration (one image generation per
 page: the app map, the architecture page, the workspace map and each issue page). Save `illustrations: yes` or `no`.
 Say which image tool was found; with none, say so, save the answer anyway and write diagrams only
 until one is available ("Illustrations" in [notebook.md](notebook.md)).
+
+Then ask the reader questions, one at a time, and save the answers under `## Reader` in `.grasp.md`
+("Ideas this leans on" in [notebook.md](notebook.md) says how a page uses them):
+
+1. "What do you know well?" Save a comma list as `knows well:`. An empty answer is fine.
+2. "What is new to you?" Save a comma list as `new to:`. Leave the gap table empty; a walk fills it.
+
+Then ask one question for the notebook: "Which issues does `sync` cover: this project's or only
+yours?" Save `sync scope: project` (the default) or `mine`. Leave `other records:` as `none` unless
+the user names folders whose files should be linked from an issue page when they mention its key.
+Fill `## Features` from the feature pages setup finds or writes (feature, page, what it covers). A
+project whose level 2 pages live elsewhere lists them by hand.
 
 Now write `.grasp.md` from [templates/grasp-config.md](../templates/grasp-config.md), with
 `run records:` set to `<docs folder>/runs`. The steps below read it.
@@ -256,8 +268,8 @@ Brings grasp up to date, then refreshes the block in every connected skill.
 
 A file written by grasp 0.1.0 has no `tested:` line, no `## App`, no `## Learning` and no
 `## Connected skills`. Never force a full setup for that. Ask for a missing part the first time a
-run needs it (the app command when a screenshot is due, LinkedIn Learning when writing
-"Concepts", `illustrations:` when a page that may open with a picture is written), save it, and
+run needs it (the app command when a screenshot is due, LinkedIn Learning when choosing an
+idea's video, the reader questions when an issue page is written, `illustrations:` when a page that may open with a picture is written), save it, and
 carry on. `grasp-tools connect` adds the Connected skills section itself.
 
 A file written before 0.3.0 has no `run records:` line, no run-record block in the instruction

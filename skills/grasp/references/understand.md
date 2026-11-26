@@ -60,7 +60,7 @@ Two sections of the before half carry the understanding:
   the agent works.
 - **Ideas**: up to 3 ideas the change leans on, the first the design idea, each one visible line
   and one toggle that holds the longer explanation and the checked links ("Standard 2" and
-  "Concepts" in [notebook.md](notebook.md)). Name them before the build: a reader who does not know the idea cannot judge the plan.
+  "Ideas this leans on" in [notebook.md](notebook.md)). Name them before the build: a reader who does not know the idea cannot judge the plan.
 
 The before half is also the spec: the build works from it, and the "after" half is compared
 against it in "Planned and built". If the plan changes during the build, change the step's text in

@@ -167,4 +167,16 @@ test_writer_rules_are_stated_once() {
   grep -qF "Walk ready: /grasp walk" "$SKILL" || _fail "step 6 does not end with the walk line"
 }
 
+test_reader_and_features_settings() {
+  local cfg="$ROOT/skills/grasp/templates/grasp-config.md" nb="$ROOT/skills/grasp/references/notebook.md" s
+  for s in "## Reader" "- knows well:" "- new to:" "| gap | found on | date |" "## Features" "| feature | page | covers |" "- sync scope:" "- other records:"; do
+    grep -qF -- "$s" "$cfg" || _fail "config template lacks: $s"
+  done
+  for s in "title match only" "content checked" "fail redirected" "refactoring.guru" "aws.amazon.com/builders-library" "checked YYYY-MM-DD" \
+           "design idea" "one specific video" "No checked video yet" "Never the course address" "system design"; do
+    grep -qF "$s" "$nb" || _fail "notebook.md lacks: $s"
+  done
+  grep -qF "## Reader" "$ROOT/skills/grasp/references/setup.md" || _fail "setup.md does not ask for the reader profile"
+}
+
 run_tests "${1:-.}"

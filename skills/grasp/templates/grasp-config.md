@@ -25,6 +25,8 @@
 - notion parent: {page id, only for target notion}
 - notion features: {page id, only for target notion}
 - notion app map: {page id, only for target notion}
+- sync scope: {project | mine}
+- other records: {folders whose files are linked from an issue page when they mention its key, or none}
 
 ## Code
 
@@ -51,6 +53,25 @@
 
 - linkedin learning: {yes | no}
 - illustrations: {yes | no}
+
+## Reader
+
+<!-- Who reads the pages. The writer teaches an idea that is under `new to`, in the gap table, or
+     not under `knows well`. Rows in the gap table are added by a walk (idea, issue, date). -->
+
+- knows well: {comma list, e.g. REST, SQL, React}
+- new to: {comma list, e.g. queues, caching}
+
+| gap | found on | date |
+| --- | -------- | ---- |
+
+## Features
+
+<!-- Filled by setup from the feature pages it finds or writes. A project whose level 2 pages
+     live elsewhere lists them here by hand. -->
+
+| feature | page | covers |
+| ------- | ---- | ------ |
 
 ## Projects
 

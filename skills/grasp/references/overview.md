@@ -75,7 +75,7 @@ the reader can recognise them in the next app. Shape: [architecture.md](../templ
   everyday picture, where this code does it, and when not to use it.
 - **Lessons are visible, not folded.** The "Lessons" table has one row per concept, easiest
   first: a free YouTube video and, with `linkedin learning: yes`, a LinkedIn Learning course, each
-  checked as "Learning links" in [notebook.md](notebook.md) says. `lint-page` reports
+  checked as "Concepts on the other pages" in [notebook.md](notebook.md) says. `lint-page` reports
   `no-lessons`.
 - **Design system**, only for an app with a UI: where the tokens and shared components live and
   what is enforced. This is a different thing from system design; say which one you mean.
@@ -99,7 +99,7 @@ the reader can recognise them in the next app. Shape: [architecture.md](../templ
   newcomer must know to follow this app, the architecture page at most 5 system design ideas, a
   feature page one or two (or a link to the app map's).
   Each is one visible line and one toggle with the longer explanation and its checked links, as
-  "Concepts" in [notebook.md](notebook.md) describes. Pick them from what the code actually does
+  "Concepts on the other pages" in [notebook.md](notebook.md) describes. Pick them from what the code actually does
   (the traces), never from a list of its libraries. Every one of these pages keeps the section:
   `lint-page` reports `no-concepts`.
 - **Top to bottom unless it is a short chain.** Obsidian shrinks a diagram to the width of the

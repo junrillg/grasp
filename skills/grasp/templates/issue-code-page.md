@@ -9,6 +9,8 @@ has no word limit. Run `grasp-tools lint-page PAGE` after every write.
 - `## Code walkthrough` has one `### N. Title` per step of "How it works", in the same order. Under
   each: the output of `grasp-tools snippet` (a marker line, a code fence and a permalink), then one
   or two sentences on what the code does and why.
+- The heading of the step where the design idea shows ends with the idea's name in parentheses,
+  for example `### 4. Send in chunks (Resumable upload)`.
 
 ---
 
