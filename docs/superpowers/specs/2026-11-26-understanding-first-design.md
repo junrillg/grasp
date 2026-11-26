@@ -153,6 +153,8 @@ What stays from today's page:
 - An issue page is a snapshot of one change. It is pinned to a commit per pull request: the merge
   commit once merged, the head of the pull request before that. Its code blocks never move to a
   later commit.
+  The pin and the stale rule were refined during the build; see "Rulings made during the build"
+  below.
 - A feature page describes how the feature works today.
 - So a later card that edits the same files does not make an issue page stale. `sync` adds a
   generated "Changed since by" line to it, naming the later issues, and marks the feature page
@@ -406,3 +408,100 @@ These are the writer's, not the owner's. Each can be overturned.
 - The sub-page of an `explain` page is named `-code`, not `-files`, so there is one naming rule.
   Older `-files` pages show up in `sync` as below standard.
 - The explain-build skill is not touched by this work; its fate is decided after the trial.
+
+## Rulings made during the build
+
+The build found places where this design was wrong, silent or contradicted itself. Each was decided
+on the spot and is recorded here so the document matches what was built. Where a ruling and a
+section above differ, the ruling is what the code and the instructions do.
+
+### Pinning and stale
+
+- **The pin is the last code commit, not the pull request head.** `HEAD` in `Checked against:` is
+  the merge commit when the page is written after the merge; otherwise the pull request's last
+  commit that changes anything outside the notebook folder. A commit that only touches the notebook
+  never moves the pin. The design's "the head of the pull request" made every page stale the moment
+  it was committed.
+- **Stale is decided from file contents, never from commit ids.** An issue page is stale when a
+  file in its own range differs between the pinned commit and the pull request's current head or
+  merge commit, or when that commit descends from the pin and changes a file outside the notebook.
+  Known ceiling: after a squash merge, someone else's later edit to the same file on the base
+  branch can show as stale.
+- **A commit that is not in the local clone proves nothing.** It is reported as `unreachable`,
+  never as stale or drifted.
+- **Work that is not committed yet.** A page about it carries the word `uncommitted` as its head,
+  lists every file, writes the walkthrough in prose with no code, and shows `Not pinned yet:` in
+  plain sight. `sync` reports it below standard with `not pinned to a commit`.
+  `/grasp repair NAME --only code` finishes it after the commit. `explain` never commits code to
+  get around this. Cost: no code excerpts until the commit.
+
+### The page
+
+- **"Questions asked" is kept.** The questions the person asked while understanding the issue are
+  the last paragraph of the "Why it was built this way" fold.
+- **The change map sits under "Where it fits".** Depth is two levels: visible, then a fold or the
+  code sub-page. The older "three zoom levels" wording is gone.
+- **`no-code-page` checks a link, `sync` checks the name.** Lint asks that a full page links an
+  existing `-code.md` file; `sync` pairs page and sub-page strictly by name and reports
+  `no code sub-page` otherwise.
+- **Design-idea reading sources are named:** martinfowler.com, the Azure architecture patterns and
+  the AWS Builders' Library come first.
+- **A video's length is read, never estimated,** and left out when it cannot be read.
+- **The optional course line has a fixed format** and always sits beside the video line, never in
+  place of it.
+- **Fold length:** 3 to 5 lines for an idea, two for a design idea the reader already knows.
+- **A lesson that differs from what was built says so** (older version, another tool). Carried over
+  from the old explain flow, for every page.
+
+### Coverage
+
+- **No end commit means the working tree.** `coverage --base REF` with no `--head` counts
+  uncommitted and untracked files; with `--head` it counts commits only. The comparison always
+  starts at the merge base.
+- **Nothing changed is not an error:** `0 of 0 changed files named`, exit 0.
+- **One run over every repository, one total.** A proof step never has an expected failure line.
+
+### Explain
+
+- **`explain check PAGE` uses the page's own ranges** when it has them; `--base` applies only when
+  it has none, or when given. It takes the main page and derives the sub-page.
+- **`--lessons all`** allows a LinkedIn Learning video when the settings say yes, or when there is
+  no settings file; never when the settings say no.
+- **With no settings file,** pages go to `docs/how-it-works/` at the root of the folder the session
+  started in.
+
+### Walk
+
+- **`walk` takes an issue, a feature, or the name of an `explain` page.** It needs a pinned page.
+- **`keep-walk` refuses rather than half-carries:** it exits 1 and leaves the new page untouched
+  when the new page has no walk markers or no `Walk:` field.
+- **The rule that a rewritten page keeps its walk lives once,** in the writer's rules, and names
+  every run that rewrites a page, `map` included.
+- **A secret typed into an answer is replaced with `[removed]`** and the person is told. This is
+  the one exception, besides HTML escaping, to never rewriting the person's words.
+- **Ideas added for gaps may take a page past three ideas.**
+
+### Sync and repair
+
+- **`sync` never causes a state it reports.** Lint does not count the generated issues list or the
+  `Changed since by:` line toward a page's word limit.
+- **A check that could not run is not a clean result.** The page is below standard with
+  `coverage could not run: REASON` (likewise lint and snippet-check).
+- **A repository named on a page and not given to `sync`** is reported as `REPO not given` with
+  `coverage partly checked`, never as a failure.
+- **Feature pages are below standard only for lint and snippet findings.** The standard number, the
+  pin and coverage are for issue pages.
+- **`sync` refuses to write a generated list** when a walk block sits between its markers, and
+  ignores markers shown inside a code fence.
+- **`repair` also takes the name of an `explain` page.**
+- **`repair` without `--only` always rewrites the whole page** from the card, the pull request and
+  the code. A quoted reason is checked against the code and reported both ways.
+- **An old explain-back answer is kept** as an "Earlier explain-back" entry in the walk fold, only
+  when it holds the person's own words. The walk state stays "not walked".
+- **One run record per `repair` run,** written by the main thread.
+- **Links:** always checked for one issue; for a feature or everything, only when asked.
+
+### Connected skills
+
+- **A second writer found in a skill's `references/` file** is handled by repointing the step in
+  that skill's `SKILL.md` and marking the file retired, each after a yes.
