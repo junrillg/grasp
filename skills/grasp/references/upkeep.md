@@ -118,12 +118,14 @@ The target decides which part below applies:
 ### One issue
 
 1. **Findings.** Build the keys file (the one key) and the heads file (its pull requests), as
-   sync's steps 1 to 3 do. Pass `--links`, unless `--only` is `page` or `code`. Run:
+   sync's steps 1 to 3 do. Run:
 
    ```
    grasp-tools sync --only KEY --docs DIR --repo DIR [--repo DIR]... --keys FILE [--heads FILE] [--links]
    ```
 
+   For one issue or one name, `sync --only` is always run with `--links` (it checks one page's
+   links, which is cheap), except with `--only page` or `--only code`.
    `grasp-tools sync --only` writes nothing. Print each finding as one line: the state, then the
    `DETAIL` item. Print a quoted reason as a finding too.
 2. **`--dry-run` stops here.** Nothing is written, no subagent starts. With no findings it prints
@@ -131,29 +133,47 @@ The target decides which part below applies:
 3. **Nothing found.** When no finding can be repaired (the state is `ok`, or only `changed-since`
    and `not-walked`), there is no reason and no `--force`: print `nothing to repair` and stop.
    Print the notes the table says repair cannot fix.
-4. **Write.** One subagent writes the pages again by [notebook.md](notebook.md) "Standard 2" and its
-   templates, from the card, the pull request and the code at the pinned commit, never from the
-   old page alone: an old page may have no working note. It reads what "What the writer reads"
-   lists. It pins by "A snapshot and a living page" (the merge commit once merged, otherwise the
-   last code commit of the pull request). It writes every code block through `grasp-tools snippet`.
-   A quoted reason is a finding to check against the code first: the page changes where the code
-   agrees, and the result says where the code agrees and where it does not.
-   A missing page is written the same way. A card with no pull request cannot be written: report
-   `needs a person: no pull request`.
+4. **Write.** One subagent writes the pages by [notebook.md](notebook.md) "Standard 2" and its
+   templates. Without `--only`, `repair` always writes the whole page again, from the card, the
+   pull request and the code at the pinned commit (an old page may have no working note). It never
+   patches a sentence of the old text. It reads what "What the writer reads" lists. It pins by "A
+   snapshot and a living page" (the merge commit once merged, otherwise the last code commit of the
+   pull request). It writes every code block through `grasp-tools snippet`. A quoted reason is one
+   more finding, checked against the code first. The report says, for the reason, where the code
+   agrees (and what changed on the page) and where it does not (and that the page already matched
+   the code there). A missing page is written the same way. A card with no pull request cannot be
+   written: report `needs a person: no pull request`. The subagent writes no run record and does
+   not touch the run records index.
 5. **Keep the walk.** Write to a new file beside the old one (`PAGE.new`, same folder, so relative
-   links stay right). Then run `grasp-tools keep-walk OLD NEW` and replace the old file only on
-   exit 0, as "A rewritten page keeps its walk" in [notebook.md](notebook.md) "Standard 2" says. On
-   exit 1 stop that page, leave the old file as it is, and report `needs a person: the walk could
-   not be carried over`, naming the new file. The code sub-page has no walk: replace it directly.
-   An old `## Explain it back` section with an answer becomes the
-   first entry of the walk fold of the new page, in the person's words. This is the only write
-   inside a walk block, and it adds an entry, never removes one. Copy the `Changed since by:` line
-   and the issues block as they are.
+   links stay right). When there is no old page (a missing page), skip `keep-walk` and just move
+   the new file into place. Otherwise run `grasp-tools keep-walk OLD NEW` and replace the old file
+   only on exit 0, as "A rewritten page keeps its walk" in [notebook.md](notebook.md) "Standard 2"
+   says. On exit 1 stop that page, leave the old file as it is, and report `needs a person: the
+   walk could not be carried over`, naming the new file. The code sub-page has no walk: replace it
+   directly. Copy the `Changed since by:` line and the issues block as they are.
+
+   An old page may hold a `## Explain it back` answer. Carry it over only when it holds the
+   person's own words (not `pending`, `skipped`, `not asked ...` or empty). Do it after
+   `keep-walk` has run, into the new page's walk fold. When `keep-walk` printed `no walk to keep`
+   the fold is the template's placeholder; replace it with this, markers kept:
+
+   ```html
+   <details><summary>Your walk: not done yet. An earlier answer is kept below. Run /grasp walk KEY</summary>
+   <p><b>Earlier explain-back.</b> THE OLD QUESTION</p>
+   <p><b>You:</b> THEIR WORDS, HTML-ESCAPED, OTHERWISE UNCHANGED</p>
+   </details>
+   ```
+
+   `Walk:` stays `not walked`: an old explain-back is not a walk. When `keep-walk` kept a real
+   walk, put the two paragraphs first inside its fold, above its entries. This is the only write
+   inside a walk block, and it adds an entry, never removes one.
 6. **Other records.** For each folder in `other records`, link every file that mentions the key
    (`grep -rlF KEY FOLDER`) in the "Open and not verified" fold, as a link of the fold's own HTML
    form. None, or `none`: skip.
 7. **Parts.** `--only page` rewrites the issue page and leaves its sub-page alone. `--only code`
-   rewrites the code sub-page and pins the page ("A page about uncommitted work"). `--only links`
+   rewrites the page's `Checked against:` line by the pinning rule in [notebook.md](notebook.md) "A
+   snapshot and a living page" (and removes a `Not pinned yet:` line if there is one), and rewrites
+   the sub-page; it changes nothing else on the issue page. `--only links`
    rewrites no prose: it rechecks every lesson link with `grasp-tools check-link`, replaces a failed
    one in place with a link chosen by "One specific video and one page to read" in
    [notebook.md](notebook.md), and fills an idea whose fold says `No checked video yet` by the same
@@ -161,8 +181,15 @@ The target decides which part below applies:
 8. **Check.** Run the three checks of "Standard 2" on the real files, then `grasp-tools sync --only
    KEY` again with the same files. Report one line: `KEY repaired`, or `KEY needs a person: REASON`
    when a check still prints something or the row still shows `missing`, `stale`, `below-standard`
-   or `bad-link`. Then run `sync` once more as `sync` does, so the generated lists show the new
-   state. Write the run record.
+   or `bad-link`. Writing the generated lists and the run record is not done here: see "Closing
+   a run".
+
+### Closing a run
+
+The main thread, not a subagent, does this once per `repair` run, after every page has reported:
+run `grasp-tools sync` as `sync` does (it writes), so the generated lists show the new states, then
+write one run record for the run that lists every page, repaired or needing a person, and rebuild
+the index ([records.md](records.md)). Subagents never write a record.
 
 ### A page about uncommitted work
 
@@ -187,18 +214,21 @@ of `KEY`. A quoted reason is a finding, as for an issue.
 
 ### A feature, or `--all`
 
-1. Run `sync` as above, on the whole notebook. For `FEATURE`, keep that feature's rows.
+1. Run `sync` as above, on the whole notebook, with `--links` only when the person asked for links.
+   For `FEATURE`, keep that feature's rows.
 2. Count: pages to rewrite (`missing`, `stale`, `below-standard`), pages that only need their links
-   (`bad-link`), and pages that need a person (the table above). With `--force`, every page
+   (`bad-link`, counted only when links were checked; otherwise say `links not checked` and
+   promise no link repairs), and pages that need a person (the table above). With `--force`, every page
    counts as one to rewrite. Show the three numbers and ask once whether to go. Without a yes,
    write nothing. With `--dry-run`, show the numbers and the findings and stop. A quoted reason
    belongs to one issue or one `explain` page, so it is not accepted here.
-3. One page per subagent, each following "One issue" steps 4 to 8, or "One `explain` page". Run them
+3. One page per subagent, each following "One issue" steps 4 to 8, or "One `explain` page", and
+   none writing a record. Run them
    one at a time when the project's checks are heavy; otherwise a few at once. A feature page is
    rewritten by [overview.md](overview.md) from the code as it is today, with the same walk rule.
    `--only code` leaves a feature page alone, because it has no sub-page.
 4. Print one line per page as it finishes, then the counts: how many repaired, how many need a
-   person, and what each needs.
+   person, and what each needs. Then "Closing a run".
 
 ## Never
 

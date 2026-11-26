@@ -209,7 +209,7 @@ test_upkeep_is_documented() {
   local u="$ROOT/skills/grasp/references/upkeep.md" f="$ROOT/skills/grasp/templates/feature-page.md" s
   [[ -f "$u" ]] || _fail "references/upkeep.md missing"
   for s in "grasp-tools sync --only" "keep-walk" "nothing to repair" "--dry-run" "--only links" "needs a person" "sync scope" \
-           "other records" "Markdown notebooks only" "not pinned to a commit" "coverage could not run" "Not pinned yet"; do
+           "other records" "Markdown notebooks only" "not pinned to a commit" "coverage could not run" "Not pinned yet" "Earlier explain-back" "one run record" "Closing a run"; do
     grep -qF -- "$s" "$u" || _fail "upkeep.md lacks: $s"
   done
   grep -qF "/grasp sync" "$SKILL"   || _fail "no usage line for sync"

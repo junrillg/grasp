@@ -104,6 +104,9 @@ Do all of this after the last answer, in one pass, with the person's exact words
 1. **The fold.** Replace what is between `<!-- grasp:walk:start -->` and `<!-- grasp:walk:end -->`
    with the fold below, markers kept. HTML only: no Markdown, no code fence, no fold inside it.
    Give lines as `<code>file lines 10-24</code>`, not as a code block. The date is today's.
+   When the fold already holds an `Earlier explain-back` entry (two paragraphs, written by
+   `repair`), keep those two paragraphs as they are, first in the fold, above the walk's own
+   entries.
 
    ```html
    <!-- grasp:walk:start -->

@@ -108,8 +108,8 @@ tracker writes.
 Every grasp subcommand that does work ends with this, because its outcome is what people ask
 about later: the full workflow at step 7, `verify` (Changed: "nothing; the fix for KEY was
 verified", or what failed), `review` (the findings count, and whether anything was posted),
-`resolve` after its commit, `setup` and `map` for what they wrote, `repair` for each page it
-rewrote or could not, and `sync` when it changed a file. Only `page` and `record`
+`resolve` after its commit, `setup` and `map` for what they wrote, `repair` (one record for the whole run, written by the
+main thread and listing every page it rewrote or could not; subagents write none), and `sync` when it changed a file. Only `page` and `record`
 themselves don't: `page` is called by a skill that is still working.
 
 ## The block in AGENTS.md and CLAUDE.md
