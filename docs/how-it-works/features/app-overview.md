@@ -2,7 +2,7 @@
 
 Verified at `dc9a389` with uncommitted changes, 2026-11-21 · part of the [app map](../app-map.md)
 
-**In one line:** grasp reads the code and writes an app map, a page per core feature and, for several projects, a workspace map.
+**In one line:** grasp reads the code and writes an app map, an architecture page with lessons, a page per core feature and, for several projects, a workspace map.
 
 ## Where it fits
 
@@ -32,7 +32,7 @@ sequenceDiagram
   A->>G: projects, to see if this is a workspace
   A->>C: list what the app can do, trace one path per feature
   A->>D: show the feature list, wait for fixes
-  A->>N: write the app map, then a page per feature, lint each
+  A->>N: write the app map, the architecture page, a page per feature, lint each
 ```
 
 <details><summary>Code walkthrough: 4 steps, numbered like the diagram</summary>
@@ -49,11 +49,11 @@ the feature list.</code></pre>
 if the README is silent. Show the feature list and let them fix nam...
 vocabulary.</code></pre>
 <p><b>4.</b> Pages are written from the traces, listed in the router and linted (<code>skills/grasp/references/setup.md</code>, "8. Overview")</p>
-<pre><code>3. Write the app map, the feature pages that earn one and, in a wor...
-   Create the notebook's `README.md` (the pages in reading order: t...
-   that table exists, Run records) and add the same rows to the doc...
-   README and the router follow "Settings in a workspace" in overvi...
-   are reached from the app map, not from the router. Run `grasp-to...</code></pre>
+<pre><code>3. Write the app map, the architecture page, the feature pages that e...
+   workspace, the workspace map (a small project gets the app map alo...
+   workspace map alone: "Scale with the app" in overview.md). Create t...
+   (the pages in reading order: the app map, the architecture page, F...
+   exists, Run records) and add the same rows to the docs router. In...</code></pre>
 </details>
 
 ## Concepts
@@ -78,4 +78,5 @@ Explained on the app map: [Concepts](../app-map.md#concepts). Diagrams as text (
 
 | When | What changed | Page |
 | ---- | ------------ | ---- |
+| 2026-11-24 | `map` and setup also write an architecture page: the design, why, what fails, and lessons | [Architecture page](../runs/2026-11-24-architecture-page-and-lessons.md) |
 | 2026-11-23 | `lint-page` now counts diagram boxes and visible words, and the app map and feature pages name their concepts | [Goal review](../runs/2026-11-23-goal-review-steps-concepts-limits.md) |

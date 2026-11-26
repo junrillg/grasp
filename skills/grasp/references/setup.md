@@ -23,7 +23,7 @@ overview of the app so there is something to read on day one (step 8).
 | 1-5 Settings | tracker, one real issue, checks, app, docs folder, LinkedIn Learning | `.grasp.md` |
 | 6 Run records | which instructions file, Stop hook yes/no | the block in `AGENTS.md` or `CLAUDE.md`, the `runs/` folder |
 | 7 Connect skills | which of the project's skills | the block in each picked skill |
-| 8 Overview | to confirm the feature list | the app map, feature pages, the workspace map |
+| 8 Overview | to confirm the feature list | the app map, the architecture page, feature pages, the workspace map |
 
 ### 0. Scope
 
@@ -112,7 +112,7 @@ Ask whether the team has LinkedIn Learning. Save `linkedin learning: yes` or `no
 "Concepts" lists only free material.
 
 Then ask once whether pages should open with a generated illustration (one image generation per
-page: the app map, the workspace map and each issue page). Save `illustrations: yes` or `no`.
+page: the app map, the architecture page, the workspace map and each issue page). Save `illustrations: yes` or `no`.
 Say which image tool was found; with none, say so, save the answer anyway and write diagrams only
 until one is available ("Illustrations" in [notebook.md](notebook.md)).
 
@@ -190,12 +190,14 @@ The issue the user came for should not wait on it unless they choose so.
 2. Show the user the feature list (at most 9 core features, in their words) and let them rename
    or drop rows. Say which features will get a page of their own ("Scale with the app" in
    overview.md decides; a small project gets none) and ask whether to write those now
-   (recommended) or only the app map. Show the concepts picked for the app map (at most 5) in
-   the same message, so a wrong or missing one is caught before pages are written.
-3. Write the app map, the feature pages that earn one and, in a workspace, the workspace map
-   (a small workspace gets the workspace map alone: "Scale with the app" in overview.md).
-   Create the notebook's `README.md` (the pages in reading order: the app map, Features once
-   that table exists, Run records) and add the same rows to the docs router. In a workspace the
+   (recommended) or only the app map. Show the concepts picked for the app map (at most 5), the
+   architecture style and the system design ideas for the architecture page (at most 5) in the
+   same message, so a wrong or missing one is caught before pages are written.
+3. Write the app map, the architecture page, the feature pages that earn one and, in a
+   workspace, the workspace map (a small project gets the app map alone and a small workspace the
+   workspace map alone: "Scale with the app" in overview.md). Create the notebook's `README.md`
+   (the pages in reading order: the app map, the architecture page, Features once that table
+   exists, Run records) and add the same rows to the docs router. In a workspace the
    README and the router follow "Settings in a workspace" in overview.md instead. Feature pages
    are reached from the app map, not from the router. Run `grasp-tools lint-page` on each page.
 

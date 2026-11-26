@@ -127,6 +127,20 @@ test_links_inside_the_skill_resolve() {
   fi
 }
 
+test_overview_teaches_architecture_and_system_design() {
+  local tpl o n s
+  tpl=$(cat "$ROOT/skills/grasp/templates/architecture.md" 2>/dev/null)
+  o=$(cat "$ROOT/skills/grasp/references/overview.md"); n=$(cat "$ROOT/skills/grasp/references/notebook.md")
+  for s in ": architecture" "## The shape" "## Why it is built this way" "## When something fails" "## How it grows" \
+           "## Design system" "## Concepts" "## Lessons" "assets/architecture.png" '```mermaid' "YouTube" "LinkedIn Learning"; do
+    assert_contains "$tpl" "$s" "architecture template has: $s"
+  done
+  assert_contains "$o" "templates/architecture.md" "overview.md links the template"
+  assert_contains "$n" "architecture.md" "notebook.md lists the page"
+  assert_contains "$(cat "$ROOT/skills/grasp/references/setup.md")" "architecture page" "setup writes it"
+  assert_contains "$(help_block)" "architecture" "help names it"
+}
+
 test_run_record_fields_agree_everywhere() {
   local f blk p rec tpl
   p=$(new_tmp); "$ROOT/skills/grasp/bin/grasp-tools" --config "$p/.grasp.md" connect AGENTS.md record >/dev/null

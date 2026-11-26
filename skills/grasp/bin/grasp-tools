@@ -61,9 +61,12 @@ Commands:
                            too-many-boxes (a diagram with more than 20 boxes) and, by the
                            kind of page read from its content: too-long (the words a reader
                            sees, toggles and code not counted: run record 150, issue page
-                           400, feature page 350, app map and workspace map 1100) and
-                           no-concepts (an issue page, app map or feature page with no
-                           "## Concepts" heading), no-answer (a built or verified issue
+                           400, feature page 350, architecture page 900, app map and
+                           workspace map 1100), no-concepts (an issue page, app map,
+                           architecture or feature page with no "## Concepts" heading),
+                           no-lessons (an architecture page whose "## Lessons" holds no
+                           YouTube or LinkedIn Learning link and no "No checked lesson
+                           yet"), no-answer (a built or verified issue
                            page with an empty "Your answer:"). Exits 1 when anything is
                            reported
   version                  print the grasp version
@@ -794,18 +797,20 @@ cmd_lint_page() {
       isrun = (isrun && h1 ~ /^# [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]: /)
       if (isrun) limit = 150
       else if (h1 ~ /: app map[ \t]*$/) { limit = 1100; needs = 1 }     # app map
+      else if (h1 ~ /: architecture[ \t]*$/) { limit = 900; needs = 1 }  # architecture page
       else if (h1 ~ /: how the projects fit[ \t]*$/) limit = 1100       # workspace map
       else if (isissue) { limit = 400; needs = 1 }                      # issue page
       else if (isfeature) { limit = 350; needs = 1 }                    # feature page
       if (limit && nwords > limit) report("too-long " nwords " words, limit " limit, 1, f)
       if (needs && !concepts) report("no-concepts", 1, f)
+      if (h1 ~ /: architecture[ \t]*$/ && !isrun && !lessons) report("no-lessons", 1, f)
       # the explain-back is the step that makes the change understood: a page is not built without it
       if (isissue && !isrun && isdone && noanswer) report("no-answer", noanswer, f)
     }
     FNR == 1 {
       if (NR > 1) finish(page)
       page = FILENAME; fence = ""; depth = 0; split("", inside); mm = 0; prev = "blank"; wrapped = 0
-      nwords = isrun = isissue = isfeature = concepts = isdone = noanswer = 0; h1 = ""
+      nwords = isrun = isissue = isfeature = concepts = isdone = noanswer = inlessons = lessons = 0; h1 = ""
     }
     {
       line = $0; sub(/\r$/, "", line)
@@ -845,6 +850,8 @@ cmd_lint_page() {
       if (line ~ /Your answer:[ \t]*$/ && !noanswer) noanswer = FNR
       if (index(line, "part of the [app map](")) isfeature = 1
       if (line == "## Concepts") concepts = 1
+      if (line ~ /^## /) inlessons = (line == "## Lessons")
+      if (inlessons && line ~ /https:\/\/((www\.|m\.)?youtube\.com|youtu\.be|www\.linkedin\.com\/learning)\/|No checked lesson yet/) lessons = 1
       # ignore inline code first (a `<pre>` named in prose opens nothing), then quoted code
       code = line; gsub(/`[^`]*`/, "", code); code = strip(code, "pre", "<pre[ >]", "</pre>"); gsub(/<code>[^<]*<\/code>/, "", code)
       links(code)

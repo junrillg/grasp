@@ -486,6 +486,26 @@ test_lint_missing_file_exits_2() {
 test_lint_flags_too_long()       { _lint_expect too-long "bad-too-long.md:1: too-long 151 words, limit 150"; }
 test_lint_flags_too_many_boxes() { _lint_expect too-many-boxes "bad-too-many-boxes.md:5: too-many-boxes 21 boxes, limit 20"; }
 test_lint_flags_no_concepts()    { _lint_expect no-concepts "bad-no-concepts.md:1: no-concepts"; }
+test_lint_flags_no_lessons() {
+  local d f
+  d=$(new_tmp); f="$d/architecture.md"
+  arch() { printf '# Shop: architecture\n\n## Concepts\n\n%s\n' "$1" > "$f"; }
+  arch 'no lesson here'
+  assert_eq "$f:1: no-lessons" "$("$TOOLS" lint-page "$f")" "an architecture page must hold a lesson"
+  arch '[docs](https://example.com/guide)'
+  assert_eq "$f:1: no-lessons" "$("$TOOLS" lint-page "$f")" "official docs alone are not a lesson"
+  arch '## Lessons'
+  assert_eq "$f:1: no-lessons" "$("$TOOLS" lint-page "$f")" "an empty Lessons section is not a lesson"
+  printf '# Shop: architecture\n\n## Concepts\n\n[v](https://www.youtube.com/watch?v=abcdefghijk)\n' > "$f"
+  assert_eq "$f:1: no-lessons" "$("$TOOLS" lint-page "$f")" "the lesson must be under ## Lessons"
+  local ok
+  for ok in '[v](https://www.youtube.com/watch?v=abcdefghijk)' '[c](https://www.linkedin.com/learning/x)' 'No checked lesson yet'; do
+    arch "$(printf '## Lessons\n\n%s' "$ok")"
+    assert_eq "" "$("$TOOLS" lint-page "$f")" "passes with: $ok"
+  done
+  arch "$(printf '## Lessons\n\n## Not sure yet\n\n[v](https://youtu.be/abcdefghijk)')"
+  assert_eq "$f:1: no-lessons" "$("$TOOLS" lint-page "$f")" "a link after the section ends does not count"
+}
 test_lint_instruction_file_is_not_a_run_record() {
   # AGENTS.md holds the block, which spells out "- **Asked:**": it must not be measured as a record
   local t i; t=$(new_tmp)
@@ -532,6 +552,7 @@ kind_page() {
     feature)   printf '# Cart\n\npart of the [app map](app-map.md)\n\n## Concepts\n\n' ;;            # 7
     app)       printf '# Shop: app map\n\n## Concepts\n\n' ;;                                        # 4
     workspace) printf '# Shop: how the projects fit\n\n' ;;                                          # 5
+    arch)      printf '# Shop: architecture\n\n## Concepts\n\n## Lessons\n\nNo checked lesson yet\n\n' ;;   # 8
     none)      printf '# Features\n\nStatus: done\n\n' ;;
   esac
   words "$2"; printf '\n'
@@ -552,6 +573,7 @@ issue 5 400
 feature 7 350
 app 4 1100
 workspace 5 1100
+arch 8 900
 EOF
 }
 
@@ -567,7 +589,7 @@ test_lint_page_of_no_kind_is_never_too_long_or_without_concepts() {
 test_lint_no_concepts_only_on_issue_app_and_feature_pages() {
   local d kind f
   d=$(new_tmp); : > "$d/app-map.md"
-  for kind in issue feature app; do
+  for kind in issue feature app arch; do
     f="$d/$kind.md"
     kind_page "$kind" 10 | grep -v '^## Concepts$' > "$f"
     assert_eq "$f:1: no-concepts" "$("$TOOLS" lint-page "$f")" "$kind page without Concepts"
@@ -1200,7 +1222,7 @@ page_of() { awk 'f { print } /^---$/ { f = 1 }' "$ROOT/skills/grasp/templates/$1
 
 test_new_templates_lint_clean() {
   local d t out rc
-  for t in run-record app-map feature-page workspace-map issue-page; do
+  for t in run-record app-map architecture feature-page workspace-map issue-page; do
     rc=0
     # the notes above "---" count as words of the page here, so its length is checked below
     out=$("$TOOLS" lint-page "$ROOT/skills/grasp/templates/$t.md" | grep -v -e ': dead-link ' -e ': hard-wrap$' -e ': too-long ') || true
@@ -1211,9 +1233,9 @@ test_new_templates_lint_clean() {
   d=$(new_tmp); mkdir -p "$d/features" "$d/runs"
   page_of app-map > "$d/app-map.md"; page_of workspace-map > "$d/workspace-map.md"
   page_of feature-page > "$d/features/some-feature.md"; page_of run-record > "$d/runs/2026-01-02-x.md"
-  page_of issue-page > "$d/features/KEY-1-some-issue.md"
+  page_of issue-page > "$d/features/KEY-1-some-issue.md"; page_of architecture > "$d/architecture.md"
   printf '# Features\n' > "$d/features/README.md"; printf '# Run records\n' > "$d/runs/README.md"
-  out=$("$TOOLS" lint-page "$d/app-map.md" "$d/workspace-map.md" "$d/features/some-feature.md" "$d/features/KEY-1-some-issue.md" "$d/runs/2026-01-02-x.md") || rc=$?
+  out=$("$TOOLS" lint-page "$d/app-map.md" "$d/architecture.md" "$d/workspace-map.md" "$d/features/some-feature.md" "$d/features/KEY-1-some-issue.md" "$d/runs/2026-01-02-x.md") || rc=$?
   assert_eq "" "$out" "template pages in a notebook layout lint clean, links included"
 }
 

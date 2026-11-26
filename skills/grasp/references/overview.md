@@ -1,15 +1,16 @@
-# Overview: app map, feature pages, workspace map
+# Overview: app map, architecture page, feature pages, workspace map
 
 Detail for `map`, setup's "Overview" step and the app map patch in step 7 of
 [SKILL.md](../SKILL.md). Goal: someone who has never opened this repository can say what the app
-is for, name its core features, explain how one of them works and how they connect, after ten
-minutes with these pages.
+is for, name its core features, explain how one of them works and how they connect, name the
+architecture and say why it is built that way, after fifteen minutes with these pages.
 
 ## The pages
 
 | Page | Answers | Template | Written |
 | ---- | ------- | -------- | ------- |
 | App map, `app-map.md` | What is this app, what can it do, how do the parts connect? | [app-map.md](../templates/app-map.md) | once per app, at setup or `/grasp map` |
+| Architecture page, `architecture.md` | What is the design called, why is it built this way, what breaks first, and where do I learn those ideas? | [architecture.md](../templates/architecture.md) | with the app map, once the app is not small (see "Scale with the app") |
 | Feature page, `features/<feature-name>.md` | How does this one feature work today? | [feature-page.md](../templates/feature-page.md) | with the app map, for each core feature that earns one (see "Scale with the app") |
 | Workspace map, `workspace-map.md` | How do these projects fit together? | [workspace-map.md](../templates/workspace-map.md) | only at the top of a workspace |
 
@@ -19,14 +20,17 @@ one click away. Never grow the app map to explain a feature; write or patch its 
 **Scale with the app.** A page nobody needs is noise, and noise is what makes docs unread:
 
 - **A small project gets the app map alone.** Small means under about 15 source files, counted
-  per project: files of code only, not tests, manifests, lock files, styles, config or docs. No feature pages, whatever the features look like. This rule wins over the next.
+  per project: files of code only, not tests, manifests, lock files, styles, config or docs. No feature pages, whatever the features look like, and no
+  architecture page: the caption of "The pieces" names the architecture style instead, and one of
+  the map's concepts is the system design idea behind it, with its lessons in the toggle. This rule wins over the next.
 - In a larger project, a feature whose whole path is one or two short files gets **no feature
   page**: its row in "Core features" and the app map's pictures already say it. Write a feature
   page only when there is a path worth tracing: three or more files or steps between where it
   starts and where it ends.
 - **A small workspace gets the workspace map alone.** When all its projects together are under
   about 15 source files, add a "Core features" table to the workspace map (feature, project,
-  where it starts) and a "Concepts" section, and write no app maps. The workspace map then stands
+  where it starts) and a "Concepts" section, and write no app maps and no architecture page (the caption of "How they connect" names the style,
+  and one concept is the system design idea behind it). The workspace map then stands
   in for the app map everywhere this skill says "the app map": it is what a run reads before
   restating an issue, what step 7 patches, what setup shows the concepts for, and the way into
   each project. `mapped at` in the Projects table still holds each project's commit. This rule
@@ -50,6 +54,37 @@ The overview lives in the notebook only. Never paste it into `CLAUDE.md` or `AGE
 generated context file loaded into every session costs tokens and has been measured to lower
 agent success. The agent instruction files get the short run-record block and nothing else.
 
+## The architecture page
+
+It teaches two things at once: how this app is designed, and the system design ideas it uses, so
+the reader can recognise them in the next app. Shape: [architecture.md](../templates/architecture.md).
+
+- **Name the style, then show it.** "In one line" gives the architecture its usual name and what
+  that means here. The code is the evidence for the shape; a name no file states is marked
+  "(inferred)".
+- **Its pictures are not the app map's.** The app map owns "The pieces" and "One request". This
+  page draws which part may call which ("The shape") and what happens on a failure ("When
+  something fails").
+- **Every choice has a cost.** A row in "Why it is built this way" with nothing under "What it
+  costs" is praise, not design: find the cost or drop the row.
+- **Limits are read, not guessed.** "How it grows" names only a limit a file shows (one process, a
+  table with no index, a ceiling in a comment). The next step is the textbook answer and is never
+  a recommendation to do it now.
+- **Concepts are system design ideas** (layering, idempotency, caching, queues, consistency,
+  failing open or closed), at most 5, each already used in a section above. Each toggle has an
+  everyday picture, where this code does it, and when not to use it.
+- **Lessons are visible, not folded.** The "Lessons" table has one row per concept, easiest
+  first: a free YouTube video and, with `linkedin learning: yes`, a LinkedIn Learning course, each
+  checked as "Learning links" in [notebook.md](notebook.md) says. `lint-page` reports
+  `no-lessons`.
+- **Design system**, only for an app with a UI: where the tokens and shared components live and
+  what is enforced. This is a different thing from system design; say which one you mean.
+- **In a workspace** the top folder gets one `architecture.md` for the whole system (its "app map"
+  link is the workspace map). A sub-project gets its own only when it is not small and has an
+  inside worth naming: more than one piece, or layers the code enforces.
+- **When it is written:** with the app map, from the same traces plus the files that show
+  failure handling and limits. `/grasp map` writes it when the app map is there and it is not.
+
 ## Rules for every overview page
 
 - **Only what a file shows.** Every feature row, connection and rule names the file it was read
@@ -61,7 +96,8 @@ agent success. The agent instruction files get the short run-record block and no
   `too-many-boxes`). Past that, split by area and give each area its own picture. A picture
   nobody can take in at a glance teaches nothing.
 - **Concepts, short on the page, long in the toggle.** The app map names at most 5 ideas a
-  newcomer must know to follow this app, a feature page one or two (or a link to the app map's).
+  newcomer must know to follow this app, the architecture page at most 5 system design ideas, a
+  feature page one or two (or a link to the app map's).
   Each is one visible line and one toggle with the longer explanation and its checked links, as
   "Concepts" in [notebook.md](notebook.md) describes. Pick them from what the code actually does
   (the traces), never from a list of its libraries. Every one of these pages keeps the section:
@@ -85,8 +121,8 @@ agent success. The agent instruction files get the short run-record block and no
   constraint, a test or a comment in the code states. An observation ("today only X writes this
   table") is not a rule; leave it out or put it under "Not sure yet" as a question.
 - **Word limits count what a reader sees:** prose, captions, table cells. Not diagram source, not
-  folded text. `lint-page` reports `too-long` past 1,100 words on an app map or a workspace map
-  and past 350 on a feature page: fold or cut, never raise the limit.
+  folded text. `lint-page` reports `too-long` past 1,100 words on an app map or a workspace map,
+  900 on an architecture page and 350 on a feature page: fold or cut, never raise the limit.
 - **Walkthroughs stay short.** At most 7 steps, each up to 8 lines of real code, never a whole
   file. A quoted line longer than about 70 characters is cut off on screen: end it with `...`
   where it is cut. Nothing else about the code is changed. A short function is quoted whole. One step may cover several arrows ("Arrows 2 to 4")
@@ -104,8 +140,9 @@ agent success. The agent instruction files get the short run-record block and no
 - **One illustration per map, when the project wants them.** Diagrams carry the structure. With
   `illustrations: yes` in `.grasp.md` and an image tool available, the app map and the workspace
   map each open with one picture of the app as an everyday scene (who uses it, what goes in, what
-  comes out), as "Illustrations" in [notebook.md](notebook.md) describes: saved to
-  `assets/app-map.png` or `assets/workspace-map.png`, read before it is linked, regenerated once
+  comes out), and the architecture page with one of its shape as an everyday scene (the parts, and
+  who may hand work to whom), as "Illustrations" in [notebook.md](notebook.md) describes: saved to
+  `assets/app-map.png`, `assets/workspace-map.png` or `assets/architecture.png`, read before it is linked, regenerated once
   if its text is garbled, dropped otherwise. Never one per feature page.
 - Everything in "Markdown that renders everywhere" and "Toggles" in [notebook.md](notebook.md)
   applies. Run `grasp-tools lint-page` on every page written.
@@ -132,10 +169,11 @@ the feature list.
    to where it ends (the data written, the reply sent), reading only the files on that path.
 5. **Find the connections** between features from what the traces share: the same table or
    entity, one feature calling another's function or endpoint, an event one sends and another
-   handles. Label each edge with the thing that passes.
+   handles. Label each edge with the thing that passes. Note on the way, for the
+   architecture page: which part calls which, what happens on a failure, and any stated limit.
 6. **Check before writing.** Every file named exists (`ls` it). Every edge has a file. Whatever
    is left unconfirmed moves to "Not sure yet".
-7. **Write** the app map, then a feature page for each core feature that earns one ("Scale with
+7. **Write** the app map, the architecture page ("The architecture page"), then a feature page for each core feature that earns one ("Scale with
    the app"), from the traces already made. No second research pass. With the first feature page,
    create `features/README.md`: a "Core features" table (feature, page) and an "Issues" table
    with the header `| Issue | What | Status | Pull request | Page |` and no rows yet. The
@@ -160,6 +198,8 @@ vocabulary.
   row, an edge in "How the features connect", a piece, a step of the main request path, a rule,
   a glossary word. A new core feature gets its feature page; a changed one gets its picture
   patched and a row under "Changes".
+- The architecture page is patched only when an issue changes a layer, a call direction, a design
+  choice, a failure path or a limit; its lessons are rechecked then, never on a schedule.
 - `/grasp map` refreshes in full: explore again, patch what differs, restamp (at the top of a
   workspace it does this only for sub-projects that are new or stale: "Workspaces" below). Do it when the map
   feels wrong, about monthly, and after a big refactor.
@@ -231,7 +271,7 @@ here.
    app map and feature pages and hand back the page paths. What a project exposes and consumes: endpoints served and called, packages published and
    imported, queues and topics, data stores, env values that point at a sibling.
 2. **The workspace map** at the top, written by one subagent given those hand-backs (or inline
-   when they are short), without re-reading code. Draw a
+   when they are short), without re-reading code, and the top `architecture.md` with it. Draw a
    connection only when a file shows it, strongest evidence first:
    - a workspace or path dependency in a manifest;
    - `docker-compose` service links, or an env value that is a URL to a sibling service;
@@ -259,8 +299,8 @@ here.
   `docs router: ../docs/README.md`, `docs repo: ..`. Its block then tells agents to start a
   record's short name with the project.
 - The feature list is made per sub-project, each confirmed with the user.
-- The top notebook's `README.md` lists the workspace map first, then each project's app map, then
-  the run records. A sub-project's folder needs no README of its own: its app map is the way in.
+- The top notebook's `README.md` lists the workspace map first, then the architecture page, then
+  each project's app map, then the run records. A sub-project's folder needs no README of its own: its app map is the way in.
   The docs router gets two rows: the workspace map and the run records.
 - Setup's own run record is one record, at the top, for the whole setup.
 

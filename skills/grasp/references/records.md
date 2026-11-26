@@ -96,7 +96,8 @@ tracker writes.
 5. Run `grasp-tools lint-page FILE`, then `grasp-tools record-index`.
 6. If the task added or changed a core feature, an edge between features, a piece, a step of the
    main request path, a rule or a glossary word, patch those rows of the app map and the feature
-   page ("Keeping it current" in [overview.md](overview.md)).
+   page; a changed layer, call direction, design choice, failure path or limit patches the
+   architecture page ("Keeping it current" in [overview.md](overview.md)).
 7. Report the record's path in one line. Leave it uncommitted unless the task itself commits: it
    belongs in the same commit or pull request as the work it describes.
 

@@ -1,6 +1,6 @@
 # grasp: app map
 
-**Verified at:** `dc9a389` with uncommitted changes, 2026-11-21 · **Patched by:** nothing yet
+**Verified at:** `dc9a389` with uncommitted changes, 2026-11-21 · **Patched by:** [architecture page](runs/2026-11-24-architecture-page-and-lessons.md)
 
 ## What it is for
 
@@ -118,7 +118,7 @@ flowchart TB
 
 ## The pieces
 
-Markdown the agent reads, one bash helper, and the files they act on in your project.
+Markdown the agent reads, one bash helper, and the files they act on in your project. Why it is built this way: [Architecture](architecture.md).
 
 ```mermaid
 flowchart TB
@@ -171,7 +171,7 @@ sequenceDiagram
 | ---- | ----- | ---------------- |
 | Router | `skills/grasp/SKILL.md` | Arguments, help, the rules, the seven steps, each subcommand |
 | Step detail | `skills/grasp/references/` | One file per step or subcommand |
-| Page shapes | `skills/grasp/templates/` | Issue page, app map, feature page, workspace map, run record, `.grasp.md` |
+| Page shapes | `skills/grasp/templates/` | Issue page, app map, architecture page, feature page, workspace map, run record, `.grasp.md` |
 | Exact steps | `skills/grasp/bin/grasp-tools` | connect, status, refresh, record-index, record-check, projects, check-link, lint-page |
 | Install | `install.sh`, `.claude-plugin/` | Links or copies the skill; the plugin manifests |
 | Tests | `tests/` | Bash tests for the helper, the installer and the help block; `tests/render/`, the Obsidian render check (`README.md`) |

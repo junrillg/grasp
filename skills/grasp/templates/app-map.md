@@ -71,7 +71,7 @@ flowchart TB
 
 ## The pieces
 
-{Caption: what runs where, in one line.}
+{Caption: what runs where, in one line. Then, when there is an architecture page: "Why it is built this way: [Architecture](architecture.md)". In a small app with none, the caption names the architecture style in plain words.}
 
 ```mermaid
 flowchart LR

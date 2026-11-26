@@ -1,6 +1,6 @@
 ---
 name: grasp
-description: "Works one issue from any tracker (Jira, GitHub, ClickUp, Linear, GitLab, Azure DevOps, or plain text) so the team understands it before and after it is built, and keeps a record of what agents do in a repository. Understand first: restate the ask, one question at a time, two or three approaches, wait for a pick. Then build test-first, verify with fresh evidence, and write a visual-first learning page (diagrams, the concepts it leans on with checked lessons, a code walkthrough, long text folded; Obsidian-compatible Markdown in docs/, or Notion). `setup` live-tests the tracker, makes every agent run leave a short run record (a block in AGENTS.md or CLAUDE.md), and writes an overview of the app: core features, how they connect, the architecture, and each sub-project of a workspace. Use when given an issue key, URL or description to build, fix or investigate; to verify a fix; to review a pull request or resolve its comments; to record what a run did; to map or explain an app; or to set up or update grasp."
+description: "Works one issue from any tracker (Jira, GitHub, ClickUp, Linear, GitLab, Azure DevOps, or plain text) so the team understands it before and after it is built, and keeps a record of what agents do in a repository. Understand first: restate the ask, one question at a time, two or three approaches, wait for a pick. Then build test-first, verify with fresh evidence, and write a visual-first learning page (diagrams, the concepts it leans on with checked lessons, a code walkthrough, long text folded; Obsidian-compatible Markdown in docs/, or Notion). `setup` live-tests the tracker, makes every agent run leave a short run record (a block in AGENTS.md or CLAUDE.md), and writes an overview of the app: core features, architecture and system design with lessons, each sub-project of a workspace. Use when given an issue key, URL or description to build, fix or investigate; to verify a fix; to review a pull request or resolve its comments; to record what a run did; to map or explain an app; or to set up or update grasp."
 argument-hint: "ISSUE [--plan] [--notebook markdown|notion|off] [--no-comment] | verify ISSUE|PR | review PR [--post] | resolve PR | page ISSUE|PR [--step work|verify|review|resolve] | record [\"NAME\"] | map | setup | update | help"
 ---
 
@@ -28,7 +28,7 @@ task.
 | `--step` | `work`, `verify`, `review`, `resolve`, with `page` | no | `work` | Which skill is calling, so `page` knows which part of the page to write. |
 | `record` | subcommand | no | none | Write or update the run record for the task in this conversation: asked, changed, checked, problems, next. Nothing else: no code, commits or tracker writes. The block that `setup` adds to `AGENTS.md` makes every agent run do this. |
 | `"NAME"` | quoted text, with `record` | no | named after what changed | The record's short name. |
-| `map` | subcommand | no | none | Build or refresh the overview only: the app map, a page for each core feature that needs one and, at the top of a workspace, the workspace map and the app map of each sub-project that is new or stale. |
+| `map` | subcommand | no | none | Build or refresh the overview only: the app map, the architecture page (not in a small app), a page for each core feature that needs one and, at the top of a workspace, the workspace map and the app map of each sub-project that is new or stale. |
 | `setup` | subcommand | no | none | Set grasp up in this project: tracker (live-tested), checks, app, docs folder, learning links, illustrations yes/no, the run-record block in `AGENTS.md` or `CLAUDE.md`, the project's own workflow skills, and the overview of the app. In a top folder with sub-projects it covers each one. Runs by itself when `.grasp.md` is missing. |
 | `update` | subcommand | no | none | Pull the latest grasp for this install, then refresh the block in every connected skill. |
 | `help` | first word | no | none | Also `--help`, `-h`. Print usage and stop. |
@@ -90,7 +90,10 @@ SUBCOMMANDS
                     150 visible words at most; longer detail is folded.
   map               build or refresh the overview: the app map (what the app is for, core
                     features, the concepts to know, how the features connect, the pieces,
-                    one traced request), a page for each core feature that needs one,
+                    one traced request), the architecture page (the design by name, why
+                    and at what cost, what fails, what gives first, the system design
+                    ideas, YouTube and LinkedIn Learning lessons; not in a small app),
+                    a page for each core feature that needs one,
                     and in a workspace how the projects fit plus each sub-project that
                     is new or stale. Small apps get fewer pages, not thinner ones.
   setup             tracker (read live to prove it works), checks, app run command, docs
@@ -149,8 +152,9 @@ IT WILL ASK YOU
   - setup, run records: before adding the block to AGENTS.md or CLAUDE.md (exact text
     shown), before adding @AGENTS.md to an existing CLAUDE.md, and whether to add the
     Stop hook (off unless you say yes)
-  - setup and map, overview: to confirm the list of core features and concepts before
-    pages are written; in a workspace, which sub-projects to cover and where their pages go
+  - setup and map, overview: to confirm the core features, concepts, architecture style and
+    system design ideas before pages are written; in a workspace, which sub-projects to
+    cover and where their pages go
   - update: to refresh stale blocks in connected skills (diff shown first), and what to do
     with a connected skill that moved; plugin installs ask you to run the plugin update
   - before installing Playwright for a screenshot, or signing in to a protected screen
@@ -162,11 +166,12 @@ REFERENCES
   references/verify.md       evidence rules and the gate
   references/notebook.md     page layout, toggles, diagrams, concepts, links, illustrations
   references/records.md      run records, the AGENTS.md block, the Stop hook
-  references/overview.md     app map, feature pages, workspaces with sub-projects
+  references/overview.md     app map, architecture page, feature pages, workspaces
   references/setup.md        setup, update, connecting skills
   references/review.md       review and resolve: pull requests, and the page they update
   templates/issue-page.md    the learning page, both halves
   templates/app-map.md       the app map page
+  templates/architecture.md  the design, why, and the system design ideas to learn
   templates/feature-page.md  one core feature
   templates/workspace-map.md how the projects of a workspace fit
   templates/run-record.md    one agent task
@@ -274,7 +279,8 @@ section that answers it. With no person in the run, never wait: write "not asked
 - Patch the app map only if the issue added or changed a core feature, a connection between
   features, a piece (a container, module, external service or data store), a step of the main
   request path, a rule that must hold or a glossary word ([references/overview.md](references/overview.md)). A changed core feature also gets its
-  feature page patched. One line in `decisions.md` for a new decision (created on first use,
+  feature page patched; a changed layer, call direction, design choice, failure path or limit
+  patches the architecture page. One line in `decisions.md` for a new decision (created on first use,
   beside the app map; in a workspace, in the sub-project's own notebook folder; its line format
   and where it is linked from are in [references/notebook.md](references/notebook.md)); one line in the
   app map's Glossary for a new domain word.
@@ -337,8 +343,9 @@ Follow [references/setup.md](references/setup.md): scope (one project or a works
 sub-projects), tracker, a live tracker test, checks and app, docs location, learning links, the
 run-record block, connecting this project's own skills, and the overview. One question at a
 time. Writes `.grasp.md`; grasp's marked block in `AGENTS.md` or `CLAUDE.md` and at the end of
-each picked skill's `SKILL.md` (nothing else in those files changes); the app map, a page for
-each core feature that needs one and, in a workspace, the workspace map; and its own run record.
+each picked skill's `SKILL.md` (nothing else in those files changes); the app map, the
+architecture page, a page for each core feature that needs one and, in a workspace, the workspace
+map; and its own run record.
 
 ## `update` subcommand
 
@@ -349,7 +356,8 @@ connected skills and in `AGENTS.md` or `CLAUDE.md`) after a yes.
 ## `map` subcommand
 
 Build or refresh the overview as [references/overview.md](references/overview.md) describes,
-then stop: the app map, a page for each core feature that needs one, and at the top of a
+then stop: the app map, the architecture page (not in a small app), a
+page for each core feature that needs one, and at the top of a
 workspace the workspace map and the app map of each sub-project that is new or stale. Show the feature list for
 confirmation before writing pages.
 

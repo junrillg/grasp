@@ -34,7 +34,7 @@ Markdown with Mermaid diagrams, so the folder opens as an Obsidian vault and ren
 
 ```mermaid
 flowchart LR
-  S["/grasp setup"] --> O["Overview<br/>app map · feature pages · workspace map"]
+  S["/grasp setup"] --> O["Overview<br/>app map · architecture · feature pages · workspace map"]
   S --> B["Block in AGENTS.md<br/>every agent run records itself"]
   B --> R["Run records<br/>one small page per task"]
   I["/grasp ISSUE"] --> P["Issue page<br/>before · after · explain back"]
@@ -45,6 +45,7 @@ flowchart LR
 | Page | The question it answers | Written |
 | --- | --- | --- |
 | **App map** and **feature pages** | What is this app, what can it do, how does each feature work, how do they connect? | By `setup`, refreshed by `map`, patched when an issue changes the shape |
+| **Architecture page** | What is the design called, why is it built this way, what breaks first, and where do I learn those ideas? | With the app map, once the app is past about 15 source files |
 | **Workspace map** | How do these projects (frontend, backend, infra...) fit together? | By `setup` in a top folder that holds several projects, with an app map per sub-project |
 | **Issue page** | What did this change do, how, and why that way? | By a `/grasp ISSUE` run: a before half, then an after half |
 | **Run record** | What did the agent do in that session, was it checked, what went wrong, what is left? | By every agent run that changed files, grasp or not |
@@ -91,9 +92,10 @@ BY DEFAULT
 | **Builds test-first** | Branch per project convention, failing test first, smallest change, the project's own checks. Asks before any push, pull request or tracker write. |
 | **Verifies with evidence** | "Verified" means a check ran green in this run and its result is quoted. `verify` proves an existing fix without touching code. |
 | **Leaves a visual learning page** | One page per issue in the repository's root `docs/` (Obsidian-compatible Markdown, listed in the docs router), or in Notion on request. You can scan it in a minute: each section is a caption and a picture (where it fits, a before/after screenshot, how it works, the decision), with the detail folded underneath: a numbered code walkthrough, files touched, how to check it. Blockers are never folded. The plan is a list of 3 to 6 steps, ticked while the agent builds, so the page shows progress live; after the build, "Planned and built" says what was built instead and why. Each page names the concepts it leans on: one line each, with the longer explanation and live-checked lessons (docs, YouTube, LinkedIn Learning) in a toggle. It ends with an explain-back question that waits for your answer or "skip": the page is marked built only then. |
-| **Keeps pages short** | `lint-page` fails a page with more visible words than its kind allows (run record 150, issue page 400, feature page 350, app map 1,100), a diagram with more than 20 boxes, no Concepts section, or a built page whose explain-back was never answered. Long text goes in a toggle, never on the page. |
+| **Keeps pages short** | `lint-page` fails a page with more visible words than its kind allows (run record 150, issue page 400, feature page 350, architecture page 900, app map 1,100), a diagram with more than 20 boxes, no Concepts section, an architecture page with no lesson, or a built page whose explain-back was never answered. Long text goes in a toggle, never on the page. |
 | **Reviews and resolves pull requests** | `review PR` checks a pull request against its issue and the project's written rules and reports verified findings; `resolve PR` works the review threads in one new commit. Both update the issue page so it says what the code does now. |
-| **Explains the app** | `setup` reads the code and writes an app map: what the app is for, its core features in the users' words, a picture of how the features connect, the pieces, and one request traced end to end. A feature with a path worth tracing gets its own short page; a small app gets the map alone, so the pages scale with the code. Every row names the file it came from; what couldn't be confirmed is listed as "Not sure yet", not drawn as fact. The app map names up to five concepts a newcomer must know, each with a folded explanation and checked lessons. With `illustrations: yes` (asked once at setup) the app map, the workspace map and each issue page open with one generated illustration. |
+| **Explains the app** | `setup` reads the code and writes an app map: what the app is for, its core features in the users' words, a picture of how the features connect, the pieces, and one request traced end to end. A feature with a path worth tracing gets its own short page; a small app gets the map alone, so the pages scale with the code. Every row names the file it came from; what couldn't be confirmed is listed as "Not sure yet", not drawn as fact. The app map names up to five concepts a newcomer must know, each with a folded explanation and checked lessons. With `illustrations: yes` (asked once at setup) the app map, the architecture page, the workspace map and each issue page open with one generated illustration. |
+| **Teaches the architecture and system design** | The architecture page names the design, draws which part may call which and what happens on a failure, and lists each design choice with what it buys and what it costs. The system design ideas behind it are each explained with an everyday picture, where this code does it and when not to use it, then a table of live-checked YouTube and LinkedIn Learning lessons, easiest first. An app with a UI also gets its design system: tokens, components, rules. |
 | **Handles a folder of projects** | Run `setup` in a top folder that holds several repositories or monorepo apps and it maps each one, then writes a workspace map of what passes between them, each connection with the file that shows it. It checks first that git won't silently ignore the pages. |
 | **Records every agent run** | `setup` adds an 18-line block to `AGENTS.md` (or `CLAUDE.md`) telling every agent to finish a task by writing a run record: asked, changed, checked, problems, next, and one small diagram when the change has a shape. A record stays under 150 visible words; longer detail is folded. Bug fixes, small changes and failed runs included. A table lists every run, newest first. An optional Stop hook reminds an agent that forgets. |
 | **Plugs into your own skills** | `setup` finds this project's skills that work issues, verify, review or resolve, and lets you pick which to connect. Each picked skill keeps its own job and gains a short marked block that calls `/grasp page` for the learning page. `update` pulls the latest grasp and refreshes those blocks. |
@@ -192,7 +194,7 @@ flowchart LR
   S --> R[records.md<br/>7 · record · AGENTS.md block]
   S --> O[overview.md<br/>map · workspaces]
   S --> SU[setup.md<br/>setup · update]
-  N --> P[templates<br/>issue page · app map · feature page<br/>workspace map · run record · .grasp.md]
+  N --> P[templates<br/>issue page · app map · architecture<br/>feature page · workspace map · run record · .grasp.md]
   O --> P
   R --> P
   SU --> G[bin/grasp-tools<br/>connect · status · refresh · record-index<br/>record-check · projects · check-link · lint-page]
@@ -204,7 +206,7 @@ flowchart LR
 | --- | --- |
 | [`skills/grasp/SKILL.md`](skills/grasp/SKILL.md) | Arguments, help, the rules for every run and the seven-step workflow |
 | [`skills/grasp/references/`](skills/grasp/references/) | One file per step, loaded only when that step runs |
-| [`skills/grasp/templates/`](skills/grasp/templates/) | The issue page, the app map, the feature page, the workspace map, the run record and the `.grasp.md` project settings |
+| [`skills/grasp/templates/`](skills/grasp/templates/) | The issue page, the app map, the architecture page, the feature page, the workspace map, the run record and the `.grasp.md` project settings |
 | [`skills/grasp/bin/grasp-tools`](skills/grasp/bin/grasp-tools) | The exact, testable steps: connect, disconnect, block, status, refresh, record-index, record-check, projects, check-link, lint-page, version. Needs only bash, sed, awk, curl and git |
 | [`tests/`](tests/) | Plain-bash tests for `grasp-tools` and the skill docs, plus the Obsidian render check |
 | [`.claude-plugin/`](.claude-plugin/) | Plugin and marketplace manifests for Claude Code |

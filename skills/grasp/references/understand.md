@@ -8,7 +8,8 @@ want, and to predict what will change, keeps it. Sources: `docs/research/` in th
 
 ## Look before you ask
 
-Read the app map page and the feature page for the feature the issue touches (if they exist),
+Read the app map page, the architecture page and the feature page for the feature the issue
+touches (if they exist),
 the code the issue touches, and the project's own docs
 for that area. Keep reading until you can say how the relevant part works today and what the
 change would touch. Use one or two read-only subagents for a wide search; give each the issue

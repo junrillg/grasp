@@ -12,6 +12,7 @@ One space per project, set in `.grasp.md`:
 ```
 <Project>: how it works          parent page
   App map                        one page: the whole app, its core features, how they connect
+  Architecture                   one page: the design, why, what breaks first, lessons
   Features                       a table: issue, what, status, pull request, page
     Feature name                 a page for each larger core feature: how it works today
     KEY: short name              one page per issue, before half + after half
@@ -21,7 +22,7 @@ One space per project, set in `.grasp.md`:
   Glossary                       one line per domain word
 ```
 
-Three kinds of page, three questions: the app map and feature pages answer "how does it work?",
+Three kinds of page, three questions: the app map, architecture page and feature pages answer "how does it work?",
 an issue page answers "what did this change do and why?", a run record answers "what did the
 agent do?". Read in that order, widest first.
 
@@ -32,10 +33,11 @@ vault root) as well as on GitHub and in a static doc site:
 ```
 docs/
   README.md                      the docs router: rows for the app map (or workspace map),
-                                 the Features table and Run records, never one per issue
+                                 the architecture page, the Features table and Run records, never one per issue
   how-it-works/
     README.md                    the parent: what each page is, in reading order
     app-map.md
+    architecture.md              not in a small app
     workspace-map.md             only at the top of a workspace
     decisions.md                 created with the first decision and linked from this README
                                  (a workspace sub-project has no README: link it from its
@@ -56,8 +58,8 @@ docs/
 The folder is the one confirmed with the user at setup and saved in `.grasp.md`; never write
 somewhere else without asking. If `docs/` already has its own layout or router, fit into it and
 say where. **The router:** a project's `docs/README.md` is how people and agents find a page.
-When it exists, it gets one row for each entry page (the app map or workspace map, the Features
-table, Run records; a question in the left column, the link in the right), never one per issue
+When it exists, it gets one row for each entry page (the app map or workspace map, the architecture page,
+the Features table, Run records; a question in the left column, the link in the right), never one per issue
 or feature page. When it does not, create it on the first write with the pages above, after asking.
 
 **Markdown that renders everywhere.** Obsidian, GitHub and static sites (VitePress, MkDocs)
@@ -87,7 +89,7 @@ share only plain Markdown, so the pages use only that:
   `CLAUDE.md`, `.grasp.md` or a `SKILL.md`: those are instructions, not pages. Fix every line it prints: a toggle
   that won't render, a link to a file that isn't there (`dead-link`), a diagram type outside the
   tested ones (`mermaid-type`), an unclosed quote in a diagram (`mermaid-quote`), prose wrapped
-  by hand (`hard-wrap`), a page git would silently skip (`git-ignored`), more visible words than the page's kind allows (`too-long`: fold or cut), a diagram with more than 20 boxes (`too-many-boxes`: split it), an issue page, app map or feature page without its Concepts section (`no-concepts`), or a built or verified issue page whose explain-back has no answer (`no-answer`: ask and write their words, `skipped`, or `not asked (no person in the run)`). It prints nothing when the page is clean.
+  by hand (`hard-wrap`), a page git would silently skip (`git-ignored`), more visible words than the page's kind allows (`too-long`: fold or cut), a diagram with more than 20 boxes (`too-many-boxes`: split it), an issue page, app map, architecture or feature page without its Concepts section (`no-concepts`), an architecture page with no lesson (`no-lessons`), or a built or verified issue page whose explain-back has no answer (`no-answer`: ask and write their words, `skipped`, or `not asked (no person in the run)`). It prints nothing when the page is clean.
 
 **Notion** (`--notebook notion`, needs a Notion tool): the same layout as pages. Create the
 parent and children on first run and save their IDs in `.grasp.md`. Edit with targeted updates
@@ -116,6 +118,8 @@ or a three-line change is written down.
   rest. About 150 words of visible text per half; the rest is folded. `lint-page` reports
   `too-long` past 400 visible words on the whole page.
 - App map: [templates/app-map.md](../templates/app-map.md). Under about 1,000 words.
+- Architecture page: [templates/architecture.md](../templates/architecture.md). How the app is
+  designed and the system design ideas to learn from it. About 600 words.
 - Feature page: [templates/feature-page.md](../templates/feature-page.md). How one core feature
   works today; patched when an issue changes it.
 - Workspace map: [templates/workspace-map.md](../templates/workspace-map.md). Only at the top of
@@ -217,9 +221,12 @@ so. Screenshots are dated snapshots: never refresh old ones automatically.
 
 ## Concepts
 
-Every issue page, app map and feature page has a "Concepts" section: the ideas a reader must know
+Every issue page, app map, architecture page and feature page has a "Concepts" section: the ideas a reader must know
 to follow the page. Up to 3 on an issue page (concepts the change actually relies on, named in the
-plan or the diff), up to 5 on an app map, one or two on a feature page.
+plan or the diff), up to 5 on an app map or an architecture page, one or two on a
+feature page. When an issue adds or moves a piece, changes who calls whom, or picks between two
+designs, one of its concepts is the system design idea behind that choice, linked to the
+architecture page when it is named there.
 
 - **One visible line per concept**: its name in bold, what it is in one plain sentence, and where
   this code uses it. That line alone must be enough to keep reading.
@@ -233,9 +240,10 @@ plan or the diff), up to 5 on an app map, one or two on a feature page.
 
 ### Learning links
 
-Each concept's toggle holds at most 3 links, in this order: the official docs, one free video,
+On every page but the architecture page, each concept's toggle holds at most 3 links, in this order: the official docs, one free video,
 and one LinkedIn Learning course only when `.grasp.md` says `linkedin learning: yes`. A page holds
-at most 6 links in all.
+at most 6 links in all; an architecture page at most 15 (5 ideas: docs in the toggle, a video and
+a course in its "Lessons" table).
 
 - Search with the concept name only, never project, client or issue text.
 - Keep a link only if `grasp-tools check-link URL` prints `ok`. Use the title and channel it
@@ -248,6 +256,8 @@ at most 6 links in all.
 - After each link say who made it, where it lives and whether it's free or paid, and end the
   toggle with the check date (`Links checked YYYY-MM-DD`).
 - Links are checked when a page is written or patched, never on a schedule.
+- Prefer the lesson a beginner can follow: the idea named in the title, explained before code, and
+  not tied to a language the project does not use.
 - No link found that passes: keep the concept and its explanation, and write "No checked link
   yet" in the toggle. Never a link that was not checked.
 
@@ -262,8 +272,8 @@ migration of untouched pages.
 `.grasp.md` decides (`illustrations: yes` or `no`, asked once at setup; a file without the line
 means ask once, then save it).
 
-- **yes**: the app map, the workspace map and each issue page open with one generated picture
-  that shows the idea as an everyday scene, directly under "What it is for" or "In one line".
+- **yes**: the app map, the architecture page, the workspace map and each issue page open with one
+  generated picture that shows the idea as an everyday scene, directly under "What it is for" or "In one line".
   Feature pages and run records never get one.
 - **no**: diagrams only.
 - Generate it with whatever image tool is available. With the Codex CLI, the form that worked in
@@ -277,7 +287,7 @@ means ask once, then save it).
   minutes: give the command a timeout of at least five. Read the PNG before
   linking it, regenerate once if the text is garbled or the idea
   wrong, otherwise go without. Save it to the page's `assets/` folder (`KEY-idea.png`,
-  `app-map.png`, `workspace-map.png`); the alt text says what the picture shows.
+  `app-map.png`, `architecture.png`, `workspace-map.png`); the alt text says what the picture shows.
 - **No image tool**: write the page with its diagrams, and say once in the report that the
   illustration was skipped and why. Never a placeholder, never a hotlinked or stock image.
 - A picture explains; it never decorates. Short labels only, no paragraphs inside an image, and
@@ -285,7 +295,7 @@ means ask once, then save it).
 
 ## App map
 
-[overview.md](overview.md) holds the app map, the feature pages and the workspace map: what they
+[overview.md](overview.md) holds the app map, the architecture page, the feature pages and the workspace map: what they
 contain, how to explore the code for them, and how to keep them current. In short: built at
 setup or with `/grasp map`, patched in step 7 only where an issue changed a core feature, a
 connection, a piece, a step of the main request path, a rule or a glossary word, and never pasted

@@ -32,7 +32,7 @@ that file was read; a connection guessed from a name (an env var called `API_URL
 
 ## How they connect
 
-{Caption: what passes between the projects, in one line.}
+{Caption: what passes between the projects, in one line. Then "Why it is built this way: [Architecture](architecture.md)". A small workspace has no such page: the caption names the architecture style in plain words.}
 
 ```mermaid
 flowchart LR

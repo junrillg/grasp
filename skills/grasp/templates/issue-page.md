@@ -49,7 +49,7 @@ flowchart LR
 
 ## Concepts
 
-{Caption: the ideas this change leans on, one line. Up to 3. With none: "Nothing new: {the one idea already on the app map}".} (before; links checked again after)
+{Caption: the ideas this change leans on, one line. Up to 3. With none: "Nothing new: {the one idea already on the app map}". A change to a piece, to who calls whom, or between designs names the system design idea behind it.} (before; links checked again after)
 
 - **{Concept name}:** {what it is in one plain sentence, and where this change uses it}
 
