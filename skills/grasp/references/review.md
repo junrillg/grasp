@@ -90,8 +90,9 @@ Both subcommands leave the issue page (see [notebook.md](notebook.md)) matching 
 - **Old page layout:** a page written before the visual layout is converted while it is being
   patched anyway: rewrite its toggles into the one-block HTML form (no blank lines, HTML only,
   content unchanged) as [notebook.md](notebook.md) "Toggles" says. Never convert untouched pages.
-- **Lint:** run `grasp-tools lint-page PAGE` on every page written or patched and fix each line it
-  prints before showing the page.
+- **Checks:** run the three checks in "Standard 2" ([notebook.md](notebook.md)) on every page
+  written or patched: `grasp-tools lint-page` on the page and its code sub-page, `snippet-check`
+  on the sub-page, `coverage` on both. Fix each line they print before showing the page.
 - Describe only what the code does at the head commit; mark what the issue asks for but the diff
   does not build as "not built yet".
 - Where the page change is committed:

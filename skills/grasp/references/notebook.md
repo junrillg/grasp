@@ -136,12 +136,12 @@ Rules for every page:
 - **Picture first, caption above it, detail folded under it.** Each section is one caption line,
   one picture (diagram or screenshot) and its toggles. Section names and order are the page's
   template. Drop a section that has nothing true to say, except Concepts (on an issue page,
-  the owner block and the ideas).
+  the owner block and the ideas), and except on a short page, which has no ideas section.
 - **Long text is always folded.** Anything that needs more than two lines to explain (a concept,
   a reason, a history) gets one visible line that states the point and a toggle that holds the
   rest. A page never makes the reader scroll past a paragraph to reach the next picture.
-- **Visible, never folded:** the status line, "In one line" (an issue page: "In two sentences"), the steps and their ticks, one line
-  per concept, every caption and picture, any blocker or risk (`> [!WARNING]`), the owner block of
+- **Visible, never folded:** the status line, "In one line" (an issue page: "In two sentences"), the steps and their ticks while the
+  status is `planned` or `building`, one line per concept, every caption and picture, any blocker or risk (`> [!WARNING]`), the owner block of
   an issue page.
 - Mermaid by default: it costs only its text and can be patched. The issue's box is highlighted
   in the "Where it fits" diagram (`style X fill:#fde68a`) and reuses the app map's node names.
@@ -210,15 +210,21 @@ is pinned to.
 ## A snapshot and a living page
 
 - An issue page is a snapshot of one change, pinned to a commit per repository in its `Checked
-  against:` line, as `REPO@BASE..HEAD` with `REPO` the repository folder's name. `BASE` is where
-  the branch left the integration branch. `HEAD` is the merge commit once the pull request is
-  merged, and the pull request's head before that. One range for each repository the change touches.
+  against:` line, as `REPO@BASE..HEAD` with `REPO` the repository folder's name. One range for each
+  repository the change touches. `BASE` is the merge base with the integration branch. `HEAD` is the
+  merge commit when the page is written after the pull request merged. Otherwise it is the pull
+  request's last commit that changes anything outside the notebook folder (the last code commit).
+- A later commit that only touches the notebook, the page itself included, does not move the pin.
 - Its code blocks never move to a later commit.
 - A feature page describes how the feature works today, so it is patched when a later issue changes
   it.
 - A later issue that edits the same files does not make an issue page stale. `sync` adds a generated
   `Changed since by:` line under `Checked against:`; no writer and no person edits it.
-- An issue page is stale only when its own pull request moved after the page was written.
+- An issue page is stale only when code in its own pull request changed after the pin. `sync`
+  decides that by comparing file contents between the pinned commit and the pull request's current
+  head or merge commit, never by comparing commit ids, so neither the page's own commit nor a merge
+  by itself makes a page stale.
+- `repair` re-pins a page to the current commit by the same rule when it rewrites the page.
 
 ## Short pages
 
