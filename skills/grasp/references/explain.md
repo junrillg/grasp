@@ -102,7 +102,9 @@ the illustration uses the same part names as its labels.
 
 Pages on this work already exist (search the folder for the same title, branch, pull request or
 files): patch them, never write a second set. Re-pin `Checked against:` by the same rule, and
-leave the walk fold alone.
+leave the walk fold alone. A page with no `Standard: 2` (also the older `NAME.md` and
+`NAME-files.md` pair) is not patched: it is rewritten by "Existing pages" in
+[notebook.md](notebook.md).
 
 The page follows [templates/issue-page.md](../templates/issue-page.md) and "Standard 2" in
 [notebook.md](notebook.md), with these differences:

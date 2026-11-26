@@ -407,7 +407,9 @@ from the current state and do nothing else: no code, no commits, no pushes, no t
 
 1. Find the issue: from the argument, or from the pull request (branch name or title holds the
    key). Read it as step 1 does, and the page if one exists. Read what "What the writer reads" in
-   [references/notebook.md](references/notebook.md) lists, as on every path.
+   [references/notebook.md](references/notebook.md) lists, as on every path. A page with no
+   `Standard: 2` is rewritten, not patched: "Existing pages" in
+   [references/notebook.md](references/notebook.md).
 2. Decide the half from state, never from `--step` alone. No diff against the integration branch
    and no pull request: the before half (step 3, without the approaches discussion: use the plan
    the calling skill made, or the issue). Otherwise the after half (step 6), writing the before
@@ -457,8 +459,8 @@ generated issues lists and the `Changed since by:` lines, never prose. Markdown 
 
 Follow "`/grasp repair`" in [references/upkeep.md](references/upkeep.md): print what is wrong
 (`grasp-tools sync --only KEY`), stop at `--dry-run`, say `nothing to repair` when there is nothing
-and no reason or `--force`, otherwise write the pages again in subagents and keep every walk with
-`grasp-tools keep-walk`. A feature or `--all` shows the count and asks first. It ends with the
+and no reason or `--force`, otherwise write the pages again in subagents, keeping every walk and the person's words by "What
+a rewrite keeps from the old page" ([references/notebook.md](references/notebook.md)). A feature or `--all` shows the count and asks first. It ends with the
 three checks and `repaired` or `needs a person: REASON`, and a run record. It never changes code,
 commits, pushes or writes to the tracker.
 

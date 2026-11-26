@@ -6,6 +6,8 @@ SKILL="$ROOT/skills/grasp/SKILL.md"
 # shellcheck source=tests/lib.sh
 source "$ROOT/tests/lib.sh"
 
+# flat: the text on one line, runs of spaces as one, so a rule wrapped across lines is still found
+flat() { tr '\n' ' ' | tr -s ' '; }
 # the fenced help block under "## Help"
 help_block() { awk '/^## Help/ { h = 1 } h && /^```/ { n++; next } h && n == 1 { print } n == 2 { exit }' "$SKILL"; }
 arg_hint() { sed -n 's/^argument-hint: "\(.*\)"$/\1/p' "$SKILL"; }
@@ -223,6 +225,31 @@ test_upkeep_is_documented() {
   grep -qF "/grasp repair" "$SKILL" || _fail "no usage line for repair"
   grep -qF "grasp:issues:start" "$f" || _fail "feature template has no issues block"
   ! grep -qxF "## Changes" "$f" || _fail "feature template still has a hand-kept Changes table"
+}
+
+test_a_rewrite_keeps_the_persons_words() {
+  local sd="$ROOT/skills/grasp" nb="$ROOT/skills/grasp/references/notebook.md" ex s f
+  grep -qxF "### What a rewrite keeps from the old page" "$nb" || _fail "notebook.md lacks the rewrite subsection"
+  ex=$(awk '/^### What a rewrite keeps from the old page/ { f = 1 } f && /^## / { exit } f' "$nb" | flat)
+  for s in "Read first" "Explain it back" "## Predict" "Questions asked" "screenshot" "illustration" "PAGE.new" \
+           "grasp-tools keep-walk OLD PAGE.new" "Earlier explain-back" "Only then replace the old file"; do
+    assert_contains "$ex" "$s" "the rewrite subsection names: $s"
+  done
+  ex=$(awk '/^## Existing pages/ { f = 1; next } f && /^## / { exit } f' "$nb" | flat)
+  for s in "Standard: 2" "never patched in its old layout" "What a rewrite keeps from the old page" "no person in the run"; do
+    assert_contains "$ex" "$s" "Existing pages says: $s"
+  done
+  for f in references/upkeep.md references/review.md references/explain.md SKILL.md; do
+    flat < "$sd/$f" | grep -qE "What a rewrite keeps from the old page|\"Existing pages\"" || _fail "$f points at the rewrite rule"
+  done
+  ! grep -qF "rewrite its toggles into the one-block HTML form" "$nb" || _fail "the old toggle-only rule for old pages is gone"
+}
+
+test_walking_again_keeps_earlier_answers() {
+  local w="$ROOT/skills/grasp/references/walk.md"
+  grep -qF "never deletes an earlier answer" "$w" || _fail "walk.md says a walk again keeps the earlier answers"
+  grep -qF "<p><b>Walk YYYY-MM-DD</b></p>" "$w" || _fail "each walk is dated inside the fold"
+  ! grep -qiF "answers are replaced" "$w" || _fail "the replace wording is gone"
 }
 
 run_tests "${1:-.}"

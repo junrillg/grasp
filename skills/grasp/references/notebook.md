@@ -181,12 +181,6 @@ them; this section holds only what a template cannot show.
   a walk runs. After the after half, the report ends with `Walk ready: /grasp walk KEY`; the run
   never starts a walk and never waits for one.
 
-- **A rewritten page keeps its walk.** When a page that already exists is rewritten (by `page`,
-  `explain`, `review`, `resolve`, `map` for a feature page, or a later repair), write the new text
-  to a new file, run `grasp-tools keep-walk OLD NEW`, and replace the old file only when it exits
-  0. On exit 1 stop, leave the old page as it is, and report it. The walk fold holds the person's
-  own answers; a rewrite never drops them.
-
 Before a page is called written, run these, and all three must print nothing or the count line only:
 
 ```
@@ -198,6 +192,43 @@ grasp-tools coverage --repo DIR PAGE PAGE-code.md
 `--repo DIR` is repeated for each repository the change touches. `coverage` without `--base`
 reads each range from the page's `Checked against:` line. A short page has no code file: pass the
 page alone.
+
+### What a rewrite keeps from the old page
+
+Every run that rewrites a page that already exists does these steps in this order: `page`,
+`verify`, `explain`, `review`, `resolve`, `repair`, and `map` for a feature page. The old page
+holds the person's own words and things that cannot be made again; a rewrite never drops them.
+
+1. **Read first.** Before writing anything, read from the old page: the walk block (between the
+   walk markers); an answered `## Explain it back` with its question (the person's own words, not
+   `pending`, `skipped`, `not asked ...` or empty); the person's guess under `## Predict`; the
+   "Questions asked" line; every screenshot with its caption; the illustration.
+2. **Write the new page to `PAGE.new`**, in the same folder, so relative links stay right. Carry
+   into it the screenshots with their captions, the illustration, the prediction guess (in the
+   "Planned and built" fold) and "Questions asked" (the last paragraph of the "Why it was built
+   this way" fold), the person's words unchanged except for HTML escaping. Copy the `Changed since
+   by:` line and an issues block as they are.
+3. **Carry the walk:** `grasp-tools keep-walk OLD PAGE.new`. Skip it only when the target file does
+   not exist. On exit 1 stop: leave the old page as it is and report `needs a person: the walk
+   could not be carried over`, naming the new file. It notes on stderr when the old page holds an
+   explain-back answer.
+4. **An old explain-back answer** goes into `PAGE.new`'s walk fold after `keep-walk`, as an
+   "Earlier explain-back" entry. When `keep-walk` printed `no walk to keep`, the fold is the
+   template's placeholder: replace it with this, markers kept. When it kept a walk, put the two
+   paragraphs first inside its fold, above its entries. `Walk:` stays as `keep-walk` left it: an
+   old explain-back is not a walk. This entry is the only write inside a walk block besides a walk,
+   and it adds, never removes.
+
+   ```html
+   <details><summary>Your walk: not done yet. An earlier answer is kept below. Run /grasp walk KEY</summary>
+   <p><b>Earlier explain-back.</b> THE OLD QUESTION</p>
+   <p><b>You:</b> THEIR WORDS, HTML-ESCAPED, OTHERWISE UNCHANGED</p>
+   </details>
+   ```
+
+5. **Only then replace the old file** with `PAGE.new`. The code sub-page holds none of these:
+   replace it directly. An old `NAME-files.md` beside an `explain` page is replaced by
+   `NAME-code.md`: delete it once the three checks pass on the new pair.
 
 ## What the writer reads
 
@@ -438,9 +469,11 @@ rules; they do not use the ideas rules above.
 
 ## Existing pages
 
-A page written before this layout is converted only when a run patches it anyway: rewrite its
-toggles into the one-block HTML form (content unchanged) and run `lint-page`. No one-off
-migration of untouched pages.
+A page whose status line has no `Standard: 2` (an issue page written before this standard, or an
+`explain` page in the older `NAME.md` and `NAME-files.md` layout) is never patched in its old
+layout. Any run that would patch it rewrites it to standard 2 instead, by "What a rewrite keeps
+from the old page" in "Standard 2". This holds with no person in the run too. A page no run
+touches is left as it is: there is no one-off migration, and `sync` lists it as `below-standard`.
 
 ## Illustrations
 

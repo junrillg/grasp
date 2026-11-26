@@ -87,9 +87,9 @@ Both subcommands leave the issue page (see [notebook.md](notebook.md)) matching 
   its warning; a warning goes only when this run fixed it.
 - **Bug:** a short page ("Short pages" in [notebook.md](notebook.md)), and its run record
   ([records.md](records.md)).
-- **Old page layout:** a page written before the visual layout is converted while it is being
-  patched anyway: rewrite its toggles into the one-block HTML form (no blank lines, HTML only,
-  content unchanged) as [notebook.md](notebook.md) "Toggles" says. Never convert untouched pages.
+- **Page with no `Standard: 2`:** it is not patched in its old layout. It is rewritten to standard 2
+  by "Existing pages" and "What a rewrite keeps from the old page" in [notebook.md](notebook.md).
+  Never convert untouched pages.
 - **Checks:** run the three checks in "Standard 2" ([notebook.md](notebook.md)) on every page
   written or patched: `grasp-tools lint-page` on the page and its code sub-page, `snippet-check`
   on the sub-page, `coverage` on both. Fix each line they print before showing the page.

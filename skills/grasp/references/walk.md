@@ -38,7 +38,7 @@ Rules that hold for the whole walk:
 4. Read the `Walk:` field of the status line (on a feature page, the `Verified at` line).
    - `not walked`: go on.
    - `walked DATE, ...` or `partly walked ...`: ask once, "This page was walked on DATE. Walk
-     again? The earlier answers are replaced." On no, stop.
+     again? The earlier answers stay on the page, below the new ones." On no, stop.
 5. Read the page's `## How it works`, its `## Ideas this leans on` (`## Concepts` on a feature
    page), and the code sub-page `KEY-NAME-code.md` when there is one. Read `## Reader` in
    `.grasp.md`, so a question is not pitched at what the person knows well.
@@ -101,16 +101,20 @@ answered. Stopping early is fine and is saved. With nothing answered, write noth
 
 Do all of this after the last answer, in one pass, with the person's exact words.
 
-1. **The fold.** Replace what is between `<!-- grasp:walk:start -->` and `<!-- grasp:walk:end -->`
-   with the fold below, markers kept. HTML only: no Markdown, no code fence, no fold inside it.
-   Give lines as `<code>file lines 10-24</code>`, not as a code block. The date is today's.
-   When the fold already holds an `Earlier explain-back` entry (two paragraphs, written by
-   `repair`), keep those two paragraphs as they are, first in the fold, above the walk's own
-   entries.
+1. **The fold.** Write the fold below between `<!-- grasp:walk:start -->` and
+   `<!-- grasp:walk:end -->`, markers kept. HTML only: no Markdown, no code fence, no fold inside
+   it. Give lines as `<code>file lines 10-24</code>`, not as a code block. The date is today's.
+   Walking a page again never deletes an earlier answer. Each walk's entries start with its own
+   `<p><b>Walk YYYY-MM-DD</b></p>` line, and the new walk's entries go above the earlier ones
+   inside the same fold. Earlier entries written with no such line get one, dated from the old
+   summary, and are otherwise kept as they are. The summary shows the latest walk. An `Earlier
+   explain-back` entry (two paragraphs, written by a rewrite) stays first in the fold, above
+   every walk.
 
    ```html
    <!-- grasp:walk:start -->
    <details><summary>Your walk: 2026-11-27, 5 of 6 right, 1 gap</summary>
+   <p><b>Walk 2026-11-27</b></p>
    <p><b>1. Predict.</b> QUESTION (<code>src/cart/total.ts lines 10-24</code>)</p>
    <p><b>You:</b> THEIR WORDS</p>
    <p><b>Right.</b> or <b>Gap:</b> TWO TO FOUR LINES</p>
@@ -124,7 +128,7 @@ Do all of this after the last answer, in one pass, with the person's exact words
    step 2. A walk stopped early reads `Your walk: 2026-11-27, stopped after 3 of 6, 2 right,
    1 gap`.
 
-2. **The status line.** Set `Walk:` to `walked YYYY-MM-DD, N of M right`, or
+2. **The status line.** Set `Walk:` to the latest walk: `walked YYYY-MM-DD, N of M right`, or
    `partly walked N of M` when the walk stopped early. In `walked`, M is the questions asked and N
    the ones answered right, so a skipped question counts in M and not in N. In `partly walked`, N is
    the questions asked so far (answered or skipped) and M the questions planned. A feature walk
@@ -150,10 +154,10 @@ Leave the files uncommitted unless the project's rules say a run commits its pag
 
 ## A rewritten page keeps its walk
 
-Any run that rewrites a page keeps the walk with `grasp-tools keep-walk OLD NEW`. The rule, and
-what to do on exit 1, is in [notebook.md](notebook.md) "Standard 2". The command copies the walk
-fold and the `Walk:` field of the old page into the new one and prints `kept`, or `no walk to
-keep`.
+Any run that rewrites a page keeps the walk with `grasp-tools keep-walk OLD NEW`, by "What a
+rewrite keeps from the old page" in [notebook.md](notebook.md) "Standard 2", which also says what
+to do on exit 1. The command copies the walk fold and the `Walk:` field of the old page into the
+new one and prints `kept`, or `no walk to keep`.
 
 ## Report
 

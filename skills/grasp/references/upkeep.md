@@ -134,39 +134,23 @@ The target decides which part below applies:
    and `not-walked`), there is no reason and no `--force`: print `nothing to repair` and stop.
    Print the notes the table says repair cannot fix.
 4. **Write.** One subagent writes the pages by [notebook.md](notebook.md) "Standard 2" and its
-   templates. Without `--only`, `repair` always writes the whole page again, from the card, the
+   templates. An old page is never written over: steps 1 and 2 of "What a rewrite keeps from the
+   old page" in "Standard 2" come first, so the subagent reads the old page, then writes
+   `PAGE.new`. Without `--only`, `repair` always writes the whole page again, from the card, the
    pull request and the code at the pinned commit (an old page may have no working note). It never
-   patches a sentence of the old text. It reads what "What the writer reads" lists. It pins by "A
-   snapshot and a living page" (the merge commit once merged, otherwise the last code commit of the
-   pull request). It writes every code block through `grasp-tools snippet`. A quoted reason is one
-   more finding, checked against the code first. The report says, for the reason, where the code
-   agrees (and what changed on the page) and where it does not (and that the page already matched
-   the code there). A missing page is written the same way. A card with no pull request cannot be
-   written: report `needs a person: no pull request`. The subagent writes no run record and does
-   not touch the run records index.
-5. **Keep the walk.** Write to a new file beside the old one (`PAGE.new`, same folder, so relative
-   links stay right). When there is no old page (a missing page), skip `keep-walk` and just move
-   the new file into place. Otherwise run `grasp-tools keep-walk OLD NEW` and replace the old file
-   only on exit 0, as "A rewritten page keeps its walk" in [notebook.md](notebook.md) "Standard 2"
-   says. On exit 1 stop that page, leave the old file as it is, and report `needs a person: the
-   walk could not be carried over`, naming the new file. The code sub-page has no walk: replace it
-   directly. Copy the `Changed since by:` line and the issues block as they are.
-
-   An old page may hold a `## Explain it back` answer. Carry it over only when it holds the
-   person's own words (not `pending`, `skipped`, `not asked ...` or empty). Do it after
-   `keep-walk` has run, into the new page's walk fold. When `keep-walk` printed `no walk to keep`
-   the fold is the template's placeholder; replace it with this, markers kept:
-
-   ```html
-   <details><summary>Your walk: not done yet. An earlier answer is kept below. Run /grasp walk KEY</summary>
-   <p><b>Earlier explain-back.</b> THE OLD QUESTION</p>
-   <p><b>You:</b> THEIR WORDS, HTML-ESCAPED, OTHERWISE UNCHANGED</p>
-   </details>
-   ```
-
-   `Walk:` stays `not walked`: an old explain-back is not a walk. When `keep-walk` kept a real
-   walk, put the two paragraphs first inside its fold, above its entries. This is the only write
-   inside a walk block, and it adds an entry, never removes one.
+   patches a sentence of the old text grasp wrote. The exception is what that subsection carries
+   over (the walk, an old explain-back answer, the prediction guess, "Questions asked",
+   screenshots and the illustration), because they are the person's words or cannot be made again.
+   It reads what "What the writer reads" lists. It pins by "A snapshot and a living page" (the
+   merge commit once merged, otherwise the last code commit of the pull request). It writes every
+   code block through `grasp-tools snippet`. A quoted reason is one more finding, checked against
+   the code first. The report says, for the reason, where the code agrees (and what changed on the
+   page) and where it does not (and that the page already matched the code there). A missing page
+   is written the same way. A card with no pull request cannot be written: report `needs a person:
+   no pull request`. The subagent writes no run record and does not touch the run records index.
+5. **Keep what the old page holds.** Steps 3 to 5 of that subsection, in order: `keep-walk`
+   (skipped only when the target file does not exist), the "Earlier explain-back" entry, and only
+   then the old file replaced.
 6. **Other records.** For each folder in `other records`, link every file that mentions the key
    (`grep -rlF KEY FOLDER`) in the "Open and not verified" fold, as a link of the fold's own HTML
    form. None, or `none`: skip.
@@ -210,7 +194,8 @@ reports it `below-standard`, `not pinned to a commit`. `repair NAME --only code`
 `repair NAME` has no card. Rebuild the page by [explain.md](explain.md) from the page's own
 `Checked against:` ranges (each `REPO@BASE..HEAD` is a `BASE..HEAD` source in that repository),
 keeping its name and folder. Steps 1 to 3, 5, 7 and 8 above apply as written, with `NAME` in place
-of `KEY`. A quoted reason is a finding, as for an issue.
+of `KEY`, and so does step 4's order: the old page is read first and the new one written to
+`PAGE.new`. A quoted reason is a finding, as for an issue.
 
 ### A feature, or `--all`
 
@@ -225,7 +210,8 @@ of `KEY`. A quoted reason is a finding, as for an issue.
 3. One page per subagent, each following "One issue" steps 4 to 8, or "One `explain` page", and
    none writing a record. Run them
    one at a time when the project's checks are heavy; otherwise a few at once. A feature page is
-   rewritten by [overview.md](overview.md) from the code as it is today, with the same walk rule.
+   rewritten by [overview.md](overview.md) from the code as it is today, by the same "What a
+   rewrite keeps from the old page".
    `--only code` leaves a feature page alone, because it has no sub-page.
 4. Print one line per page as it finishes, then the counts: how many repaired, how many need a
    person, and what each needs. Then "Closing a run".
@@ -233,9 +219,9 @@ of `KEY`. A quoted reason is a finding, as for an issue.
 ## Never
 
 - Edit prose in `sync`.
-- Write between `<!-- grasp:walk:start -->` and `<!-- grasp:walk:end -->` in a page, except the one
-  old explain-back entry above. Never between `<!-- grasp:issues:start -->` and
-  `<!-- grasp:issues:end -->`.
+- Write between `<!-- grasp:walk:start -->` and `<!-- grasp:walk:end -->` in a page, except the
+  one "Earlier explain-back" entry ([notebook.md](notebook.md) "Standard 2"). Never between
+  `<!-- grasp:issues:start -->` and `<!-- grasp:issues:end -->`.
 - Rewrite a clean page with no reason and no `--force`.
 - Replace an old page before `keep-walk` has exited 0.
 - Type or edit a code block by hand.

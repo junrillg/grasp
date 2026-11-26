@@ -201,7 +201,8 @@ vocabulary.
   ([upkeep.md](upkeep.md)). `map` never edits between `<!-- grasp:issues:start -->` and
   `<!-- grasp:issues:end -->`, and never between `<!-- grasp:walk:start -->` and
   `<!-- grasp:walk:end -->`. A feature page that already exists and is rewritten keeps its
-  walk: see "A rewritten page keeps its walk" in [notebook.md](notebook.md) "Standard 2".
+  walk and the rest: see "What a rewrite keeps from the old page" in [notebook.md](notebook.md)
+  "Standard 2".
 - The architecture page is patched only when an issue changes a layer, a call direction, a design
   choice, a failure path or a limit; its lessons are rechecked then, never on a schedule.
 - `/grasp map` refreshes in full: explore again, patch what differs, restamp (at the top of a
