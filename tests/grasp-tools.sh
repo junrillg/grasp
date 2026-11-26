@@ -541,14 +541,39 @@ test_lint_flags_backticks_inside_a_toggle() {
   assert_eq "" "$("$TOOLS" lint-page "$t/good.md")" "code tags, backticks inside pre, and backticks outside a toggle are fine"
 }
 
-test_lint_flags_no_answer()      { _lint_expect no-answer "bad-no-answer.md:14: no-answer"; }
-
-test_lint_no_answer_only_once_built() {
-  local t; t=$(new_tmp)
-  # still building: the question is open, which is true; answered or skipped: clean
-  sed 's/^Status: built/Status: building/' "$FIX/pages/bad-no-answer.md" > "$t/building.md"
-  sed 's/Your answer:$/Your answer: skipped/' "$FIX/pages/bad-no-answer.md" > "$t/skipped.md"
-  assert_eq "" "$("$TOOLS" lint-page "$t/building.md" "$t/skipped.md")" "a building page, or a skipped answer, is not no-answer"
+test_lint_standard2_pair_and_short_page_pass() {
+  assert_eq "" "$(lint example-issue-page.md example-issue-page-code.md short-issue-page.md)" "the three good pages are clean"
+}
+test_lint_flags_no_owner_block()   { _lint_expect no-owner-block "bad-no-owner-block.md:1: no-owner-block"; }
+test_lint_flags_asked_too_long()   { _lint_expect asked-too-long "bad-asked-too-long.md:13: asked-too-long 31 words, limit 30"; }
+test_lint_flags_link_undated()     { assert_contains "$(lint bad-link-undated.md)" ": link-undated" "a lesson link with no checked date"; }
+test_lint_flags_no_code_page()     { _lint_expect no-code-page "bad-no-code-page.md:1: no-code-page"; }
+test_lint_flags_no_design_idea()   { assert_contains "$(lint bad-no-design-idea.md)" ": no-design-idea" "every full page names its design idea"; }
+test_lint_flags_idea_without_video() { assert_contains "$(lint bad-no-video.md)" ": no-video" "an idea with only a page to read"; }
+test_lint_video_rule_accepts_and_rejects() {
+  local t ok bad; t=$(new_tmp)
+  ok='<p>Watch: <a href="https://www.linkedin.com/learning/system-design-basics/resumable-uploads">T</a> · A · content checked · checked 2026-11-26</p>'
+  sed "s|<p>Watch:.*</p>|$ok|" "$FIX/pages/example-issue-page.md" > "$t/example-issue-page.md"
+  cp "$FIX/pages/example-issue-page-code.md" "$t/"
+  assert_eq "" "$("$TOOLS" lint-page "$t/example-issue-page.md")" "one LinkedIn Learning video inside a course counts"
+  bad='<p>Course: <a href="https://www.linkedin.com/learning/system-design-basics">T</a> · A · checked 2026-11-26</p>'
+  sed "s|<p>Watch:.*</p>|$bad|" "$FIX/pages/example-issue-page.md" > "$t/example-issue-page.md"
+  assert_contains "$("$TOOLS" lint-page "$t/example-issue-page.md")" ": no-video" "a whole course is not a video"
+  sed "s|<p>Watch:.*</p>|<p>No checked video yet</p>|" "$FIX/pages/example-issue-page.md" > "$t/example-issue-page.md"
+  assert_eq "" "$("$TOOLS" lint-page "$t/example-issue-page.md")" "saying there is none yet is allowed"
+}
+test_lint_flags_code_page_sections() {
+  local out; out=$(lint bad-code-page-sections-code.md)
+  assert_contains "$out" "no-file-list" "file list required"; assert_contains "$out" "no-walkthrough" "walkthrough required"
+}
+test_lint_code_page_has_no_word_limit() {
+  local t; t=$(new_tmp); : > "$t/SHOP-12-x.md"
+  { printf '# SHOP-12: x, code\n\nCode for [SHOP-12: x](SHOP-12-x.md) · Standard: 2\n\n## Every changed file\n\n## Code walkthrough\n\n'; words 900; } > "$t/SHOP-12-x-code.md"
+  assert_eq "" "$("$TOOLS" lint-page "$t/SHOP-12-x-code.md")" "900 words on a code page is fine"
+}
+test_lint_old_page_without_standard_is_unchanged() {
+  local t; t=$(new_tmp); kind_page issue 300 > "$t/old.md"
+  assert_eq "" "$("$TOOLS" lint-page "$t/old.md")" "an old page with no owner block and no answer still lints clean"
 }
 
 test_lint_counts_only_what_a_reader_sees() {
@@ -834,7 +859,7 @@ test_example_page_lints_clean() {
 test_template_has_sections() {
   local body sec
   body=$(cat "$TEMPLATE")
-  for sec in "Where it fits" "Before and after" "How it works" "Decision" "Blocker" "Explain it back" "Concepts" "Steps" "Planned and built"; do
+  for sec in "In two sentences" "For the owner" "Where it fits" "Ideas this leans on" "How it works" "Steps" "Predict" "More detail"; do
     assert_contains "$body" "## $sec" "template has section $sec"
   done
 }
@@ -850,7 +875,7 @@ test_template_lints_clean() {
 test_example_has_sections() {
   local body sec
   body=$(cat "$FIX/pages/example-issue-page.md")
-  for sec in "Where it fits" "Before and after" "How it works" "Decision" "Explain it back" "Concepts" "Steps" "Planned and built"; do
+  for sec in "In two sentences" "For the owner" "Where it fits" "Ideas this leans on" "How it works" "More detail"; do
     assert_contains "$body" "## $sec" "example has section $sec"
   done
 }
@@ -1416,7 +1441,7 @@ page_of() { awk 'f { print } /^---$/ { f = 1 }' "$ROOT/skills/grasp/templates/$1
 
 test_new_templates_lint_clean() {
   local d t out rc
-  for t in run-record app-map architecture feature-page workspace-map issue-page; do
+  for t in run-record app-map architecture feature-page workspace-map issue-page issue-code-page; do
     rc=0
     # the notes above "---" count as words of the page here, so its length is checked below
     out=$("$TOOLS" lint-page "$ROOT/skills/grasp/templates/$t.md" | grep -v -e ': dead-link ' -e ': hard-wrap$' -e ': too-long ') || true

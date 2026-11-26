@@ -1,136 +1,65 @@
-# PROJ-42: Keep users signed in past one hour
+# SHOP-12: Resumable photo uploads
 
-Status: verified · [issue](https://example.atlassian.net/browse/PROJ-42) · [pull request](https://github.com/acme/shop/pull/118)
+Status: built · Standard: 2 · Feature: none · Walk: not walked · [issue](https://example.com/shop/SHOP-12) · [pull request](https://example.com/shop/pull/12)
 
-**In one line:** signed-in shoppers stay signed in all day instead of being logged out after an hour.
+Checked against: `web@1a2b3c4..5d6e7f8`, `api@9a8b7c6..0f1e2d3` on 2026-11-26
 
-## Steps
+## In two sentences
 
-The plan in four steps, ticked as the build finished each one.
+Sellers can now upload a product photo in pieces, so a dropped connection resumes where it stopped. Before, one failure sent the whole photo again.
 
-- [x] A test that fails when the token is one hour old
-- [x] Refresh the token five minutes before it expires
-- [x] Sign out when the refresh itself fails
-- [x] Parallel calls share one refresh (added: found in review)
+## For the owner
+
+- **Asked:** let sellers upload large product photos on a weak connection without starting over.
+- **Users can now:** resume an interrupted photo upload from the last piece that arrived.
+- **Risk:** half-sent uploads stay on the server until the nightly cleanup removes them.
+- **Not done:** video uploads, and uploads from the mobile app.
+- **Needs a decision:** how long the server keeps a half-sent upload, now one day.
 
 ## Where it fits
 
-The token cache sits between every API call and the auth server.
+The seller's browser sends pieces to the upload service, which hands the finished photo to the product page.
 
-```mermaid
-flowchart LR
-  UI["Web app"] --> API["Shop API"] --> Cache["Token cache"] --> Auth["Auth server"]
-  style Cache fill:#fde68a,stroke:#b45309,stroke-width:3px
-```
+## Ideas this leans on
 
-<details><summary>Shoppers lost their carts at the one-hour mark, so we refresh tokens early</summary>
-<p>Support saw 40 tickets a week about carts emptying mid-checkout. The access token lasts one hour and nothing refreshed it.</p>
-<p><b>Not doing:</b> refresh for service accounts (PROJ-51) or "remember me" across browser restarts.</p>
-</details>
-
-## Concepts
-
-The one idea this change leans on.
-
-- **Token refresh:** swapping an old login token for a new one before it expires; used by the token cache.
-
-<details><summary>Token refresh: renewing early avoids a failed request</summary>
-<p>The access token is a pass the API checks on every call, and it lasts one hour. The refresh token is the longer-lived one that buys a new pass. The cache swaps the pass five minutes before it runs out, so no request ever carries an expired one.</p>
-<ul><li><a href="https://datatracker.ietf.org/doc/html/rfc6749#section-1.5">RFC 6749, section 1.5: Refresh Token</a>, official spec, free</li><li><a href="https://www.linkedin.com/learning/web-security-oauth-and-openid-connect-23016424">Web Security: OAuth and OpenID Connect</a>, LinkedIn Learning, paid</li></ul>
-<p>Links checked 2026-11-20.</p>
-</details>
-
-## Before and after
-
-The session banner no longer appears after an hour of browsing.
-
-| Before | After |
-| ------ | ----- |
-| ![before](assets/PROJ-42-before.png) | ![after](assets/PROJ-42-after.png) |
-
-After, at `a1b2c3d`, 2026-11-20.
-
-<details><summary>Check it yourself in 3 steps</summary>
-<ol><li>Run <code>npm run dev</code> and sign in.</li><li>Set the clock forward with <code>TOKEN_TTL=60 npm run dev</code> and wait 70 seconds.</li><li>Add an item to the cart: it works and no banner appears.</li></ol>
-<p><b>Verified:</b> <code>npm test</code> 212 passed; control run on <code>main</code> shows the banner; cart add seen working at 70 s, on <code>a1b2c3d</code>.</p>
+- **Design · Resumable upload:** a big file goes up in pieces, so one failure resends one piece.
+<details><summary>Resumable upload: how it works here, and where to learn it</summary>
+<p>The browser cuts the photo into 1 MB pieces and numbers them. The service keeps the pieces by upload id and answers which numbers it already holds. After a failure the browser asks, then sends only the missing ones.</p>
+<p>Watch: <a href="https://www.youtube.com/watch?v=aBcDeFgHiJk&t=95s">Resumable uploads explained</a> · Shop Dev Talks · 12 min · content checked · checked 2026-11-26</p>
+<p>Read: <a href="https://example.com/docs/resumable-uploads">Resumable upload protocol</a> · Example Docs · checked 2026-11-26</p>
 </details>
 
 ## How it works
 
-Every API call checks the token's age first and refreshes it when under five minutes remain.
-
-```mermaid
-sequenceDiagram
-  autonumber
-  participant W as Web app
-  participant A as Shop API
-  participant C as Token cache
-  participant S as Auth server
-  W->>A: add to cart
-  A->>C: get token
-  C->>S: refresh (under 5 min left)
-  S-->>C: new token
-  C-->>A: token
-  A-->>W: 200 cart updated
-```
-
-<details><summary>Code walkthrough: 3 steps, numbered like the diagram</summary>
-<p><b>2.</b> The API asks the cache, never the auth server directly (<a href="https://github.com/acme/shop/blob/a1b2c3d/src/api/client.ts#L18-L20">src/api/client.ts#L18-L20</a>)</p>
-<pre><code>const token = await tokenCache.get();
-headers.Authorization = `Bearer ${token}`;</code></pre>
-<p><b>3.</b> The cache refreshes early (<a href="https://github.com/acme/shop/blob/a1b2c3d/src/auth/cache.ts#L31-L36">src/auth/cache.ts#L31-L36</a>)</p>
-<pre><code>if (this.expiresAt - Date.now() &lt; FIVE_MINUTES) {
-  this.current = await this.refresh();
-}
-return this.current.token;</code></pre>
-<p><b>4.</b> One refresh at a time: concurrent callers share the same promise (<a href="https://github.com/acme/shop/blob/a1b2c3d/src/auth/cache.ts#L40-L44">src/auth/cache.ts#L40-L44</a>)</p>
-</details>
-<details><summary>4 files touched, 2 of them tests</summary>
-<ul><li><code>src/auth/cache.ts</code>: the token cache and early refresh</li><li><code>src/api/client.ts</code>: reads the token from the cache</li><li><code>src/auth/cache.test.ts</code>: refresh timing and the single-flight rule</li><li><code>e2e/session.spec.ts</code>: the 70-second session test</li></ul>
-</details>
-
-## Decision
-
-Refresh early in the cache, over retrying after a 401.
-
 ```mermaid
 flowchart LR
-  Q{"How do we avoid expired tokens?"} -->|picked| P["Refresh early in the cache"]
-  Q -.->|rejected| R["Retry after a 401"]
-  style P fill:#bbf7d0,stroke:#15803d
-  style R fill:#e5e7eb,stroke:#6b7280,stroke-dasharray: 4 4
+  B["Browser"] --> S["Upload service"]
+  S --> P["Piece store"]
+  S --> C["Product page"]
 ```
 
-<details><summary>Refreshing early avoids a failed request, at the cost of one timer per tab</summary>
-<p>A retry still fails the first request after expiry and doubles its latency. <b>Costs:</b> each open tab refreshes on its own. <b>Biggest risk:</b> two tabs refreshing at once, covered by the single-flight rule.</p>
+1. The browser cuts the photo into numbered pieces.
+2. It asks the service which pieces it already holds.
+3. It sends only the missing pieces, in order.
+4. The service stores each piece under the upload id.
+5. When the last piece lands, the service joins them and publishes the photo.
+
+[The code, file by file](example-issue-page-code.md)
+
+## More detail
+
+<details><summary>Why it was built this way: pieces beat one long request</summary>
+<p>A single long request fails as a whole on a weak connection. Pieces make the retry cost one piece, at the price of one extra question before each resume.</p>
 </details>
-
-## Planned and built
-
-3 of 3 planned steps built as planned; one step was added.
-
-| Planned | Built instead | Why |
-| ------- | ------------- | --- |
-| Nothing about parallel calls | Parallel calls share one refresh | The review found each call starting its own refresh |
-
-## Blocker
-
-> [!WARNING]
-> The staging auth server was down for a day. Tested against a local stub; re-checked on staging once it was back.
-
-## Predict
-
-<details><summary>Your guess vs what happened: right about the cache, missed the race</summary>
-<p>Guessed "the API client changes" and "logout breaks". The client did change; logout was fine, but parallel refreshes raced.</p>
+<details><summary>Planned and built: 4 of 4 steps as planned</summary>
+<ol><li>A test that drops the connection half way.</li><li>Cut and number the pieces.</li><li>Resume from the missing piece.</li><li>Join the pieces and publish.</li></ol>
 </details>
-
-## Explain it back
-
-1. What happens when two tabs call the API at the same moment, four minutes before expiry?
-   - Your answer: both refresh? Not sure.
-
-<details><summary>Model answer</summary>
-<p>Each tab has its own cache, so each refreshes once. Inside one tab, the second call waits on the first call's refresh promise instead of starting another.</p>
+<details><summary>Proof it works: 2 of 2 acceptance points pass</summary>
+<table><tr><th>Acceptance point</th><th>Command or check</th><th>Result line</th></tr><tr><td>A dropped upload resumes</td><td><code>npm test -- resume</code></td><td>1 passed, 0 failed</td></tr><tr><td>A finished upload is joined once</td><td><code>npm test -- join</code></td><td>1 passed, 0 failed</td></tr></table>
 </details>
-
-**Questions asked:** "Why not store the token in localStorage?"
+<details><summary>Open and not verified: slow networks were not tried</summary>
+<p>Only a fast local connection was used. Pieces of 1 MB were not tuned for a slow one.</p>
+</details>
+<!-- grasp:walk:start -->
+<details><summary>Your walk: not done yet. Run /grasp walk SHOP-12</summary></details>
+<!-- grasp:walk:end -->

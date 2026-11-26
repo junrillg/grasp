@@ -1,166 +1,113 @@
 # Issue page template
 
 One page per issue, one layout for both halves. Title: `KEY: short name` (for a text issue, a
-short name). Step 3 writes the before half: the sections marked (before). Step 6 writes the
-after half: it patches the same sections and adds the ones marked (after). Rules for every
-part are in [notebook.md](../references/notebook.md). Fill every `{...}`. Delete a section that
-has nothing true to say instead of padding it.
+short name). The before half is written when the plan is agreed: the status line, both
+sentences, the owner block, where it fits, the ideas, the diagram and steps, and the visible
+`## Steps` and `## Predict`. The after half patches the same sections and fills the folds under
+`## More detail`. Rules for every part are in [notebook.md](../references/notebook.md). Fill every
+`{...}`. Delete a line that has nothing true to say instead of padding it.
 
-**Visible:** pictures, one-line captions, the status line, the steps, one line per concept,
-blockers, the explain-back question.
-**Folded:** everything else, in a toggle directly under the picture it explains. A toggle is a
-single HTML block: no blank lines inside, HTML only (`p`, `ul`, `ol`, `li`, `a`, `code`, `pre`,
-`b`, `br`). Each toggle title states a conclusion, never "Details". Run
-`grasp-tools lint-page PAGE` after every write.
+**Length:** target 300 visible words, never over 400. Toggles and code are not counted.
+**Visible:** the status line, both sentences, the owner block, one line of where it fits, one line
+per idea, the diagram and its numbered steps, the link to the code page, blockers.
+**Folded:** everything else, in a toggle. A toggle is a single HTML block: no blank lines inside,
+HTML only (`p`, `ul`, `ol`, `li`, `a`, `code`, `pre`, `b`, `br`, `table`, `tr`, `th`, `td`). Each
+toggle title states a conclusion, never "Details". Run `grasp-tools lint-page PAGE` after every write.
+
+- `## How it works` is one diagram then 4 to 7 numbered steps, one line each, then one line that
+  links the code page.
+- Each idea is one visible line, then a `<details>` with 3 to 5 lines tied to this code. Its links
+  are `<a href>` followed by `· title · author · checked YYYY-MM-DD`. The first idea is the design
+  idea and holds one video.
+- The Proof fold is an HTML `<table>` with the columns acceptance point, command or check, result line.
+- The walk fold sits between the walk markers. It starts as the empty fold below and only a walk
+  changes it.
+- While `Status: planned` or `building`, a visible `## Steps` list and a `## Predict` question sit
+  above `## More detail`. At `built`, both move into the "Planned and built" fold.
+- A blocker is a `> [!WARNING]` alert under the title, never folded.
 
 ---
 
 # {KEY}: {short name}
 
-Status: {planned | building | built | verified | blocked} · [issue]({issue url}; for a text issue write "text issue" with no link) · [pull request]({pr url, or "not yet"})
+Status: {planned | building | built | verified | blocked} · Standard: 2 · Feature: {link to the feature page, or none} · Walk: not walked · [issue]({issue url}; for a text issue write "text issue" with no link) · [pull request]({pr url, or "not yet"})
+
+Checked against: `{repo}@{base}..{head}`, `{repo}@{base}..{head}` on {YYYY-MM-DD}
 
 > [!WARNING]
 > {Blocked: what blocks it and who can unblock it, in one line. Only while blocked; never folded.}
 
-**In one line:** {what someone can do now (after) or will be able to do (before), in plain words}
+## In two sentences
 
-## Steps
+{What users can do now (after) or will be able to do (before), then what was true before. Plain words.}
 
-{Caption: the plan in 3 to 6 steps. Each box is ticked the moment the build finishes that step, so this list is the live progress.} (before, ticked during the build)
+## For the owner
 
-- [ ] {step 1, something a person could check, e.g. "A test that fails for the expired token"}
-- [ ] {step 2}
-- [ ] {step 3}
+- **Asked:** {the request, in the asker's words, 30 words at most}
+- **Users can now:** {what a person can do that they could not, or "nothing yet" while planned}
+- **Risk:** {the one thing most likely to go wrong, or "none known"}
+- **Not done:** {what this issue deliberately leaves out}
+- **Needs a decision:** {the open question for the owner, or "nothing"}
 
 ## Where it fits
 
-{Caption: where this issue sits in the app, one line.} (before)
+{One line: where this issue sits in the app, and what it touches.}
 
-```mermaid
-flowchart LR
-  A["{previous step}"] --> B["{this issue}"] --> C["{next step}"]
-  style B fill:#fde68a,stroke:#b45309,stroke-width:3px
-```
+## Ideas this leans on
 
-(after: replace the diagram above with the change map from `grasp-tools change-map`: every part coloured new, changed or untouched, renamed to the app map's names, arrows added by hand, and its legend line under it)
-
-<details><summary>{Why this matters, as a conclusion, e.g. "Users lose their work after an hour, so we refresh early"}</summary>
-<p>{the reason, in the asker's words where possible}</p>
-<p><b>Not doing:</b> {what this issue deliberately leaves out}</p>
+- **Design · {design idea}:** {one line: the architecture pattern or system design concept behind this change}
+<details><summary>{Design idea}: how it works here, and where to learn it</summary>
+<p>{3 to 5 lines, plain words, tied to this code and not a textbook definition}</p>
+<p>Watch: <a href="{one YouTube video, or one LinkedIn Learning video inside a course}">{title from check-link}</a> · {channel} · {n} min · {content checked | title match only} · checked {YYYY-MM-DD}</p>
+<p>Read: <a href="{official docs url}">{page title}</a> · {site} · checked {YYYY-MM-DD}</p>
 </details>
+- **Idea · {another idea}:** {one line. Add one only when the change leans on it. Same fold as above.}
 
-## Concepts
-
-{Caption: the ideas this change leans on, one line. Up to 3. With none: "Nothing new: {the one idea already on the app map}". A change to a piece, to who calls whom, or between designs names the system design idea behind it.} (before; links checked again after)
-
-- **{Concept name}:** {what it is in one plain sentence, and where this change uses it}
-
-<details><summary>{Concept name}: {its point as a conclusion, e.g. "A queue lets the request return before the work is done"}</summary>
-<p>{the longer explanation, 3 to 8 lines, plain words, tied to this code and not a textbook definition}</p>
-<ul><li><a href="{official docs url}">{page title}</a>, official docs, free</li><li><a href="{video url}">{title from check-link}</a>, {channel from check-link}, YouTube, free</li><li><a href="{final url from check-link}">{course title from check-link}</a>, LinkedIn Learning, paid</li></ul>
-<p>Links checked {YYYY-MM-DD}.</p>
-</details>
-
-## Before and after
-
-{Caption: what changed on screen, one line, or "No visible change" and drop the table. A change that shows only in another project: drop the table and the "After, at" line, and make the caption "{what will show} in {project}. Not captured."} (after; the table is for UI changes only, the "Check it yourself" toggle below stays for every change: it holds the evidence)
-
-| Before | After |
-| ------ | ----- |
-| {![before](assets/{KEY}-before.png) from an issue attachment, or "Not captured"} | ![after](assets/{KEY}-after.png) |
-
-After, at `{short sha}`, {YYYY-MM-DD}.
-
-<details><summary>Check it yourself in {n} steps</summary>
-<ol><li>{one command or one click}</li><li>{what you should see}</li></ol>
-<p><b>Verified:</b> {checks run with their result lines, the control result, behaviour seen} on <code>{commit}</code></p>
-</details>
-
-## What changed, part by part
-
-{Caption: how many parts changed and the biggest one, one line.} (after)
-
-| Part | What it does now | Why | Files |
-| ---- | ---------------- | --- | ----- |
-| {part, as named on the change map} | {one line} | {one line} | {n} |
-
-<details><summary>{Part}: {what changed, as a conclusion}</summary>
-<ul><li><code>{path}</code>: {what it does}</li></ul>
-<pre><code>{3 to 8 lines of the key code}</code></pre>
-<p><b>What went wrong:</b> {problem and fix, or "nothing"}</p>
-</details>
+{With no video that passes the check, the Watch line is `<p>No checked video yet</p>`. With lessons switched off it is `<p>Lessons turned off</p>`.}
 
 ## How it works
 
-{Caption: the one idea behind the change, one line. Before: "Expected flow".} (before, replaced after)
-
-```mermaid
-sequenceDiagram
-  autonumber
-  participant U as {actor}
-  participant S as {service}
-  U->>S: {step 1}
-  S-->>U: {step 2}
-```
-
-<details><summary>Code walkthrough: {n} steps, numbered like the diagram</summary>
-<p><b>1.</b> {what this step does} (<a href="{commit-SHA permalink to the lines}">{path}#L{a}-L{b}</a>)</p>
-<pre><code>{3 to 8 lines of the real code, no highlighting}</code></pre>
-<p><b>2.</b> {next step} (<a href="{permalink}">{path}#L{a}-L{b}</a>)</p>
-<pre><code>{excerpt}</code></pre>
-</details>
-<details><summary>{n} files touched, {m} of them tests</summary>
-<ul><li><code>{path}</code>: {what it does, one line}</li></ul>
-</details>
-
-## Decision
-
-{Caption: the decision in one line, "{picked} over {rejected}".} (before)
-
 ```mermaid
 flowchart LR
-  Q{"{the question}"} -->|picked| P["{picked approach}"]
-  Q -.->|rejected| R["{rejected approach}"]
-  style P fill:#bbf7d0,stroke:#15803d
-  style R fill:#e5e7eb,stroke:#6b7280,stroke-dasharray: 4 4
+  A["{previous step}"] --> B["{this change}"] --> C["{next step}"]
+  style B fill:#fde68a,stroke:#b45309,stroke-width:3px
 ```
 
-<details><summary>Why {picked} wins, and what it costs</summary>
-<p>{the reason}. <b>Costs:</b> {the trade-off}. <b>Biggest risk:</b> {one line}.</p>
-</details>
+1. {step 1, one line}
+2. {step 2}
+3. {step 3}
+4. {step 4}
 
-## Planned and built
+[The code, file by file]({KEY}-{slug}-code.md)
 
-{Caption: "{n} of {m} steps built as planned", then the one thing that changed, if any.} (after)
+## Steps
 
-| Planned | Built instead | Why |
-| ------- | ------------- | --- |
-| {a step that changed, or was not done} | {what was built, or "not done"} | {one line} |
+{Only while planned or building. The plan in 3 to 6 steps; tick each box the moment the build finishes the step.}
 
-{One row per step that changed or was not done, never the steps built as planned: their ticks say it. Everything as planned: keep the caption, drop the table.}
-
-## Blocker
-
-> [!WARNING]
-> {A blocker met during the build, and how it was resolved or worked around. One alert per blocker. Never folded.} (after)
+- [ ] {step 1, something a person could check}
+- [ ] {step 2}
 
 ## Predict
 
-{Visible while planned or building. Once built, move it into the "Your guess" toggle below.} (before)
+{Only while planned or building. The one question asked before the build.}
 
-- {The one question that was asked, e.g. "Which parts will change?" or "What is most likely to break?"} → {user's guess, or "skipped"}
+- {the question} → {the guess, or "skipped"}
 
-<details><summary>Your guess vs what happened: {one-line verdict}</summary>
-<p>{the predictions, then one or two lines comparing them with the diff} (after)</p>
+## More detail
+
+<details><summary>Why it was built this way: {the reason as a conclusion}</summary>
+<p>{the reason, and the approach picked over the one rejected, in the asker's words where possible}</p>
 </details>
-
-## Explain it back
-
-1. {a "why", "what breaks if" or "trace this request" question} (after)
-   - Your answer: {their words; `skipped`; or `not asked (no person in the run)`}
-
-<details><summary>Model answer</summary>
-<p>{2 to 4 lines}</p>
+<details><summary>Planned and built: {n} of {m} steps as planned</summary>
+<ol><li>{each planned step, and what was built instead when it changed}</li></ol>
+<p>{At built: the guess against what happened, in one or two lines.}</p>
 </details>
-
-**Questions asked:** {one conceptual question the user asked during the run, if any}
+<details><summary>Proof it works: {n} of {m} acceptance points pass</summary>
+<table><tr><th>Acceptance point</th><th>Command or check</th><th>Result line</th></tr><tr><td>{point}</td><td><code>{command}</code></td><td>{result line}</td></tr></table>
+</details>
+<details><summary>Open and not verified: {what is still open}</summary>
+<p>{what was not checked, and why}</p>
+</details>
+<!-- grasp:walk:start -->
+<details><summary>Your walk: not done yet. Run /grasp walk {KEY}</summary></details>
+<!-- grasp:walk:end -->

@@ -67,8 +67,19 @@ Commands:
                            architecture or feature page with no "## Concepts" heading),
                            no-lessons (an architecture page whose "## Lessons" holds no
                            YouTube or LinkedIn Learning link and no "No checked lesson
-                           yet"), no-answer (a built or verified issue
-                           page with an empty "Your answer:"). Exits 1 when anything is
+                           yet"). A page whose status line holds "Standard: 2" is also
+                           checked for no-owner-block (the "## For the owner" heading or one
+                           of its five labelled lines is missing), asked-too-long (the
+                           "Asked:" line has more than 30 words), link-undated (a YouTube or
+                           LinkedIn Learning address on a line with no "checked YYYY-MM-DD"),
+                           no-design-idea (no "- **Design · " idea under "## Ideas this leans
+                           on"), no-video (an idea toggle with no YouTube or LinkedIn Learning
+                           video, and no "No checked video yet" or "Lessons turned off") and
+                           no-code-page (no link to an existing file ending -code.md). A
+                           "Standard: 2 short" page is exempt from no-design-idea and
+                           no-code-page and needs no ideas section. A file ending -code.md
+                           with a "Code for [" line is checked for no-file-list and
+                           no-walkthrough, and has no word limit. Exits 1 when anything is
                            reported
   change-map [--repo DIR]... [--base REF] [--head REF] [--depth N]
                            print a Mermaid block, ready to paste, that shows the code base as
@@ -1039,10 +1050,18 @@ cmd_coverage() {
 
 cmd_lint_page() {
   [[ $# -ge 1 ]] || die 2 "usage: lint-page FILE..."
-  local f out rc=0 line file ln target
+  local f out rc=0 line file ln target okfile=
   for f in "$@"; do [[ -f "$f" ]] || die 2 "no such file: $f"; done
   out=$(mktemp "${TMPDIR:-/tmp}/grasp.XXXXXX") || die 1 "cannot create a temporary file in ${TMPDIR:-/tmp}; nothing was changed"
   awk -v form="$TOGGLE_FORM" '
+    BEGIN {
+      # a video: one YouTube video, or one LinkedIn Learning video (two path parts, not a course)
+      yt = "youtube\\.com/watch\\?v=[A-Za-z0-9_-]|youtu\\.be/[A-Za-z0-9_-]"
+      li = "linkedin\\.com/learning/[^/\"?# <>]+/[^/\"?# <>]"
+      lesson = "youtube\\.com|youtu\\.be|linkedin\\.com/learning"
+      dated = "checked 20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]"
+      split("Asked|Users can now|Risk|Not done|Needs a decision", label, "|")
+    }
     # report(rule): on this line. report(rule, n, f): on line n, of file f when given
     function report(rule, n, f) { printf "%s:%d: %s\n", (f != "" ? f : FILENAME), (n ? n : FNR), rule; bad = 1 }
     function count(s, re,   n) { n = 0; while (match(s, re)) { n++; s = substr(s, RSTART + RLENGTH) } return n }
@@ -1125,7 +1144,7 @@ cmd_lint_page() {
     # finish(f): the checks that need the whole page. Its kind, read from its content (the first
     # that matches), sets the word limit and whether it must explain its concepts. An index or
     # a README has no kind: neither check applies.
-    function finish(f,   limit, needs) {
+    function finish(f,   limit, needs, n, i) {
       limit = 0; needs = 0
       # a run record: the five lines under a dated title (AGENTS.md also spells out the lines)
       isrun = (isrun && h1 ~ /^# [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]: /)
@@ -1133,18 +1152,28 @@ cmd_lint_page() {
       else if (h1 ~ /: app map[ \t]*$/) { limit = 1100; needs = 1 }     # app map
       else if (h1 ~ /: architecture[ \t]*$/) { limit = 900; needs = 1 }  # architecture page
       else if (h1 ~ /: how the projects fit[ \t]*$/) limit = 1100       # workspace map
-      else if (isissue) { limit = 400; needs = 1 }                      # issue page
+      else if (isissue) { limit = 400; needs = !short }                 # issue page (a short one has no ideas)
       else if (isfeature) { limit = 350; needs = 1 }                    # feature page
       if (limit && nwords > limit) report("too-long " nwords " words, limit " limit, 1, f)
       if (needs && !concepts) report("no-concepts", 1, f)
       if (h1 ~ /: architecture[ \t]*$/ && !isrun && !lessons) report("no-lessons", 1, f)
-      # the explain-back is the step that makes the change understood: a page is not built without it
-      if (isissue && !isrun && isdone && noanswer) report("no-answer", noanswer, f)
+      if (isissue && !isrun && std2) {
+        n = 0; for (i = 1; i <= 5; i++) n += own[i]
+        if (!ownerhead || n < 5) report("no-owner-block", 1, f)
+        if (!short && !hasdesign) report("no-design-idea", (ideashead ? ideashead : 1), f)
+        if (!short) printf "\002%s\n", f      # the shell checks the link to the code page
+      }
+      if (iscode) {
+        if (!filelist) report("no-file-list", 1, f)
+        if (!walkthrough) report("no-walkthrough", 1, f)
+      }
     }
     FNR == 1 {
       if (NR > 1) finish(page)
       page = FILENAME; fence = ""; depth = 0; split("", inside); mm = 0; prev = "blank"; wrapped = 0
-      nwords = isrun = isissue = isfeature = concepts = isdone = noanswer = inlessons = lessons = 0; h1 = ""
+      nwords = isrun = isissue = isfeature = concepts = inlessons = lessons = 0; h1 = ""
+      std2 = short = ownerhead = hasdesign = ideashead = ideadet = hasvid = iscode = filelist = walkthrough = 0
+      sect = ""; split("", own)
     }
     {
       line = $0; sub(/\r$/, "", line)
@@ -1179,12 +1208,28 @@ cmd_lint_page() {
       # the marks finish() reads the kind of page from
       if (line ~ /^- \*\*Asked:\*\*/) isrun = 1
       if (h1 == "" && line ~ /^# /) h1 = line
-      if (line ~ /^Status: (planned|building|built|verified|blocked)/) isissue = 1
-      if (line ~ /^Status: (built|verified)/) isdone = 1
-      if (line ~ /Your answer:[ \t]*$/ && !noanswer) noanswer = FNR
+      if (line ~ /^Status: (planned|building|built|verified|blocked)/) {
+        isissue = 1
+        if (line ~ /Standard: 2( |$)/) { std2 = 1; short = (line ~ /Standard: 2 short/) }
+      }
       if (index(line, "part of the [app map](")) isfeature = 1
-      if (line == "## Concepts") concepts = 1
-      if (line ~ /^## /) inlessons = (line == "## Lessons")
+      if (line == "## Concepts" || line == "## Ideas this leans on") concepts = 1
+      if (line ~ /^## /) { inlessons = (line == "## Lessons"); sect = line }
+      if (line == "## For the owner") ownerhead = FNR
+      if (line == "## Ideas this leans on") ideashead = FNR
+      if (line == "## Every changed file") filelist = 1
+      if (line == "## Code walkthrough") walkthrough = 1
+      if (index(line, "Code for [") == 1 && page ~ /-code\.md$/) iscode = 1
+      if (sect == "## For the owner")
+        for (i = 1; i <= 5; i++) if (index(line, "- **" label[i] ":**") == 1) {
+          own[i] = 1
+          if (i == 1 && std2) {
+            a = substr(line, length(label[1]) + 8)
+            if (words(a) > 30) report("asked-too-long " words(a) " words, limit 30")
+          }
+        }
+      if (std2 && sect == "## Ideas this leans on" && index(line, "- **Design · ") == 1) hasdesign = 1
+      if (std2 && line ~ lesson && line !~ dated) report("link-undated")
       if (inlessons && line ~ /https:\/\/((www\.|m\.)?youtube\.com|youtu\.be|www\.linkedin\.com\/learning)\/|No checked lesson yet/) lessons = 1
       # ignore inline code first (a `<pre>` named in prose opens nothing), then quoted code
       code = line; gsub(/`[^`]*`/, "", code); code = strip(code, "pre", "<pre[ >]", "</pre>"); gsub(/<code>[^<]*<\/code>/, "", code)
@@ -1230,15 +1275,25 @@ cmd_lint_page() {
         kind = prev
       } else wrapped = 0
       prev = kind; prevlen = length(line)
+      # an idea toggle must hold a video, or say there is none
+      if (std2 && sect == "## Ideas this leans on" && start == 0 && opens > 0) { ideadet = FNR; hasvid = 0 }
+      if (ideadet && (line ~ yt || line ~ li || line ~ /No checked video yet|Lessons turned off/)) hasvid = 1
       depth += opens - closes; if (depth < 0) depth = 0
+      if (ideadet && depth == 0) { if (!hasvid) report("no-video", ideadet); ideadet = 0 }
     }
     END { if (NR) finish(page); exit bad }
   ' "$@" > "$out" || rc=$?
   while IFS= read -r line; do
     if [[ "$line" == $'\001'* ]]; then
       IFS=$'\t' read -r file ln target <<< "${line#?}"
-      [[ -e "$(dirname "$file")/$target" ]] && continue
+      if [[ -e "$(dirname "$file")/$target" ]]; then
+        [[ "$target" == *-code.md ]] && okfile=$file
+        continue
+      fi
       printf '%s:%s: dead-link %s\n' "$file" "$ln" "$target"; rc=1
+    elif [[ "$line" == $'\002'* ]]; then
+      # a standard 2 page that is not short links its code page, an existing file ending -code.md
+      [[ "$okfile" == "${line#?}" ]] || { printf '%s:1: no-code-page\n' "${line#?}"; rc=1; }
     else
       printf '%s\n' "$line"
     fi
