@@ -571,6 +571,13 @@ test_lint_video_rule_accepts_and_rejects() {
   sed "s|<p>Watch:.*</p>|<p>No checked video yet</p>|" "$FIX/pages/example-issue-page.md" > "$t/example-issue-page.md"
   assert_eq "" "$("$TOOLS" lint-page "$t/example-issue-page.md")" "saying there is none yet is allowed"
 }
+test_lint_no_checked_page_is_not_a_video_fallback() {
+  local t; t=$(new_tmp); cp "$FIX/pages/example-issue-page-code.md" "$t/"
+  sed "s|<p>Read:.*</p>|<p>No checked page yet</p>|" "$FIX/pages/example-issue-page.md" > "$t/example-issue-page.md"
+  assert_eq "" "$("$TOOLS" lint-page "$t/example-issue-page.md")" "no page to read, with a video, is clean"
+  sed -e "s|<p>Read:.*</p>|<p>No checked page yet</p>|" -e "/<p>Watch:/d" "$FIX/pages/example-issue-page.md" > "$t/example-issue-page.md"
+  assert_contains "$("$TOOLS" lint-page "$t/example-issue-page.md")" ": no-video" "the page fallback is not a video fallback"
+}
 test_lint_flags_code_page_sections() {
   local out; out=$(lint bad-code-page-sections-code.md)
   assert_contains "$out" "no-file-list" "file list required"; assert_contains "$out" "no-walkthrough" "walkthrough required"
@@ -1719,6 +1726,14 @@ test_sync_lists_design_idea_and_counts_missing_videos() {
   out=$(gt sync --docs "$d" --repo "$p" --no-write 2>/dev/null)
   assert_contains "$(row SHOP-12 "$out" | cut -f4)" "1 ideas without a video" "an idea with no video is counted"
   [[ "$(row SHOP-12 "$out" | cut -f2)" != *below-standard* ]] || _fail "a missing video is not below standard"
+}
+test_sync_counts_ideas_without_a_page() {
+  local d p out; read -r d p <<<"$(sync_fix)"
+  sed -i.bak 's#^<p>Read:.*#<p>No checked page yet</p>#' "$d/features/SHOP-12-x.md"; rm "$d/features/SHOP-12-x.md.bak"
+  out=$(gt sync --docs "$d" --repo "$p" --no-write 2>/dev/null)
+  assert_contains "$(row SHOP-12 "$out" | cut -f4)" "1 ideas without a page" "an idea with no page to read is counted"
+  [[ "$(row SHOP-12 "$out" | cut -f4)" != *"without a video"* ]] || _fail "a missing page is not a missing video"
+  [[ "$(row SHOP-12 "$out" | cut -f2)" != *below-standard* ]] || _fail "a missing page is not below standard"
 }
 test_sync_bad_link_only_with_links() {
   local d p out; read -r d p <<<"$(sync_fix)"

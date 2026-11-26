@@ -194,9 +194,11 @@ test_explain_is_a_full_copy() {
            "a glossary exists" "in bold the first time"; do
     grep -qF -- "$s" "$e" || _fail "explain.md lacks: $s"
   done
-  for s in "no logos" "on the page to read too" "No checked page yet" "A video or a page to read whose title"; do
+  for s in "no logos" "on the page to read too" "No checked page yet" "A video or a page to read whose title" \
+           "Never name a project, client, person or issue"; do
     grep -qF -- "$s" "$ROOT/skills/grasp/references/notebook.md" || _fail "notebook.md lacks: $s"
   done
+  ! grep -qF "Never name a project" "$e" || _fail "explain.md keeps its own copy of the privacy rule"
   grep -qF "/grasp explain check" "$SKILL" || _fail "no usage line for explain check"
   ! grep -rqiF "explain-build" "$ROOT/skills/grasp" || _fail "grasp must not depend on or mention the explain-build skill"
 }

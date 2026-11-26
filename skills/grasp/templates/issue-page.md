@@ -68,7 +68,7 @@ Checked against: `{repo}@{base}..{head}`, `{repo}@{base}..{head}` on {YYYY-MM-DD
 </details>
 - **Idea · {another idea}:** {one line. Add one only when the change leans on it. Same fold as above.}
 
-{With no video that passes the check, the Watch line is `<p>No checked video yet</p>`. With lessons switched off it is `<p>Lessons turned off</p>`.}
+{With no video that passes the check, the Watch line is `<p>No checked video yet</p>`. With no page to read that passes, the Read line is `<p>No checked page yet</p>`. With lessons switched off, the single line `<p>Lessons turned off</p>` replaces both the Watch line and the Read line.}
 
 ## How it works
 

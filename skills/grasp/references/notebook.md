@@ -368,7 +368,7 @@ A short page has no ideas section.
 ### One specific video and one page to read
 
 Every idea gets one specific video and one page to read, in the format of the template. Search with
-the idea plus the project's stack.
+the idea plus the project's stack: technology names, never the project's own name. Never name a project, client, person or issue in a web search or an image prompt; this holds on every page, the illustrations included.
 
 - **The video** is one YouTube video or one video inside a LinkedIn Learning course. LinkedIn
   Learning is allowed when `.grasp.md` says `linkedin learning: yes`, and, for `explain` with
@@ -396,17 +396,20 @@ the idea plus the project's stack.
   channel: use that title and channel. For LinkedIn Learning it prints `ok`, the final address and
   the title. `fail redirected FINAL` on a LinkedIn Learning video means the video is gone: pick
   another video, do not fall back to the course.
-- When no video passes, write `No checked video yet`. Never leave the line out.
+- When no video passes, write `No checked video yet`. Never leave the line out, unless lessons are
+  switched off (the last rule below).
 - **The page to read** is official documentation first. Then this fixed list: refactoring.guru,
   martinfowler.com, web.dev, developer.mozilla.org, learn.microsoft.com/azure/architecture/patterns,
   aws.amazon.com/builders-library. For the design idea try martinfowler.com,
   learn.microsoft.com/azure/architecture/patterns and aws.amazon.com/builders-library first. The page must have been opened: keep no link to a page you did not read.
   Run `grasp-tools check-link URL` on the page to read too, and use the final address it prints. When
-  no page passes, write `<p>No checked page yet</p>`. Never leave the line out.
+  no page passes, write `<p>No checked page yet</p>`. Never leave the line out, unless lessons are
+  switched off.
 - Each link line holds the title, the author or the site, and `checked YYYY-MM-DD`. A link with no
   check date fails `lint-page` (`link-undated`).
-- Links are checked when a page is written or patched, never on a schedule. With
-  lessons switched off the fold says `Lessons turned off` instead of the Watch line.
+- Links are checked when a page is written or patched, never on a schedule.
+- With lessons switched off, an idea's fold holds its explanation and the single line
+  `<p>Lessons turned off</p>`, which stands in for both the Watch line and the Read line.
 
 ### Concepts on the other pages
 

@@ -1469,13 +1469,14 @@ sy_fields() {
           idea = substr(line, length("- **Design · ") + 1); i = index(idea, ":**"); idea = (i ? substr(idea, 1, i - 1) : "")
         }
         sect == "## Ideas this leans on" && index(line, "No checked video yet") { novideo++ }
+        sect == "## Ideas this leans on" && index(line, "No checked page yet") { nopage++ }
         END {
           kind = (issue ? "issue" : (iscode ? "code" : (isfeature ? "feature" : "other")))
           key = title; i = index(key, ":"); if (i) key = substr(key, 1, i - 1)
           gsub(/^[ \t]+|[ \t]+$/, "", key)
           if (!i || key == "") { key = rel; sub(/^.*\//, "", key); sub(/\.md$/, "", key) }
-          printf "%s\037%s\037%s\037%s\037%s\037%d\037%d\037%s\037%s\037%s\037%s\037%s\037%s\037%d\037%s\037%s\n",
-            rel, kind, key, title, std, short, checked, date, ranges, feat, featname, walk, idea, novideo, verified, since
+          printf "%s\037%s\037%s\037%s\037%s\037%d\037%d\037%s\037%s\037%s\037%s\037%s\037%s\037%d\037%s\037%s\037%d\n",
+            rel, kind, key, title, std, short, checked, date, ranges, feat, featname, walk, idea, novideo, verified, since, nopage
         }' "$docs/$rel"
     done
 }
@@ -1601,7 +1602,7 @@ sy_err() { sed -n '1{s/^grasp-tools: //;s/^[[:space:]]*//;s/[[:space:]]*$//;p;}'
 sy_join() { local sep=$1 out='' p; shift; for p in "$@"; do [[ -n "$p" ]] && out+="${out:+$sep}$p"; done; printf '%s' "$out"; }
 
 # sy_check: STATES<TAB>DETAIL for the page whose fields are in the caller's variables (rel, kind,
-# std, short, checked, ranges, walk, novideo, verified) and the cmd_sync settings it reads
+# std, short, checked, ranges, walk, novideo, verified, nopage) and the cmd_sync settings it reads
 # (docs, heads, links, work).
 sy_check() {
   local page="$docs/$rel" sub='' absent='' rc=0 r n b pin i cur res nb s reason='' stale='' bad='' since='' notes=() good=() skip='' partial=0 out u
@@ -1664,6 +1665,7 @@ sy_check() {
   fi
   [[ $kind == issue ]] && since=$(awk -F'\037' -v r="$rel" '$1 == r { print $2; exit }' "$work/later")
   [[ $novideo -gt 0 ]] && notes+=("$novideo ideas without a video")
+  [[ ${nopage:-0} -gt 0 ]] && notes+=("$nopage ideas without a page")
   local states
   states=$(sy_join , ${stale:+stale} ${reason:+below-standard} ${bad:+bad-link} ${since:+changed-since})
   [[ "$walk" == walked* ]] || states=$(sy_join , "$states" not-walked)
@@ -1788,8 +1790,8 @@ cmd_sync() {
   sy_fields "$docs" > "$work/raw"
   sy_mark_features "$work/raw" > "$work/fields"
   sy_later "$work/fields" "$docs" "${SY_NAMES[*]-}" > "$work/later"
-  local rel kind key title std short checked date ranges feat featname walk idea novideo verified cursince res
-  while IFS=$'\037' read -r rel kind key title std short checked date ranges feat featname walk idea novideo verified cursince; do
+  local rel kind key title std short checked date ranges feat featname walk idea novideo verified cursince nopage res
+  while IFS=$'\037' read -r rel kind key title std short checked date ranges feat featname walk idea novideo verified cursince nopage; do
     [[ $kind == issue || $kind == feature ]] || continue
     [[ -z "$only" || "$key" == "$only" ]] || continue
     res=$(sy_check < /dev/null)
@@ -1808,7 +1810,7 @@ cmd_sync() {
   # 5. the generated parts: "Changed since by:" lines, then the lists of issues
   : >> "$work/states"
   local want
-  while IFS=$'\037' read -r rel kind key title std short checked date ranges feat featname walk idea novideo verified cursince; do
+  while IFS=$'\037' read -r rel kind key title std short checked date ranges feat featname walk idea novideo verified cursince nopage; do
     [[ $kind == issue ]] || continue
     want=$(awk -F'\037' -v r="$rel" '$1 == r { print $3; exit }' "$work/later")
     [[ "$want" == "$cursince" ]] || sy_set_since "$docs/$rel" "$want"

@@ -41,7 +41,8 @@ differently or adds.
   detail, never cut it.
 - **Never put on a page** a secret, token, personal data, client text or a raw log. Names of
   settings and variables only, never values.
-- **Never name a project, client or issue** in a web search or an image prompt.
+- **Searches and image prompts** follow the privacy rule in [notebook.md](notebook.md), "One
+  specific video and one page to read".
 - **No lesson without a live check**, and never claim you watched one ([notebook.md](notebook.md),
   "One specific video and one page to read").
 - **Never change code.** A bug found while explaining is reported, not fixed.

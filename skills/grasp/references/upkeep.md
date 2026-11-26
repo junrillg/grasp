@@ -87,13 +87,13 @@ States, in the order the helper prints them:
 | `snippet-drift FILE A-B` | `--only code`: the block was edited by hand, so it is pulled again with `grasp-tools snippet` |
 | `not pinned to a commit` | `--only code`, after the work is committed ("A page about uncommitted work" below) |
 | `REPO: PATH changed after the pin` | rewriting the page, and pinning it again |
-| `bad-link` with an address, `N ideas without a video` | `--only links` |
+| `bad-link` with an address, `N ideas without a video`, `N ideas without a page` | `--only links` |
 | `REPO not given`, `coverage partly checked: REPO not given` | not the page's fault. Needs a person: pass that repository as `--repo`, or add it to `## Projects` |
 | `unreachable REPO@SHA` | not the page's fault. Needs a person: that commit is not in the clone. Fetch it, after a yes |
 | `coverage could not run: REASON`, `lint could not run: REASON` | not the page's fault. Needs a person: fix the cause named in REASON. Do not rewrite |
 
 A row can show a finding that is a note while its state is `ok` (a repository not given, an
-unreachable commit, ideas without a video). Print it. It is repaired only when the table says a
+unreachable commit, ideas without a video or a page). Print it. It is repaired only when the table says a
 repair fixes it.
 
 ## `/grasp repair`
@@ -176,8 +176,8 @@ The target decides which part below applies:
    the sub-page; it changes nothing else on the issue page. `--only links`
    rewrites no prose: it rechecks every lesson link with `grasp-tools check-link`, replaces a failed
    one in place with a link chosen by "One specific video and one page to read" in
-   [notebook.md](notebook.md), and fills an idea whose fold says `No checked video yet` by the same
-   rules. The other documents of the card are not touched.
+   [notebook.md](notebook.md), and fills an idea whose fold says `No checked video yet` or `No
+   checked page yet` by the same rules. The other documents of the card are not touched.
 8. **Check.** Run the three checks of "Standard 2" on the real files, then `grasp-tools sync --only
    KEY` again with the same files. Report one line: `KEY repaired`, or `KEY needs a person: REASON`
    when a check still prints something or the row still shows `missing`, `stale`, `below-standard`
