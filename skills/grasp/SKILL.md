@@ -223,7 +223,7 @@ REFERENCES
   templates/grasp-config.md  the .grasp.md project settings file
   bin/grasp-tools            helper: connect, disconnect, block, status, refresh, record-index,
                              record-check, projects, check-link, lint-page, change-map, snippet,
-                             snippet-check, coverage, keep-walk, version
+                             snippet-check, coverage, keep-walk, sync, version
                              (grasp-tools -h)
 ```
 

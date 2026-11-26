@@ -17,6 +17,7 @@ done
 GRASP_HOME=$(cd -P "$(dirname "$_src")/.." && pwd)
 
 BLOCK_FORMAT=1
+PAGE_STANDARD=2   # the page standard issue pages are written to; sync reports older ones
 TOGGLE_FORM=html   # set by the Obsidian render test (docs/research/visual-pages.md)
 STEPS="work verify review resolve record import"   # record, import: blocks in AGENTS.md / CLAUDE.md
 RUNS_DEFAULT=docs/how-it-works/runs
@@ -123,6 +124,27 @@ Commands:
                            NEW as it was when OLD has a walk and NEW has no complete pair of
                            markers or no "Walk:" field to carry the state into (or OLD's
                            block has no end marker), 2 on bad use or a missing file
+  sync [--docs DIR] [--repo DIR]... [--keys FILE] [--heads FILE] [--links] [--only KEY] [--no-write]
+                           report every issue and feature page under DIR (default
+                           docs/how-it-works, runs/ left out), one row each, then one per key of
+                           --keys (one per line) with no issue page: KEY, STATES, PATH, DETAIL,
+                           tab separated. STATES is ok, or in this order: missing, stale,
+                           below-standard, bad-link, changed-since, not-walked. An issue page is
+                           stale when a file of its range changed between its pin and the head
+                           in --heads (KEY, REPO, SHA per line, tab separated), or the head
+                           descends from the pin and changed a file outside the docs folder; a
+                           feature page when a path it names changed since its "Verified at"
+                           commit. below-standard: no or an old Standard, no Checked against
+                           line, not pinned to a commit, no KEY-code.md sub-page, or lint-page,
+                           snippet-check or coverage findings. bad-link (only with --links): a
+                           lesson link in "## Ideas this leans on" fails check-link.
+                           changed-since: a later issue page names one of its files. A commit
+                           not in the clone is never a failure; DETAIL says "unreachable
+                           REPO@SHA". Then it rewrites the generated issues lists (between the
+                           grasp:issues markers, added once when missing) in features/README.md
+                           and every feature page, and each issue page's "Changed since by:"
+                           line. --no-write, and --only (rows for one key), write nothing. Exits
+                           0 whatever the states, 2 on bad use
   version                  print the grasp version
 
 Options:
@@ -1270,7 +1292,8 @@ cmd_lint_page() {
       # hard-wrap: Obsidian shows every newline inside a paragraph or list item as a line
       # break, so prose wrapped at a fixed width reads as ragged short lines. One paragraph, one line.
       # ponytail: a heuristic. A wrap is a prose line right under a prose or list line of 60 or
-      # more characters; a line that opens with a bold label is a deliberate new line.
+      # more characters; a line that opens with a bold label is a deliberate new line, and so is
+      # the "Changed since by:" line sync writes under "Checked against:".
       k = line; ind = match(k, /[^ \t]/) - 1; sub(/^[ \t]+/, "", k)
       if (start > 0 || depth + opens > 0) kind = "other"
       else if (k == "") kind = "blank"
@@ -1279,7 +1302,7 @@ cmd_lint_page() {
       else if (ind >= 4 && prev != "list" && prev != "para") kind = "other"   # an indented code block
       else kind = "para"
       if (kind == "para" && (prev == "para" || prev == "list")) {
-        if (!wrapped && prevlen >= 60 && k !~ /^\*\*/) { report("hard-wrap"); wrapped = 1 }
+        if (!wrapped && prevlen >= 60 && k !~ /^(\*\*|Changed since by: )/) { report("hard-wrap"); wrapped = 1 }
         kind = prev
       } else wrapped = 0
       prev = kind; prevlen = length(line)
@@ -1368,6 +1391,410 @@ cmd_keep_walk() {
   printf 'kept\n'
 }
 
+# ---------- sync ----------
+
+# awk helpers shared by sync's programs. Paths are relative to the docs folder.
+SY_AWK='
+  function sydir(p) { if (p !~ /\//) return ""; sub(/\/[^\/]*$/, "", p); return p }
+  function synorm(p,   a, n, i, o, k, r) {
+    n = split(p, a, "/"); k = 0
+    for (i = 1; i <= n; i++) {
+      if (a[i] == "" || a[i] == ".") continue
+      if (a[i] == ".." && k > 0 && o[k] != "..") { k--; continue }
+      o[++k] = a[i]
+    }
+    r = ""; for (i = 1; i <= k; i++) r = r (i > 1 ? "/" : "") o[i]; return r
+  }
+  function syrel(fromdir, to,   a, b, na, nb, i, j, r) {
+    na = (fromdir == "" ? 0 : split(fromdir, a, "/")); nb = split(to, b, "/")
+    i = 1; while (i <= na && i < nb && a[i] == b[i]) i++
+    r = ""; for (j = i; j <= na; j++) r = r "../"
+    for (j = i; j <= nb; j++) r = r b[j] (j < nb ? "/" : "")
+    gsub(/ /, "%20", r); gsub(/\(/, "%28", r); gsub(/\)/, "%29", r); return r
+  }
+  function sycell(s) { gsub(/\|/, "\\|", s); return s }
+'
+
+# sy_fields DOCS: one line per page under DOCS (runs/ left out), the fields split by \037 so an
+# empty one survives `read`: REL KIND KEY TITLE STD SHORT CHECKED DATE RANGES FEATURE FEATNAME WALK
+# IDEA NOVIDEO VERIFIED SINCE. KIND is issue, code, feature or other (a page an issue names as its
+# Feature is made a feature page by sy_mark_features). FEATURE is the feature page's path relative
+# to DOCS, "none", or empty. Nothing inside a walk block or a code fence is read.
+sy_fields() {
+  local docs=$1 rel
+  (cd "$docs" && find . -path ./runs -prune -o -type f -name '*.md' -print) | sed 's|^\./||' | LC_ALL=C sort |
+    while IFS= read -r rel; do
+      awk -v rel="$rel" "$SY_AWK"'
+        function field(s, name,   i, v) {
+          i = index(s, name); if (!i) return ""
+          v = substr(s, i + length(name)); i = index(v, " · "); if (i) v = substr(v, 1, i - 1); return v
+        }
+        { line = $0; sub(/\r$/, "", line); gsub(/[\t\037]/, " ", line) }
+        line ~ /^<!-- grasp:walk:start -->/ { inwalk = 1; next }
+        line ~ /^<!-- grasp:walk:end -->/ { inwalk = 0; next }
+        inwalk { next }
+        fence != "" { if (index(line, fence) == 1) fence = ""; next }
+        line ~ /^(```|~~~)/ { fence = substr(line, 1, 3); next }
+        title == "" && line ~ /^# / { title = substr(line, 3) }
+        line ~ /^## / { sect = line }
+        !issue && line ~ /^Status: (planned|building|built|verified|blocked)/ {
+          issue = 1
+          if (match(line, /Standard: [0-9]+/)) std = substr(line, RSTART + 10, RLENGTH - 10)
+          short = (line ~ /Standard: [0-9]+ short/)
+          f = field(line, "Feature: ")
+          if (f == "none") feat = "none"
+          else if (match(f, /^\[[^]]*\]\([^)]*\)/)) {
+            featname = substr(f, 2, index(f, "](") - 2)
+            feat = substr(f, index(f, "](") + 2); sub(/\).*$/, "", feat); sub(/[#?].*$/, "", feat); gsub(/%20/, " ", feat)
+            feat = synorm((sydir(rel) == "" ? "" : sydir(rel) "/") feat)
+          }
+        }
+        index(line, "part of the [app map](") { isfeature = 1 }
+        index(line, "Code for [") == 1 && rel ~ /-code\.md$/ { iscode = 1 }
+        walk == "" && index(line, " · Walk: ") { walk = field(line, " · Walk: ") }
+        verified == "" && index(line, "Verified at") && match(line, /`[0-9a-f]+`/) { verified = substr(line, RSTART + 1, RLENGTH - 2) }
+        sincenext { sincenext = 0; if (index(line, "Changed since by: ") == 1) since = substr(line, 19) }
+        !checked && line ~ /^Checked against:/ {
+          checked = 1; sincenext = 1; s = line
+          while (match(s, /`[^`@ ]+@[^` ]+`/)) {
+            ranges = ranges (ranges == "" ? "" : " ") substr(s, RSTART + 1, RLENGTH - 2); s = substr(s, RSTART + RLENGTH)
+          }
+          if (match(line, / on [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/)) date = substr(line, RSTART + 4, 10)
+        }
+        sect == "## Ideas this leans on" && idea == "" && index(line, "- **Design · ") == 1 {
+          idea = substr(line, length("- **Design · ") + 1); i = index(idea, ":**"); idea = (i ? substr(idea, 1, i - 1) : "")
+        }
+        sect == "## Ideas this leans on" && index(line, "No checked video yet") { novideo++ }
+        END {
+          kind = (issue ? "issue" : (iscode ? "code" : (isfeature ? "feature" : "other")))
+          key = title; i = index(key, ":"); if (i) key = substr(key, 1, i - 1)
+          gsub(/^[ \t]+|[ \t]+$/, "", key)
+          if (!i || key == "") { key = rel; sub(/^.*\//, "", key); sub(/\.md$/, "", key) }
+          printf "%s\037%s\037%s\037%s\037%s\037%d\037%d\037%s\037%s\037%s\037%s\037%s\037%s\037%d\037%s\037%s\n",
+            rel, kind, key, title, std, short, checked, date, ranges, feat, featname, walk, idea, novideo, verified, since
+        }' "$docs/$rel"
+    done
+}
+
+# sy_mark_features FIELDS: the same lines, a page some issue names as its Feature made a feature page
+sy_mark_features() {
+  awk -F'\037' -v OFS='\037' '
+    FNR == NR { if ($2 == "issue" && $10 != "none" && $10 != "") target[$10] = 1; next }
+    $2 == "other" && ($1 in target) { $2 = "feature" }
+    { print }' "$1" "$1"
+}
+
+# sy_later FIELDS DOCS NAMES: for each issue page that a later one (by checked date) changed, a line
+# REL \037 KEYS \037 LINKS: the later keys, and the "Changed since by:" value, oldest first. Files
+# are compared by the first column of the code sub-page's file list (the page itself when it has no
+# sub-page), with a leading "REPO/" of a known repository dropped.
+# ponytail: changed-since compares page dates and file names, not git ancestry. Move to merge order per repo if two cards built on the same day mislabel each other.
+sy_later() {
+  local fields=$1 docs=$2 names=$3 rel kind key date list
+  while IFS=$'\037' read -r rel kind key _ _ _ _ date _; do
+    [[ $kind == issue && -n "$date" ]] || continue
+    list="$docs/$rel"; [[ -f "$docs/${rel%.md}-code.md" ]] && list="$docs/${rel%.md}-code.md"
+    cv_firstcol "$list" | awk -v names="$names" -v r="$rel" -v d="$date" -v k="$key" '
+      BEGIN { n = split(names, nm, " ") }
+      { p = $0; for (i = 1; i <= n; i++) if (index(p, nm[i] "/") == 1) { p = substr(p, length(nm[i]) + 2); break }
+        printf "%s\037%s\037%s\037%s\n", r, d, k, p }'
+  done < "$fields" | LC_ALL=C sort -u |
+    awk -F'\037' "$SY_AWK"'
+      { n[$4]++; R[$4, n[$4]] = $1; D[$1] = $2; K[$1] = $3 }
+      END {
+        for (p in n) for (i = 1; i <= n[p]; i++) for (j = 1; j <= n[p]; j++) {
+          a = R[p, i]; b = R[p, j]
+          if (D[b] > D[a] && !((a, b) in seen)) { seen[a, b] = 1; m[a]++; L[a, m[a]] = b }
+        }
+        for (a in m) {
+          for (i = 2; i <= m[a]; i++) for (j = i; j > 1; j--) {   # oldest first, then by key
+            x = L[a, j - 1]; y = L[a, j]
+            if (D[x] > D[y] || (D[x] == D[y] && K[x] > K[y])) { L[a, j - 1] = y; L[a, j] = x } else break
+          }
+          keys = ""; links = ""
+          for (i = 1; i <= m[a]; i++) {
+            b = L[a, i]; keys = keys (i > 1 ? ", " : "") K[b]
+            links = links (i > 1 ? ", " : "") "[" K[b] "](" syrel(sydir(a), b) ")"
+          }
+          printf "%s\037%s\037%s\n", a, keys, links
+        }
+      }' | LC_ALL=C sort
+}
+
+# sy_repo NAME: the index of the --repo with that folder name, or nothing
+sy_repo() { local i; for i in ${SY_NAMES[@]+"${!SY_NAMES[@]}"}; do [[ "${SY_NAMES[$i]}" == "$1" ]] && { echo "$i"; return 0; }; done; return 1; }
+
+sy_commit() { git -C "$1" cat-file -e "$2^{commit}" 2>/dev/null; }
+
+# sy_issue_stale TOP NAME BASE PIN CUR NB: "stale<TAB>DETAIL", "unreachable<TAB>REPO@SHA" or nothing.
+# Decided by file contents, never by commit ids: the page's own commit and a merge both move the
+# head. NB is the notebook folder inside this repository ("." the whole of it, empty when outside).
+# ponytail: after a squash merge, rule (a) can fire on someone else's later edit to the same file on the base branch. Narrow it with the pull request's own commit list if that shows up in practice.
+sy_issue_stale() {
+  local top=$1 n=$2 base=$3 pin=$4 cur=$5 nb=$6 s f files=()
+  [[ "$cur" == "$pin"* || "$pin" == "$cur"* ]] && return 0
+  for s in "$pin" "$cur"; do sy_commit "$top" "$s" || { printf 'unreachable\tunreachable %s@%s\n' "$n" "$s"; return 0; }; done
+  while IFS= read -r -d '' f; do files+=("$f"); done < <(git -C "$top" diff --name-only --no-renames -z "$base" "$pin" 2>/dev/null)
+  f=''
+  [[ ${#files[@]} -gt 0 ]] &&
+    f=$(git --literal-pathspecs -C "$top" -c core.quotePath=false diff --name-only --no-renames "$pin" "$cur" -- "${files[@]}" 2>/dev/null | head -n 1)
+  if [[ -z "$f" ]] && git -C "$top" merge-base --is-ancestor "$pin" "$cur" 2>/dev/null; then
+    f=$(git -C "$top" -c core.quotePath=false diff --name-only --no-renames "$pin" "$cur" 2>/dev/null |
+      awk -v nb="$nb" 'nb != "." && !(nb != "" && index($0, nb "/") == 1) { print; exit }')
+  fi
+  [[ -z "$f" ]] || printf 'stale\t%s: %s changed after the pin\n' "$n" "$f"
+}
+
+# sy_feature_stale PAGE SHA: the first path the page names in backticks that changed in SHA..HEAD of a
+# --repo holding SHA, or "unreachable<TAB>..." when none holds it
+sy_feature_stale() {
+  local page=$1 sha=$2 i found=0 changed='' miss=''
+  for i in ${SY_NAMES[@]+"${!SY_NAMES[@]}"}; do
+    if sy_commit "${SY_TOPS[$i]}" "$sha"; then
+      found=1
+      changed+=$(git -C "${SY_TOPS[$i]}" -c core.quotePath=false log --format= --name-only "$sha..HEAD" 2>/dev/null |
+        awk -v n="${SY_NAMES[$i]}" 'NF { print $0; print n "/" $0 }')$'\n'
+    else
+      miss+="${miss:+, }unreachable ${SY_NAMES[$i]}@$sha"
+    fi
+  done
+  [[ $found == 1 ]] || { [[ -z "$miss" ]] || printf 'unreachable\t%s\n' "$miss"; return 0; }
+  cv_quoted "$page" | awk 'FNR == NR { if (NF) c[$0] = 1; next } ($0 in c) { print "stale\t" $0; exit }' <(printf '%s' "$changed") -
+}
+
+# sy_hrefs PAGE: every href inside "## Ideas this leans on"
+sy_hrefs() {
+  awk '{ sub(/\r$/, "") } /^## / { in_s = ($0 == "## Ideas this leans on"); next }
+    in_s { s = $0; while (match(s, /href="[^"]*"/)) { print substr(s, RSTART + 6, RLENGTH - 7); s = substr(s, RSTART + RLENGTH) } }' "$1"
+}
+
+# sy_snippets PAGE SKIP: snippet-check against every --repo. Prints "below<TAB>REASON" for drift and
+# unmarked fences, "note<TAB>unreachable REPO@REV" for a commit or repository not here. Markers of
+# the repositories in SKIP (space separated) are not checked.
+sy_snippets() {
+  local page=$1 skip=" $2 " i args=() line ln rule rest m
+  for i in ${SY_NAMES[@]+"${!SY_NAMES[@]}"}; do args+=(--repo "${SY_TOPS[$i]}"); done
+  [[ ${#args[@]} -gt 0 ]] || return 0
+  ( cmd_snippet_check "${args[@]}" "$page" ) 2>/dev/null | while IFS= read -r line; do
+    line=${line#"$page":}; ln=${line%%:*}; rest=${line#*: }; rule=${rest%% *}
+    m=$(sed -n "${ln}p" "$page" | sed -n 's/^<!-- grasp:snippet repo=\([^ ]*\) .* rev=\([0-9a-f]*\) -->.*/\1 \2/p')
+    [[ -n "$m" && "$skip" == *" ${m% *} "* ]] && continue
+    case $rule in
+      snippet-unreachable|snippet-unknown-repo) printf 'note\tunreachable %s@%s\n' "${m% *}" "${m#* }" ;;
+      *) printf 'below\t%s\n' "$rest" ;;
+    esac
+  done
+}
+
+# sy_join SEP PART...: the non-empty parts joined
+sy_join() { local sep=$1 out='' p; shift; for p in "$@"; do [[ -n "$p" ]] && out+="${out:+$sep}$p"; done; printf '%s' "$out"; }
+
+# sy_check: STATES<TAB>DETAIL for the page whose fields are in the caller's variables (rel, kind,
+# std, short, checked, ranges, walk, novideo, verified) and the cmd_sync settings it reads
+# (docs, heads, links, work).
+sy_check() {
+  local page="$docs/$rel" sub='' r n b pin i cur res nb s reason='' stale='' bad='' since='' notes=() good=() skip='' partial=0 out u
+  [[ $kind == issue && -f "$docs/${rel%.md}-code.md" ]] && sub="$docs/${rel%.md}-code.md"
+  if [[ $kind == issue ]]; then
+    [[ -n "$std" ]] || reason='no Standard field'
+    [[ -n "$reason" || $std -ge $PAGE_STANDARD ]] || reason="Standard $std, current $PAGE_STANDARD"
+    [[ -n "$reason" || $checked == 1 ]] || reason='no Checked against line'
+    for r in $ranges; do
+      n=${r%%@*}; b=${r#*@}; pin=${b#*..}; b=${b%%..*}
+      if [[ "$pin" == uncommitted ]]; then
+        skip+=" $n"; partial=1; [[ -n "$reason" ]] || reason='not pinned to a commit'; continue
+      fi
+      if ! i=$(sy_repo "$n"); then notes+=("unreachable $n@$pin"); skip+=" $n"; partial=1; continue; fi
+      if ! sy_commit "${SY_TOPS[$i]}" "$b"; then notes+=("unreachable $n@$b"); skip+=" $n"; partial=1; continue; fi
+      if ! sy_commit "${SY_TOPS[$i]}" "$pin"; then notes+=("unreachable $n@$pin"); skip+=" $n"; partial=1; continue; fi
+      good+=(--repo "${SY_TOPS[$i]}")
+      [[ -n "$heads" ]] || continue
+      cur=$(awk -F'\t' -v k="$key" -v n="$n" '{ sub(/\r$/, "") } $1 == k && $2 == n { print $3; exit }' "$heads")
+      [[ -n "$cur" ]] || continue
+      res=$(sy_issue_stale "${SY_TOPS[$i]}" "$n" "$b" "$pin" "$cur" "${SY_NB[$i]}")
+      case $res in
+        stale*) [[ -n "$stale" ]] || stale=${res#*$'\t'} ;;
+        unreachable*) notes+=("${res#*$'\t'}") ;;
+      esac
+    done
+    [[ -n "$reason" || $short == 1 || $std -lt $PAGE_STANDARD || -n "$sub" ]] || reason='no code sub-page'
+  elif [[ -n "$verified" ]]; then
+    res=$(sy_feature_stale "$page" "$verified")
+    case $res in
+      stale*) stale=${res#*$'\t'} ;;
+      unreachable*) notes+=("${res#*$'\t'}") ;;
+    esac
+  fi
+  if [[ -z "$reason" ]]; then
+    out=$( ( cmd_lint_page "$page" ${sub:+"$sub"} ) 2>/dev/null ); out=${out%%$'\n'*}
+    [[ -z "$out" ]] || { out=${out#"$page":}; [[ -z "$sub" ]] || out=${out#"$sub":}; out=${out#*: }; reason="lint: ${out%% *}"; }
+  fi
+  for s in "$page" ${sub:+"$sub"}; do
+    while IFS=$'\t' read -r r res; do
+      if [[ $r == below ]]; then [[ -n "$reason" ]] || reason=$res; else notes+=("$res"); fi
+    done < <(sy_snippets "$s" "$skip")
+  done
+  if [[ -z "$reason" && $kind == issue && ${#good[@]} -gt 0 ]]; then
+    # a repository left out (not here, or not pinned) would make its files look STALE in the others
+    out=$( ( cmd_coverage "${good[@]}" "$page" ${sub:+"$sub"} ) 2>/dev/null )
+    out=$(printf '%s\n' "$out" | awk -v partial=$partial '/^MISSING / || (!partial && /^STALE /) { print; exit }')
+    [[ -z "$out" ]] || reason="coverage: $out"
+  fi
+  if [[ $links == 1 ]]; then
+    while IFS= read -r u; do
+      [[ -n "$u" ]] || continue
+      ( cmd_check_link "$u" ) >/dev/null 2>&1 || { bad=$u; break; }
+    done < <(sy_hrefs "$page")
+  fi
+  [[ $kind == issue ]] && since=$(awk -F'\037' -v r="$rel" '$1 == r { print $2; exit }' "$work/later")
+  [[ $novideo -gt 0 ]] && notes+=("$novideo ideas without a video")
+  local states
+  states=$(sy_join , ${stale:+stale} ${reason:+below-standard} ${bad:+bad-link} ${since:+changed-since})
+  [[ "$walk" == walked* ]] || states=$(sy_join , "$states" not-walked)
+  local uniq=() x seen=' '
+  for x in ${notes[@]+"${notes[@]}"}; do [[ "$seen" == *" $x "* ]] || { uniq+=("$x"); seen+="$x "; }; done
+  printf '%s\t%s\n' "${states:-ok}" "$(sy_join '; ' "$stale" "$reason" "$bad" "$since" ${uniq[@]+"${uniq[@]}"})"
+}
+
+# sy_set_since PAGE VALUE: set, replace or remove the "Changed since by:" line under "Checked against:"
+sy_set_since() {
+  local f=$1 tmp sz
+  tmp=$(mktemp "${TMPDIR:-/tmp}/grasp.XXXXXX") || die 1 "cannot create a temporary file in ${TMPDIR:-/tmp}; nothing was changed"
+  GRASP_SINCE=$2 awk '
+    BEGIN { v = ENVIRON["GRASP_SINCE"] }
+    after { after = 0; if (index($0, "Changed since by: ") == 1) { if (v != "") print "Changed since by: " v cr; next } if (v != "") print "Changed since by: " v cr }
+    !done && /^Checked against:/ { done = after = 1; cr = ($0 ~ /\r$/ ? "\r" : "") }
+    { print }
+    END { if (after && v != "") print "Changed since by: " v cr }' "$f" > "$tmp"
+  if ! ends_with_newline "$f"; then sz=$(wc -c < "$tmp"); head -c $((sz - 1)) "$tmp" > "$tmp.2" && mv "$tmp.2" "$tmp"; fi
+  write_if_changed "$tmp" "$f"
+}
+
+# sy_put_issues FILE BLOCK: replace the lines between the issues markers (outside a walk block) with
+# BLOCK, or append "## Issues" and BLOCK once. A missing FILE is created.
+sy_put_issues() {
+  local f=$1 blk=$2 tmp loc
+  tmp=$(mktemp "${TMPDIR:-/tmp}/grasp.XXXXXX") || die 1 "cannot create a temporary file in ${TMPDIR:-/tmp}; nothing was changed"
+  [[ -f "$f" ]] || printf '# Features\n' > "$tmp"
+  [[ -f "$f" ]] && loc=$(awk '
+    /^<!-- grasp:walk:start -->/ { w = 1 } /^<!-- grasp:walk:end -->/ { w = 0; next } w { next }
+    !s && /^<!-- grasp:issues:start -->[ \t\r]*$/ { s = FNR; next }
+    s && /^<!-- grasp:issues:end -->[ \t\r]*$/ { e = FNR; exit }
+    END { if (s) print s, e + 0 }' "$f")
+  if [[ -n "${loc:-}" ]]; then
+    if [[ "${loc#* }" == 0 ]]; then rm -f "$tmp"; printf 'note: %s has an issues start marker and no end marker; left as it was\n' "$f" >&2; return 0; fi
+    awk -v blk="$blk" -v s="${loc% *}" -v e="${loc#* }" '
+      FNR == s { while ((getline l < blk) > 0) print l; close(blk) }
+      FNR >= s && FNR <= e { next } { print }' "$f" > "$tmp"
+  else
+    if [[ -f "$f" ]]; then cat "$f" > "$tmp"; ends_with_newline "$f" || printf '\n' >> "$tmp"; fi
+    [[ -s "$tmp" ]] && printf '\n' >> "$tmp"
+    printf '## Issues\n\n' >> "$tmp"; cat "$blk" >> "$tmp"
+  fi
+  [[ -f "$f" ]] || : > "$f"
+  write_if_changed "$tmp" "$f"
+}
+
+# sy_block FIELDS ROWS FROMDIR [FEATURE]: the generated issues block. With FEATURE, that feature's
+# issues oldest first; without, every issue by feature (then checked date), "No feature page" last.
+sy_block() {
+  local only=${4:-} all=0; [[ -n "$only" ]] || all=1
+  awk -F'\037' -v from="$3" -v only="$only" -v all="$all" "$SY_AWK"'
+    FNR == NR { st[$1] = $2; next }
+    $2 != "issue" { next }
+    all || $10 == only {
+      fs = ($10 == "none" || $10 == "" ? "\177" : ($11 == "" ? $10 : $11))
+      fc = ($10 == "none" || $10 == "" ? "No feature page" : "[" sycell($11) "](" syrel(from, $10) ")")
+      t = $4; if (t == "") t = $3; t = sycell(t); gsub(/\[/, "\\[", t); gsub(/\]/, "\\]", t)
+      r = "| [" t "](" syrel(from, $1) ")"
+      if (all) r = r " | " fc
+      r = r " | " sycell($13) " | " st[$1] " | " sycell($12) " | " $8 " |"
+      printf "%s\037%s\037%s\037%s\n", (all ? fs : ""), $8, $3, r
+    }' <(printf '\n'; cat "$2") "$1" | LC_ALL=C sort -t $'\037' -k1,1 -k2,2 -k3,3 | awk -F'\037' -v all="$all" '
+    BEGIN { print "<!-- grasp:issues:start -->"
+            if (all) { print "| Issue | Feature | Design idea | State | Walk | Checked |"; print "| --- | --- | --- | --- | --- | --- |" }
+            else { print "| Issue | Design idea | State | Walk | Checked |"; print "| --- | --- | --- | --- | --- |" } }
+    { print $4 }
+    END { print "<!-- grasp:issues:end -->" }'
+}
+
+cmd_sync() {
+  local docs=docs/how-it-works repos=() keys='' heads='' links=0 only='' nowrite=0 d top real nb i
+  local usage="usage: sync [--docs DIR] [--repo DIR]... [--keys FILE] [--heads FILE] [--links] [--only KEY] [--no-write]"
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --docs) [[ $# -ge 2 && -n "$2" ]] || die 2 "--docs needs a folder"; docs=$2; shift 2 ;;
+      --repo) [[ $# -ge 2 ]] || die 2 "--repo needs a folder"; repos+=("$2"); shift 2 ;;
+      --keys) [[ $# -ge 2 ]] || die 2 "--keys needs a file"; keys=$2; shift 2 ;;
+      --heads) [[ $# -ge 2 ]] || die 2 "--heads needs a file"; heads=$2; shift 2 ;;
+      --only) [[ $# -ge 2 && -n "$2" ]] || die 2 "--only needs a key"; only=$2; shift 2 ;;
+      --links) links=1; shift ;;
+      --no-write) nowrite=1; shift ;;
+      *) die 2 "$usage" ;;
+    esac
+  done
+  [[ -d "$docs" ]] || die 2 "no such folder: $docs"
+  [[ -z "$keys" || -f "$keys" ]] || die 2 "no such file: $keys"
+  [[ -z "$heads" || -f "$heads" ]] || die 2 "no such file: $heads"
+  [[ -n "$only" ]] && nowrite=1
+  [[ "$docs" == / ]] || docs=${docs%/}
+  # the repositories: their folder names, tops, and the notebook folder inside each (when it is)
+  SY_NAMES=(); SY_TOPS=(); SY_NB=()
+  [[ ${#repos[@]} -gt 0 ]] || { git rev-parse --show-toplevel >/dev/null 2>&1 && repos=(.); }
+  real=$(cd -P "$docs" && pwd)
+  for d in ${repos[@]+"${repos[@]}"}; do
+    top=$(git -C "$d" rev-parse --show-toplevel 2>/dev/null) || die 2 "not a git repository: $d"
+    top=$(cd -P "$top" && pwd); nb=''
+    [[ "$real" == "$top" ]] && nb=.
+    [[ "$real" == "$top"/* ]] && nb=${real#"$top"/}
+    SY_NAMES+=("$(basename "$top")"); SY_TOPS+=("$top"); SY_NB+=("$nb")
+  done
+  local work; work=$(mktemp -d "${TMPDIR:-/tmp}/grasp.XXXXXX") || die 1 "cannot create a temporary folder in ${TMPDIR:-/tmp}; nothing was changed"
+  SY_WORK=$work; trap 'rm -rf "$SY_WORK"' EXIT
+  [[ -n "$keys" ]] || echo "note: missing not checked (no --keys)" >&2
+  [[ -n "$heads" ]] || echo "note: issue pages not checked for stale (no --heads)" >&2
+  [[ $links == 1 ]] || echo "note: links not checked (no --links)" >&2
+
+  # 1. read every page, 2. who changed whose files later, 3. one row per issue and feature page
+  sy_fields "$docs" > "$work/raw"
+  sy_mark_features "$work/raw" > "$work/fields"
+  sy_later "$work/fields" "$docs" "${SY_NAMES[*]-}" > "$work/later"
+  local rel kind key title std short checked date ranges feat featname walk idea novideo verified cursince res
+  while IFS=$'\037' read -r rel kind key title std short checked date ranges feat featname walk idea novideo verified cursince; do
+    [[ $kind == issue || $kind == feature ]] || continue
+    [[ -z "$only" || "$key" == "$only" ]] || continue
+    res=$(sy_check < /dev/null)
+    printf '%s\t%s\t%s\t%s\n' "$key" "${res%%$'\t'*}" "$docs/$rel" "${res#*$'\t'}"
+    printf '%s\037%s\n' "$rel" "${res%%$'\t'*}" >> "$work/states"
+  done < "$work/fields"
+  # 4. a key the tracker has and no issue page has
+  if [[ -n "$keys" ]]; then
+    tr -d '\r' < "$keys" | awk '{ gsub(/^[ \t]+|[ \t]+$/, "") } NF && !seen[$0]++' | while IFS= read -r key; do
+      [[ -z "$only" || "$key" == "$only" ]] || continue
+      awk -F'\037' -v k="$key" '$2 == "issue" && $3 == k { f = 1; exit } END { exit !f }' "$work/fields" || printf '%s\tmissing\t\t\n' "$key"
+    done
+  fi
+  [[ $nowrite == 0 ]] || return 0
+
+  # 5. the generated parts: "Changed since by:" lines, then the lists of issues
+  : >> "$work/states"
+  local want
+  while IFS=$'\037' read -r rel kind key title std short checked date ranges feat featname walk idea novideo verified cursince; do
+    [[ $kind == issue ]] || continue
+    want=$(awk -F'\037' -v r="$rel" '$1 == r { print $3; exit }' "$work/later")
+    [[ "$want" == "$cursince" ]] || sy_set_since "$docs/$rel" "$want"
+  done < "$work/fields"
+  if [[ -d "$docs/features" ]]; then
+    sy_block "$work/fields" "$work/states" features > "$work/block"
+    sy_put_issues "$docs/features/README.md" "$work/block"
+  fi
+  while IFS=$'\037' read -r rel kind _; do
+    [[ $kind == feature ]] || continue
+    sy_block "$work/fields" "$work/states" "$(dirname "$rel" | sed 's|^\.$||')" "$rel" > "$work/block"
+    sy_put_issues "$docs/$rel" "$work/block"
+  done < "$work/fields"
+}
+
 CONFIG=./.grasp.md
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -1391,6 +1818,7 @@ case "$cmd" in
   snippet-check) cmd_snippet_check "$@" ;;
   coverage) cmd_coverage "$@" ;;
   keep-walk) cmd_keep_walk "$@" ;;
+  sync) cmd_sync "$@" ;;
   "") usage >&2; exit 2 ;;
   *) usage >&2; printf '\ngrasp-tools: unknown command: %s\n' "$cmd" >&2; exit 2 ;;
 esac

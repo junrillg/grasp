@@ -30,7 +30,7 @@ test_unknown_command_exits_2() {
 test_help_lists_all_commands() {
   local out c
   out=$(gt -h 2>&1)
-  for c in connect disconnect block status refresh record-index record-check projects check-link lint-page change-map snippet snippet-check coverage keep-walk version; do
+  for c in connect disconnect block status refresh record-index record-check projects check-link lint-page change-map snippet snippet-check coverage keep-walk sync version; do
     assert_contains "$out" "$c" "help lists $c"
   done
 }
@@ -1593,4 +1593,140 @@ test_keep_walk_refuses_an_unclosed_block_in_old() {
   assert_exit 1 "refuses" -- "$TOOLS" keep-walk "$t/old.md" "$t/new.md"
   assert_eq "$before" "$(cat "$t/new.md")" "the new page is untouched"
 }
+# ---- sync ----
+
+sync_fix() {   # docs with a clean standard 2 pair for SHOP-12 on repo "web"; echoes "DOCS WEB"
+  local t d p b h; t=$(new_tmp); d="$t/docs/how-it-works"; p=$(cov_repo); mkdir -p "$d/features"
+  b=$(g -C "$p" rev-parse --short=7 HEAD~1); h=$(g -C "$p" rev-parse --short=7 HEAD)
+  sed -e "s/^Checked against:.*/Checked against: \`web@$b..$h\` on 2026-11-20/" -e 's/example-issue-page-code\.md/SHOP-12-x-code.md/g' \
+    "$FIX/pages/example-issue-page.md" > "$d/features/SHOP-12-x.md"
+  { printf '# SHOP-12: x, code\n\nCode for [SHOP-12: x](SHOP-12-x.md) · Standard: 2\n\n## Every changed file\n\n| File | What it does in this change |\n| --- | --- |\n| `a.ts` | x |\n| `b c.ts` | x |\n| `deep/d.ts` | x |\n\n## Code walkthrough\n\n'
+    gt snippet --repo "$p" --rev "$h" a.ts 1 1; } > "$d/features/SHOP-12-x-code.md"
+  echo "$d $p"
+}
+row() { awk -F'\t' -v k="$1" '$1 == k' <<<"$2"; }
+
+test_sync_clean_page_is_not_walked_only() {
+  local d p out; read -r d p <<<"$(sync_fix)"
+  out=$(gt sync --docs "$d" --repo "$p" --no-write 2>/dev/null)
+  assert_eq "not-walked" "$(row SHOP-12 "$out" | cut -f2)" "a clean, unwalked page"
+}
+test_sync_old_page_is_below_standard_with_reason() {
+  local d p out; read -r d p <<<"$(sync_fix)"
+  kind_page issue 20 | sed 's/^# K-1: x/# SHOP-9: old/' > "$d/features/SHOP-9-old.md"
+  out=$(gt sync --docs "$d" --repo "$p" --no-write 2>/dev/null)
+  assert_contains "$(row SHOP-9 "$out")" "below-standard" "old page reported"
+  assert_contains "$(row SHOP-9 "$out")" "no Standard field" "the reason is named"
+}
+test_sync_reports_missing_and_stale_from_files() {
+  local d p t out cur; read -r d p <<<"$(sync_fix)"; t=$(new_tmp)
+  echo 3 > "$p/a.ts"; g -C "$p" commit -qam "code after the pin"; cur=$(g -C "$p" rev-parse --short=7 HEAD)
+  printf 'SHOP-12\nSHOP-13\n' > "$t/keys"; printf 'SHOP-12\tweb\t%s\n' "$cur" > "$t/heads"
+  out=$(gt sync --docs "$d" --repo "$p" --keys "$t/keys" --heads "$t/heads" --no-write 2>/dev/null)
+  assert_eq "missing" "$(row SHOP-13 "$out" | cut -f2)" "a key with no page"
+  assert_contains "$(row SHOP-12 "$out" | cut -f2)" "stale" "code changed after the pin"
+  assert_contains "$(row SHOP-12 "$out" | cut -f4)" "web: a.ts changed after the pin" "detail"
+}
+test_sync_page_only_commit_is_not_stale() {   # the notebook lives inside the code repository
+  local p d b h t out cur; p=$(cov_repo); d="$p/docs/how-it-works"; mkdir -p "$d/features"; t=$(new_tmp)
+  b=$(g -C "$p" rev-parse --short=7 HEAD~1); h=$(g -C "$p" rev-parse --short=7 HEAD)
+  sed -e "s/^Checked against:.*/Checked against: \`web@$b..$h\` on 2026-11-20/" -e 's/example-issue-page-code\.md/SHOP-12-x-code.md/g' \
+    "$FIX/pages/example-issue-page.md" > "$d/features/SHOP-12-x.md"
+  printf '# SHOP-12: x, code\n\nCode for [SHOP-12: x](SHOP-12-x.md) · Standard: 2\n\n## Every changed file\n\n| File | What it does in this change |\n| --- | --- |\n| `a.ts` | x |\n| `b c.ts` | x |\n| `deep/d.ts` | x |\n\n## Code walkthrough\n\n' > "$d/features/SHOP-12-x-code.md"
+  g -C "$p" add -A; g -C "$p" commit -qm "docs: the page"; cur=$(g -C "$p" rev-parse --short=7 HEAD)
+  printf 'SHOP-12\tweb\t%s\n' "$cur" > "$t/heads"
+  out=$(gt sync --docs "$d" --repo "$p" --heads "$t/heads" --no-write 2>/dev/null)
+  [[ "$(row SHOP-12 "$out" | cut -f2)" != *stale* ]] || _fail "the page's own commit must not make it stale"
+}
+test_sync_unreachable_head_is_not_stale() {
+  local d p t out; read -r d p <<<"$(sync_fix)"; t=$(new_tmp)
+  printf 'SHOP-12\tweb\tfffffff\n' > "$t/heads"
+  out=$(gt sync --docs "$d" --repo "$p" --heads "$t/heads" --no-write 2>/dev/null)
+  [[ "$(row SHOP-12 "$out" | cut -f2)" != *stale* ]] || _fail "a head that is not in the clone proves nothing"
+  assert_contains "$(row SHOP-12 "$out" | cut -f4)" "unreachable web@fffffff" "but it is said"
+}
+test_sync_says_what_it_could_not_check() {
+  local d p err; read -r d p <<<"$(sync_fix)"
+  err=$(gt sync --docs "$d" --repo "$p" --no-write 2>&1 >/dev/null)
+  assert_contains "$err" "note: missing not checked (no --keys)" "keys note"
+  assert_contains "$err" "note: issue pages not checked for stale (no --heads)" "heads note"
+  assert_exit 0 "still exits 0" -- "$TOOLS" sync --docs "$d" --repo "$p" --no-write
+}
+test_sync_unreachable_commit_is_not_below_standard() {
+  local d p out; read -r d p <<<"$(sync_fix)"
+  sed -i.bak 's/rev=[0-9a-f]*/rev=0000000/' "$d/features/SHOP-12-x-code.md"; rm "$d/features/SHOP-12-x-code.md.bak"
+  out=$(gt sync --docs "$d" --repo "$p" --no-write 2>/dev/null)
+  [[ "$(row SHOP-12 "$out" | cut -f2)" != *below-standard* ]] || _fail "an unfetched commit must not fail the page"
+  assert_contains "$(row SHOP-12 "$out" | cut -f4)" "unreachable web@0000000" "but it is said"
+}
+test_sync_drift_and_uncovered_file_are_below_standard() {
+  local d p out; read -r d p <<<"$(sync_fix)"
+  sed -i.bak 's/| `deep\/d.ts` | x |//' "$d/features/SHOP-12-x-code.md"; rm "$d/features/SHOP-12-x-code.md.bak"
+  out=$(gt sync --docs "$d" --repo "$p" --no-write 2>/dev/null)
+  assert_contains "$(row SHOP-12 "$out" | cut -f4)" "coverage: MISSING web/deep/d.ts" "an unnamed file"
+}
+test_sync_uncommitted_page_is_not_pinned() {
+  local d p out; read -r d p <<<"$(sync_fix)"
+  sed -i.bak 's/\(Checked against: `web@[0-9a-f]*\.\.\)[0-9a-f]*/\1uncommitted/' "$d/features/SHOP-12-x.md"; rm "$d/features/SHOP-12-x.md.bak"
+  out=$(gt sync --docs "$d" --repo "$p" --no-write 2>/dev/null)
+  assert_contains "$(row SHOP-12 "$out" | cut -f2)" "below-standard" "an unpinned page is below standard"
+  assert_contains "$(row SHOP-12 "$out" | cut -f4)" "not pinned to a commit" "and says why"
+  assert_exit 0 "and sync does not fail" -- "$TOOLS" sync --docs "$d" --repo "$p" --no-write
+}
+test_sync_missing_sub_page_is_below_standard() {
+  local d p out; read -r d p <<<"$(sync_fix)"
+  mv "$d/features/SHOP-12-x-code.md" "$d/features/other-code.md"
+  sed -i.bak 's/SHOP-12-x-code\.md/other-code.md/g' "$d/features/SHOP-12-x.md"; rm "$d/features/SHOP-12-x.md.bak"
+  out=$(gt sync --docs "$d" --repo "$p" --no-write 2>/dev/null)
+  assert_contains "$(row SHOP-12 "$out" | cut -f4)" "no code sub-page" "a sub-page under another name does not count"
+}
+test_sync_writes_generated_lists_and_keeps_other_text() {
+  local d p; read -r d p <<<"$(sync_fix)"
+  printf '# Features\n\nhand written\n' > "$d/features/README.md"
+  gt sync --docs "$d" --repo "$p" >/dev/null 2>&1
+  assert_contains "$(cat "$d/features/README.md")" "hand written" "existing text kept"
+  assert_contains "$(cat "$d/features/README.md")" "<!-- grasp:issues:start -->" "block added"
+  assert_contains "$(cat "$d/features/README.md")" "| [SHOP-12" "the issue is listed"
+  gt sync --docs "$d" --repo "$p" >/dev/null 2>&1
+  assert_eq 1 "$(grep -c 'grasp:issues:start' "$d/features/README.md")" "running twice adds one block"
+}
+test_sync_only_limits_rows_and_writes_nothing() {
+  local d p out; read -r d p <<<"$(sync_fix)"
+  out=$(gt sync --docs "$d" --repo "$p" --only SHOP-12 2>/dev/null)
+  assert_eq 1 "$(printf '%s\n' "$out" | wc -l | tr -d ' ')" "one row"
+  [[ ! -f "$d/features/README.md" ]] || _fail "--only must not write lists"
+}
+test_sync_changed_since_names_the_later_issue() {
+  local d p f out; read -r d p <<<"$(sync_fix)"; f="$d/features"
+  sed -e 's/^# SHOP-12: .*/# SHOP-14: y/' -e 's/ on 2026-11-20$/ on 2026-11-25/' -e 's/SHOP-12-x-code\.md/SHOP-14-y-code.md/g' \
+    "$f/SHOP-12-x.md" > "$f/SHOP-14-y.md"
+  sed -e 's/SHOP-12: x/SHOP-14: y/g' -e 's/SHOP-12-x\.md/SHOP-14-y.md/g' "$f/SHOP-12-x-code.md" > "$f/SHOP-14-y-code.md"
+  out=$(gt sync --docs "$d" --repo "$p" --no-write 2>/dev/null)
+  assert_contains "$(row SHOP-12 "$out" | cut -f2)" "changed-since" "the older page is changed since"
+  assert_contains "$(row SHOP-12 "$out" | cut -f4)" "SHOP-14" "by the later issue"
+  [[ "$(row SHOP-14 "$out" | cut -f2)" != *changed-since* ]] || _fail "the later page is not changed since"
+  gt sync --docs "$d" --repo "$p" >/dev/null 2>&1; gt sync --docs "$d" --repo "$p" >/dev/null 2>&1
+  assert_eq 1 "$(grep -cxF 'Changed since by: [SHOP-14](SHOP-14-y.md)' "$f/SHOP-12-x.md")" "the line is written once"
+  assert_eq 0 "$(grep -c '^Changed since by:' "$f/SHOP-14-y.md")" "the later page gets no line"
+  sed 's/^Checked against: .*/&, `api@1111111..2222222`/' "$f/SHOP-12-x.md" > "$f/long.md"
+  [[ "$(gt lint-page "$f/long.md")" != *hard-wrap* ]] || _fail "the line under a long Checked against line is not a wrap"
+}
+test_sync_lists_design_idea_and_counts_missing_videos() {
+  local d p out; read -r d p <<<"$(sync_fix)"
+  gt sync --docs "$d" --repo "$p" >/dev/null 2>&1
+  assert_contains "$(sed -n '/grasp:issues:start/,/grasp:issues:end/p' "$d/features/README.md")" "| Resumable upload |" "the design idea is listed"
+  sed -i.bak 's#^<p>Watch:.*#<p>No checked video yet</p>#' "$d/features/SHOP-12-x.md"; rm "$d/features/SHOP-12-x.md.bak"
+  out=$(gt sync --docs "$d" --repo "$p" --no-write 2>/dev/null)
+  assert_contains "$(row SHOP-12 "$out" | cut -f4)" "1 ideas without a video" "an idea with no video is counted"
+  [[ "$(row SHOP-12 "$out" | cut -f2)" != *below-standard* ]] || _fail "a missing video is not below standard"
+}
+test_sync_bad_link_only_with_links() {
+  local d p out; read -r d p <<<"$(sync_fix)"
+  out=$(GRASP_CURL="$FIX/fake-curl" FAKE_CURL_CASE=yt-400 gt sync --docs "$d" --repo "$p" --links --no-write 2>/dev/null)
+  assert_contains "$(row SHOP-12 "$out" | cut -f2)" "bad-link" "a failing lesson link"
+  assert_contains "$(row SHOP-12 "$out" | cut -f4)" "https://www.youtube.com/watch?v=aBcDeFgHiJk&t=95s" "the address"
+  out=$(GRASP_CURL="$FIX/fake-curl" FAKE_CURL_CASE=yt-400 gt sync --docs "$d" --repo "$p" --no-write 2>/dev/null)
+  [[ "$(row SHOP-12 "$out" | cut -f2)" != *bad-link* ]] || _fail "links are checked only with --links"
+}
+
 run_tests "${1:-.}"
