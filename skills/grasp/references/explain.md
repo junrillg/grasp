@@ -183,9 +183,10 @@ sub-page has no `Checked against:` line.
 - Uncommitted or untracked files in the work (a head of `uncommitted`): pass `--base REF`, one ref
   that exists in every repository (usually the integration branch), and no `--head`. It counts
   those files too. With `--head`, only commits count.
-- Repositories that need different bases and have uncommitted work: run `coverage` once per
-  repository. A `STALE` line for a path of the other repository is then expected; every `MISSING`
-  line is not.
+- Repositories that need different bases and have uncommitted work: one `--base` cannot serve
+  them. Say so, ask the person to commit, and run `coverage` once with no `--base` after that: the
+  `Checked against:` line carries one range per repository. Report coverage as not run until then.
+- Every `MISSING` or `STALE` line is something to fix. `MISSING REPO/path` names the repository.
 - Every lesson link through `grasp-tools check-link URL`, as in "One specific video and one page
   to read". A link that fails is dropped.
 - Every diagram rendered, or at least linted, and the illustration opened and looked at. Say in
@@ -211,9 +212,7 @@ sub-page has no `Checked against:` line.
 ### 7. Report
 
 - Where the pages are.
-- Coverage, `N of M changed files named` for each repository (one `coverage` run per repository,
-  where a `STALE` line for another repository's path is expected), then the total from the run
-  over all of them.
+- Coverage: the one line `N of M changed files named` from the single run over every repository.
 - What is not finished, and who can finish it.
 - Which checks did not run, and any bug found.
 - With no `.grasp.md`: that `/grasp setup` is available.
