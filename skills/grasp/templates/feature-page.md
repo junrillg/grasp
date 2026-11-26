@@ -11,6 +11,9 @@ section that has nothing true to say, except "Concepts", which every page keeps 
 reports `no-concepts`): most pages need "Where it fits", "How it works", "Concepts" and
 "Connects to", and nothing else.
 
+The walk block at the end and the `Walk:` field are written only by `/grasp walk`
+([walk.md](../references/walk.md)); copy them as they are and never edit what is between the markers.
+
 Write this page only when the feature has a path worth tracing: three or more files or steps. A
 feature that lives in one or two short files is explained by its row on the app map.
 
@@ -18,7 +21,7 @@ feature that lives in one or two short files is explained by its row on the app 
 
 # {Feature name}
 
-Verified at `{short sha}`, {YYYY-MM-DD} · part of the [app map](../app-map.md)
+Verified at `{short sha}`, {YYYY-MM-DD} · Walk: not walked · part of the [app map](../app-map.md)
 
 **In one line:** {what someone can do with it, in plain words}
 
@@ -83,3 +86,7 @@ sequenceDiagram
 | When | What changed | Page |
 | ---- | ------------ | ---- |
 | {YYYY-MM-DD} | {one line} | [{KEY or run name}]({KEY-short-name}.md) |
+
+<!-- grasp:walk:start -->
+<details><summary>Your walk: not done yet. Run /grasp walk {feature-name}</summary></details>
+<!-- grasp:walk:end -->

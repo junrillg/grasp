@@ -30,7 +30,7 @@ test_unknown_command_exits_2() {
 test_help_lists_all_commands() {
   local out c
   out=$(gt -h 2>&1)
-  for c in connect disconnect block status refresh record-index record-check projects check-link lint-page change-map snippet snippet-check coverage version; do
+  for c in connect disconnect block status refresh record-index record-check projects check-link lint-page change-map snippet snippet-check coverage keep-walk version; do
     assert_contains "$out" "$c" "help lists $c"
   done
 }
@@ -1541,6 +1541,33 @@ test_uninstall_removes_only_own_installs() {
   "$ROOT/install.sh" --project "$p" --uninstall >/dev/null 2>&1
   [[ ! -L "$p/.agents/skills/grasp" ]] || _fail "uninstall removes grasp's symlink"
   [[ -d "$ROOT/skills/grasp" ]] || _fail "uninstall leaves the symlink target in the repo"
+}
+
+# ---- keep-walk ----
+
+walk_page() {   # walk_page FILE WALKFIELD BODY
+  printf '# SHOP-12: x\n\nStatus: built · Standard: 2 · Feature: none · Walk: %s · [issue](u)\n\ntext\n\n<!-- grasp:walk:start -->\n%s\n<!-- grasp:walk:end -->\n\ntail\n' "$2" "$3" > "$1"
+}
+test_keep_walk_copies_block_and_field() {
+  local t; t=$(new_tmp)
+  walk_page "$t/old.md" "walked 2026-11-27, 5 of 6 right" "<details><summary>Your walk</summary><p>You: my words</p></details>"
+  walk_page "$t/new.md" "not walked" "<details><summary>Your walk: not done yet</summary></details>"
+  assert_eq "kept" "$(gt keep-walk "$t/old.md" "$t/new.md")" "says kept"
+  assert_contains "$(cat "$t/new.md")" "<p>You: my words</p>" "answers carried over"
+  assert_contains "$(cat "$t/new.md")" "Walk: walked 2026-11-27, 5 of 6 right ·" "field carried over"
+  assert_contains "$(cat "$t/new.md")" $'\ntail' "the rest of the new page is kept"
+}
+test_keep_walk_refuses_when_new_has_no_markers() {
+  local t before; t=$(new_tmp)
+  walk_page "$t/old.md" "walked 2026-11-27, 1 of 1 right" "<details><summary>Your walk</summary><p>You: a</p></details>"
+  printf '# SHOP-12: x\n\nStatus: built · Standard: 2 · Walk: not walked\n' > "$t/new.md"; before=$(cat "$t/new.md")
+  assert_exit 1 "refuses" -- "$TOOLS" keep-walk "$t/old.md" "$t/new.md"
+  assert_eq "$before" "$(cat "$t/new.md")" "the new page is untouched"
+}
+test_keep_walk_with_nothing_to_keep() {
+  local t; t=$(new_tmp); printf '# old\n' > "$t/old.md"
+  walk_page "$t/new.md" "not walked" "<details><summary>Your walk: not done yet</summary></details>"
+  assert_eq "no walk to keep" "$(gt keep-walk "$t/old.md" "$t/new.md")" "an old page with no walk is fine"
 }
 
 run_tests "${1:-.}"

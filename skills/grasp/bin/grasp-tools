@@ -116,6 +116,13 @@ Commands:
                            a path in the first column of a table that is neither changed nor in
                            any repository, then "N of M changed files named". Exits 1 on any
                            MISSING or STALE, 2 on bad use, a git error or no range to read
+  keep-walk OLD NEW        carry a page's walk over to its rewrite: copies the lines between the
+                           walk markers of OLD, markers included, over the same span in NEW, and
+                           the "Walk: ..." field of OLD's status line into NEW's. Prints "kept",
+                           or "no walk to keep" when OLD has no walk block. Exits 1 and leaves
+                           NEW as it was when OLD has a walk and NEW has no complete pair of
+                           markers (or OLD's block has no end marker), 2 on bad use or a
+                           missing file
   version                  print the grasp version
 
 Options:
@@ -1309,6 +1316,53 @@ cmd_lint_page() {
   return $rc
 }
 
+# walk_span FILE: "START END" line numbers of the first walk block, END 0 when it is never closed
+walk_span() {
+  awk '
+    /^<!-- grasp:walk:start -->[ \t\r]*$/ { if (!s) s = FNR; next }
+    /^<!-- grasp:walk:end -->[ \t\r]*$/ { if (s && !e) e = FNR }
+    END { if (s) print s, e + 0 }
+  ' "$1"
+}
+
+# keep-walk OLD NEW: the person's walk survives a rewritten page. Nothing is parsed or edited in
+# the block: its lines are copied as they are, so no word of the person's can change.
+cmd_keep_walk() {
+  [[ $# -eq 2 ]] || die 2 "usage: grasp-tools keep-walk OLD NEW"
+  local old=$1 new=$2 os ns blk tmp field
+  [[ -f "$old" ]] || die 2 "no such file: $old"
+  [[ -f "$new" ]] || die 2 "no such file: $new"
+  os=$(walk_span "$old")
+  if [[ -z "$os" ]]; then printf 'no walk to keep\n'; return 0; fi
+  [[ "${os#* }" != 0 ]] || die 1 "the walk in $old has a start marker and no end marker; $new was left as it was"
+  ns=$(walk_span "$new")
+  { [[ -n "$ns" ]] && [[ "${ns#* }" != 0 ]]; } || die 1 "$new has no complete pair of walk markers; the walk in $old was not carried over and $new was left as it was"
+  blk=$(mktemp "${TMPDIR:-/tmp}/grasp.XXXXXX") || die 1 "cannot create a temporary file in ${TMPDIR:-/tmp}; nothing was changed"
+  tmp=$(mktemp "${TMPDIR:-/tmp}/grasp.XXXXXX") || { rm -f "$blk"; die 1 "cannot create a temporary file in ${TMPDIR:-/tmp}; nothing was changed"; }
+  sed -n "${os% *},${os#* }p" "$old" > "$blk"
+  # the field is the text after "Walk: " up to the next " · ", read from the first 10 lines outside the block
+  field=$(awk -v s="${os% *}" -v e="${os#* }" '
+    BEGIN { pat = " · Walk: " }
+    FNR > 10 { exit }
+    FNR >= s && FNR <= e { next }
+    (i = index($0, pat)) { f = substr($0, i + length(pat)); j = index(f, " · "); if (j) f = substr(f, 1, j - 1); sub(/\r$/, "", f); print f; exit }
+  ' "$old")
+  GRASP_WALK_FIELD=$field awk -v blk="$blk" -v s="${ns% *}" -v e="${ns#* }" '
+    BEGIN { pat = " · Walk: "; field = ENVIRON["GRASP_WALK_FIELD"] }
+    FNR == s { while ((getline l < blk) > 0) print l; close(blk) }
+    FNR >= s && FNR <= e { next }
+    field != "" && !done && FNR <= 10 && (i = index($0, pat)) {
+      pre = substr($0, 1, i - 1 + length(pat)); rest = substr($0, i + length(pat))
+      j = index(rest, " · "); print pre field (j ? substr(rest, j) : (rest ~ /\r$/ ? "\r" : "")); done = 1; next
+    }
+    { print }
+    END { if (field != "" && !done) print "grasp-tools: " FILENAME " has no Walk: field in its first lines; the walk block was carried over, the field was not" > "/dev/stderr" }
+  ' "$new" > "$tmp"
+  rm -f "$blk"
+  write_if_changed "$tmp" "$new"
+  printf 'kept\n'
+}
+
 CONFIG=./.grasp.md
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -1331,6 +1385,7 @@ case "$cmd" in
   snippet) cmd_snippet "$@" ;;
   snippet-check) cmd_snippet_check "$@" ;;
   coverage) cmd_coverage "$@" ;;
+  keep-walk) cmd_keep_walk "$@" ;;
   "") usage >&2; exit 2 ;;
   *) usage >&2; printf '\ngrasp-tools: unknown command: %s\n' "$cmd" >&2; exit 2 ;;
 esac

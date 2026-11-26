@@ -196,4 +196,13 @@ test_explain_is_a_full_copy() {
   ! grep -rqiF "explain-build" "$ROOT/skills/grasp" || _fail "grasp must not depend on or mention the explain-build skill"
 }
 
+test_walk_is_documented() {
+  local w="$ROOT/skills/grasp/references/walk.md" s
+  [[ -f "$w" ]] || _fail "references/walk.md missing"
+  for s in "one at a time" "grasp:walk:start" "## Reader" "never block" "Changed since by"; do
+    grep -qiF "$s" "$w" || _fail "walk.md lacks: $s"
+  done
+  grep -qF "/grasp walk" "$SKILL" || _fail "no usage line for walk"
+}
+
 run_tests "${1:-.}"
