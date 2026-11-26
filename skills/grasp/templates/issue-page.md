@@ -42,6 +42,8 @@ flowchart LR
   style B fill:#fde68a,stroke:#b45309,stroke-width:3px
 ```
 
+(after: replace the diagram above with the change map from `grasp-tools change-map`: every part coloured new, changed or untouched, renamed to the app map's names, arrows added by hand, and its legend line under it)
+
 <details><summary>{Why this matters, as a conclusion, e.g. "Users lose their work after an hour, so we refresh early"}</summary>
 <p>{the reason, in the asker's words where possible}</p>
 <p><b>Not doing:</b> {what this issue deliberately leaves out}</p>
@@ -72,6 +74,20 @@ After, at `{short sha}`, {YYYY-MM-DD}.
 <details><summary>Check it yourself in {n} steps</summary>
 <ol><li>{one command or one click}</li><li>{what you should see}</li></ol>
 <p><b>Verified:</b> {checks run with their result lines, the control result, behaviour seen} on <code>{commit}</code></p>
+</details>
+
+## What changed, part by part
+
+{Caption: how many parts changed and the biggest one, one line.} (after)
+
+| Part | What it does now | Why | Files |
+| ---- | ---------------- | --- | ----- |
+| {part, as named on the change map} | {one line} | {one line} | {n} |
+
+<details><summary>{Part}: {what changed, as a conclusion}</summary>
+<ul><li><code>{path}</code>: {what it does}</li></ul>
+<pre><code>{3 to 8 lines of the key code}</code></pre>
+<p><b>What went wrong:</b> {problem and fix, or "nothing"}</p>
 </details>
 
 ## How it works

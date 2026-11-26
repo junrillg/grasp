@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # grasp-tools: the exact, mechanical steps of the grasp skill.
-# Needs only bash, sed, awk and curl. Run `grasp-tools -h` for usage.
+# Needs only bash, sed, awk, git and curl. Run `grasp-tools -h` for usage.
 set -u
 # Bytes, not characters: BSD awk and sed stop on a byte that is not valid UTF-8, which would hide
 # a block that is already in the file. CDPATH would send a relative cd somewhere else.
@@ -69,6 +69,16 @@ Commands:
                            yet"), no-answer (a built or verified issue
                            page with an empty "Your answer:"). Exits 1 when anything is
                            reported
+  change-map [--repo DIR]... [--base REF] [--head REF] [--depth N]
+                           print a Mermaid block, ready to paste, that shows the code base as
+                           a few boxes coloured by what the change did: green new, amber
+                           changed, grey one box per repository for the folders left alone.
+                           Each --repo (default .) is one subgraph. A box is a folder cut to
+                           N segments (default 2), cut further while there are more than 18
+                           boxes. Changed means commits since BASE, uncommitted and untracked
+                           files; with --head REF only the commits in BASE...REF. BASE (default: origin/HEAD, origin/develop, origin/main,
+                           develop, main, master, the first that exists) is resolved in
+                           each repository, and so is REF
   version                  print the grasp version
 
 Options:
@@ -701,6 +711,116 @@ cmd_check_link() {
   esac
 }
 
+# ---------- change-map ----------
+
+CM_MAX_BOXES=18
+
+# cm_files TOP MB [HEAD] -> "STATUS<tab>PATH" for every file changed since MB: commits, uncommitted
+# and untracked, or with HEAD only the commits up to HEAD. A rename is listed under its new path
+# as M; an untracked file as A.
+cm_files() {
+  { git -C "$1" -c core.quotePath=false diff --name-status -M "$2" ${3:+"$3"} 2>/dev/null |
+      awk -F'\t' 'NF >= 2 { s = substr($1, 1, 1); if (s == "R" || s == "C") s = "M"; print s "\t" $NF }'
+    [[ -n "${3:-}" ]] || git -C "$1" -c core.quotePath=false ls-files --others --exclude-standard 2>/dev/null | awk '{ print "A\t" $0 }'
+  } | LC_ALL=C sort -t "$(printf '\t')" -k2,2 -u
+}
+
+# cm_parts DEPTH < cm_files -> "P<tab>FILES<tab>ADDED<tab>PART", most files first
+cm_parts() {
+  awk -F'\t' -v depth="$1" '
+    { n = split($2, s, "/"); if (n == 1) part = "(root)"
+      else { part = s[1]; for (i = 2; i < n && i <= depth; i++) part = part "/" s[i] }
+      files[part]++; if ($1 == "A") added[part]++ }
+    END { for (p in files) printf "P\t%d\t%d\t%s\n", files[p], added[p] + 0, p }' |
+    LC_ALL=C sort -t "$(printf '\t')" -k2,2nr -k4,4
+}
+
+# cm_kind TOP MB < cm_parts -> each line plus a KIND: new when every file in the part is added
+# and the folder did not exist at MB (one added file in an old folder is a change to it)
+cm_kind() {
+  local p n a part
+  while IFS=$'\t' read -r p n a part; do
+    if [[ $n == "$a" && "$part" != "(root)" ]] && ! git -C "$1" cat-file -e "$2:$part" 2>/dev/null
+    then printf '%s\t%s\t%s\t%s\tnew\n' "$p" "$n" "$a" "$part"
+    else printf '%s\t%s\t%s\t%s\tchanged\n' "$p" "$n" "$a" "$part"; fi
+  done
+}
+
+# cm_unchanged TOP REV FILES PARTS -> how many sibling folders of the changed parts hold no changed file
+cm_unchanged() {
+  local top=$1 rev=$2 files=$3 parts=$4 parent
+  printf '%s\n' "$parts" | awk -F'\t' '$4 != "(root)" { p = $4; if (!sub(/\/[^\/]*$/, "", p)) p = "."; print p }' |
+    LC_ALL=C sort -u | while IFS= read -r parent; do
+      if [[ "$parent" == . ]]; then git -C "$top" ls-tree -d --name-only "$rev"
+      else git -C "$top" -c core.quotePath=false ls-tree -d --name-only "$rev" -- "$parent/"; fi
+    done | LC_ALL=C sort -u |
+    awk -F'\t' 'FNR == NR { if (NF >= 2) ch[++n] = $2; next }
+      { for (i = 1; i <= n; i++) if (index(ch[i], $0 "/") == 1) next; c++ }
+      END { print c + 0 }' <(printf '%s\n' "$files") -
+}
+
+cmd_change_map() {
+  local repos=() base='' head='' h depth=2 d i top b mb files tops=() mbs=() revs=() names=() lists=() bases=() all
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --repo) [[ $# -ge 2 ]] || die 2 "--repo needs a folder"; repos+=("$2"); shift 2 ;;
+      --base) [[ $# -ge 2 ]] || die 2 "--base needs a ref"; base=$2; shift 2 ;;
+      --head) [[ $# -ge 2 ]] || die 2 "--head needs a ref"; head=$2; shift 2 ;;
+      --depth) [[ $# -ge 2 && "$2" =~ ^[1-9][0-9]*$ ]] || die 2 "--depth needs a number from 1"; depth=$2; shift 2 ;;
+      *) die 2 "usage: change-map [--repo DIR]... [--base REF] [--head REF] [--depth N]" ;;
+    esac
+  done
+  [[ ${#repos[@]} -gt 0 ]] || repos=(.)
+  for d in "${repos[@]}"; do
+    top=$(git -C "$d" rev-parse --show-toplevel 2>/dev/null) || die 1 "not a git repository: $d"
+    b=$base
+    if [[ -z "$b" ]]; then
+      for b in origin/HEAD origin/develop origin/main develop main master ''; do
+        git -C "$top" rev-parse -q --verify "$b^{commit}" >/dev/null 2>&1 && break
+      done
+      [[ -n "$b" ]] || die 1 "no base branch found in $top: pass --base REF"
+    fi
+    git -C "$top" rev-parse -q --verify "$b^{commit}" >/dev/null 2>&1 || die 1 "no such base in $top: $b"
+    h=''
+    if [[ -n "$head" ]]; then
+      h=$(git -C "$top" rev-parse -q --verify "$head^{commit}" 2>/dev/null) || die 1 "no such head in $top: $head"
+    fi
+    mb=$(git -C "$top" merge-base "$b" "${h:-HEAD}" 2>/dev/null) || die 1 "$b and ${head:-HEAD} share no history in $top"
+    files=$(cm_files "$top" "$mb" "$h")
+    [[ " ${bases[*]-} " == *" $b "* ]] || bases+=("$b")
+    [[ -n "$files" ]] || continue
+    tops+=("$top"); mbs+=("$mb"); revs+=("${h:-HEAD}"); names+=("$(basename "$top")"); lists+=("$files")
+  done
+  if [[ ${#tops[@]} == 0 ]]; then all="${bases[*]}"; printf 'no changes against %s\n' "${all// /, }"; return 0; fi
+
+  # Build the map at DEPTH; while it holds more than CM_MAX_BOXES boxes, cut one level and retry.
+  local out parts u boxes reduced=0
+  while :; do
+    out=''; boxes=0
+    for i in "${!tops[@]}"; do
+      parts=$(printf '%s\n' "${lists[$i]}" | cm_parts "$depth" | cm_kind "${tops[$i]}" "${mbs[$i]}")
+      u=$(cm_unchanged "${tops[$i]}" "${revs[$i]}" "${lists[$i]}" "$parts")
+      boxes=$((boxes + $(printf '%s\n' "$parts" | wc -l) + (u > 0 ? 1 : 0)))
+      out+="R	$((i + 1))	${names[$i]}"$'\n'"$parts"$'\n'"U	$u"$'\n'
+    done
+    [[ $boxes -gt $CM_MAX_BOXES && $depth -gt 1 ]] || break
+    depth=$((depth - 1)); reduced=1
+  done
+  printf '```mermaid\nflowchart TB\n'
+  [[ $reduced == 1 ]] && printf '  %%%% depth reduced to %d to stay under %d boxes\n' "$depth" "$CM_MAX_BOXES"
+  printf '%s' "$out" | awk -F'\t' '
+    function q(s) { gsub(/"/, "\047", s); return s }
+    function plural(n, w) { return n " " w (n == 1 ? "" : "s") }
+    function close_repo() { if (r == "") return; if (u > 0) { printf "    r%su[\"%s other folder%s unchanged\"]\n", r, u, (u == 1 ? "" : "s"); cls = cls "  class r" r "u same\n" } print "  end" }
+    $1 == "R" { r = $2; j = 0; printf "  subgraph r%s[\"%s\"]\n", r, q($3) }
+    $1 == "P" { j++; lab = q($4) " \302\267 " plural($2, "file") ($3 > 0 ? ", " $3 " new" : "")
+                printf "    r%sp%d[\"%s\"]\n", r, j, lab; cls = cls "  class r" r "p" j " " $5 "\n" }
+    $1 == "U" { u = $2; close_repo(); r = "" }
+    END { printf "%s", cls }'
+  printf '  classDef new fill:#dcfce7,stroke:#15803d\n  classDef changed fill:#fde68a,stroke:#b45309\n  classDef same fill:#f3f4f6,stroke:#9ca3af,color:#6b7280\n```\n'
+  printf 'Green: new. Amber: changed. Grey: untouched. Arrows: add them by hand from the architecture.\n'
+}
+
 # ---------- lint-page ----------
 
 cmd_lint_page() {
@@ -937,6 +1057,7 @@ case "$cmd" in
   record-check) cmd_record_check "$@" ;;
   check-link) cmd_check_link "$@" ;;
   lint-page) cmd_lint_page "$@" ;;
+  change-map) cmd_change_map "$@" ;;
   "") usage >&2; exit 2 ;;
   *) usage >&2; printf '\ngrasp-tools: unknown command: %s\n' "$cmd" >&2; exit 2 ;;
 esac

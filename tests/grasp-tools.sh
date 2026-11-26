@@ -30,7 +30,7 @@ test_unknown_command_exits_2() {
 test_help_lists_all_commands() {
   local out c
   out=$(gt -h 2>&1)
-  for c in connect disconnect block status refresh record-index record-check projects check-link lint-page version; do
+  for c in connect disconnect block status refresh record-index record-check projects check-link lint-page change-map version; do
     assert_contains "$out" "$c" "help lists $c"
   done
 }
@@ -627,6 +627,76 @@ test_lint_accepts_a_task_list_on_an_issue_page() {
   out=$("$TOOLS" lint-page "$d/K-1-x.md") || rc=$?
   assert_eq "" "$out" "ticked and open boxes are fine"
   assert_eq 0 "$rc" "exit 0"
+}
+
+# ---- change-map ----
+
+# cm_repo: a repo whose main has app/{a,b,c,d}, lib/x and a root file; on branch work it adds
+# app/new (committed), changes app/a (uncommitted) and adds lib/x/u and README (untracked)
+cm_repo() {
+  local p f
+  p=$(new_tmp); p=$(cd -P "$p" && pwd)/shop; mkdir -p "$p"
+  g -C "$p" init -q -b main
+  mkdir -p "$p/app/a" "$p/app/b" "$p/app/c" "$p/app/d" "$p/lib/x"
+  for f in app/a/1 app/b/1 app/c/1 app/d/1 lib/x/1 top; do printf '1\n' > "$p/$f"; done
+  g -C "$p" add -A; g -C "$p" commit -qm init; g -C "$p" switch -qc work
+  mkdir -p "$p/app/new"; printf 'n\n' > "$p/app/new/f"; printf 'n\n' > "$p/app/new/g"
+  g -C "$p" add -A; g -C "$p" commit -qm new
+  printf '2\n' >> "$p/app/a/1"; printf 'u\n' > "$p/lib/x/u"; printf 'r\n' > "$p/README"
+  printf '%s' "$p"
+}
+
+test_change_map_boxes_classes_and_counts() {
+  local p out
+  p=$(cm_repo)
+  out=$(gt change-map --repo "$p" --base main)
+  assert_contains "$out" $'```mermaid\nflowchart TB\n  subgraph r1["shop"]' "a fenced flowchart with one subgraph named after the folder"
+  assert_contains "$out" $'    r1p1["app/new \xc2\xb7 2 files, 2 new"]' "the biggest part comes first, files counted"
+  assert_contains "$out" '["app/a · 1 file"]' "one file is 1 file"
+  assert_contains "$out" '["lib/x · 1 file, 1 new"]' "an added file in an old folder"
+  assert_contains "$out" '    r1u["3 other folders unchanged"]' "app/b, app/c, app/d are untouched siblings"
+  assert_contains "$out" '  class r1p1 new' "a folder that is all new is new"
+  assert_contains "$out" "  class $(printf '%s\n' "$out" | sed -n 's/^ *\(r1p[0-9]*\)\["lib\/x .*/\1/p') changed" "an old folder with an added file is changed"
+  assert_contains "$out" '  class r1u same' "the untouched box is grey"
+  assert_contains "$out" '  classDef changed fill:#fde68a,stroke:#b45309' "classes are defined"
+  assert_eq 'Green: new. Amber: changed. Grey: untouched. Arrows: add them by hand from the architecture.' "$(printf '%s\n' "$out" | tail -n 1)" "the legend follows the fence"
+}
+
+test_change_map_head_sees_commits_only() {
+  local p out
+  p=$(cm_repo)
+  out=$(gt change-map --repo "$p" --base main --head HEAD)
+  assert_contains "$out" '["app/new · 2 files, 2 new"]' "committed work is shown"
+  [[ "$out" != *lib/x* && "$out" != *"(root)"* && "$out" != *app/a* ]] || _fail "untracked and uncommitted files are left out"
+  assert_contains "$out" '["4 other folders unchanged"]' "siblings are read from REF"
+  assert_exit 1 "a missing head exits 1" -- "$TOOLS" change-map --repo "$p" --base main --head nope
+}
+
+test_change_map_lints_clean_in_a_page() {
+  local p d
+  p=$(cm_repo); d=$(new_tmp)
+  { printf '# What changed\n\n'; gt change-map --repo "$p" --base main; } > "$d/page.md"
+  assert_eq "" "$("$TOOLS" lint-page "$d/page.md")" "the block passes lint-page"
+}
+
+test_change_map_reduces_depth_past_18_boxes() {
+  local p i out
+  p=$(new_tmp); p=$(cd -P "$p" && pwd)
+  g -C "$p" init -q -b main; printf '1\n' > "$p/top"; g -C "$p" add -A; g -C "$p" commit -qm init
+  for i in $(seq 1 20); do mkdir -p "$p/src/m$i"; printf 'x\n' > "$p/src/m$i/f"; done
+  out=$(gt change-map --repo "$p" --base main)
+  assert_contains "$out" '  %% depth reduced to 1 to stay under 18 boxes' "20 parts drop to depth 1"
+  assert_contains "$out" '["src · 20 files, 20 new"]' "and fold into one box"
+}
+
+test_change_map_no_changes_and_errors() {
+  local p
+  p=$(new_tmp); p=$(cd -P "$p" && pwd)
+  g -C "$p" init -q -b main; printf '1\n' > "$p/top"; g -C "$p" add -A; g -C "$p" commit -qm init
+  assert_eq "no changes against main" "$(gt change-map --repo "$p")" "a clean branch says so"
+  assert_exit 0 "and exits 0" -- "$TOOLS" change-map --repo "$p"
+  assert_exit 1 "a missing base exits 1" -- "$TOOLS" change-map --repo "$p" --base nope
+  assert_exit 1 "a folder that is not a repository exits 1" -- "$TOOLS" change-map --repo "$(new_tmp)"
 }
 
 # ---- page template ----

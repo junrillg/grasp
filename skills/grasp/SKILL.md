@@ -177,7 +177,8 @@ REFERENCES
   templates/run-record.md    one agent task
   templates/grasp-config.md  the .grasp.md project settings file
   bin/grasp-tools            helper: connect, disconnect, block, status, refresh, record-index,
-                             record-check, projects, check-link, lint-page, version
+                             record-check, projects, check-link, lint-page, change-map,
+                             version
                              (grasp-tools -h)
 ```
 
@@ -264,7 +265,9 @@ failed gate is reported plainly and nothing is drafted as passing.
 ### 6. After page
 
 Fill the "after" half of the same page ([templates/issue-page.md](templates/issue-page.md),
-rules in [references/notebook.md](references/notebook.md)): the screenshot (UI changes only),
+rules in [references/notebook.md](references/notebook.md)): the change map in "Where it fits"
+(`grasp-tools change-map`, coloured new, changed, untouched), "What changed, part by part" with
+one folded toggle per part, the screenshot (UI changes only),
 how it works with a numbered code walkthrough, the decision, "Planned and built" (what was
 built instead of the plan, and why), blockers met, the concepts corrected if the build leaned on
 something else, and the explain-back question with its answer folded away (a one-block

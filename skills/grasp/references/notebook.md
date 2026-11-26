@@ -149,6 +149,24 @@ Rules for every page:
 - Mark built, not built and blocked honestly.
 - No secrets, personal data or text copied from client documents.
 
+## Change map and three zoom levels
+
+Any page about a change (an issue page's after half, an explain-build page) opens with the
+**change map**: the whole code base as boxes coloured by what the change did. Green is new,
+amber is changed, grey is untouched, with file counts. `grasp-tools change-map --repo DIR
+--base REF` prints it from git; rename the boxes to the app map's names, keep the folder in the
+label, and add the arrows by hand from the code. Keep its legend line under it.
+
+Then the page reads at three depths, and each depth works alone:
+
+| Zoom | Visible |
+| ---- | ------- |
+| 30 seconds | Status, "In one line", the change map, the picture |
+| 5 minutes | One row per changed part: what it does now, why, file count; the main flow |
+| All the detail | A toggle under each part: its files as `<li><code>path</code>: what</li>`, a short excerpt, what went wrong |
+
+Fold detail, never cut it. A reader who opens every toggle has the whole change.
+
 ## Toggles
 
 Tested in Obsidian (Reading view and Live Preview) and on GitHub (the notes are
@@ -276,6 +294,11 @@ means ask once, then save it).
   generated picture that shows the idea as an everyday scene, directly under "What it is for" or "In one line".
   Feature pages and run records never get one.
 - **no**: diagrams only.
+- **An issue page's after half that changed more than about three parts** also gets the change map
+  as a picture (`KEY-change-map.png`): a cutaway building, one room per part named as on the
+  change map, walls in its colours (pale green new, amber changed, grey untouched), a
+  three-swatch legend, outside systems in the basement or outside the walls. It sits directly
+  above the change map: the picture is read in seconds, the diagram gives the counts.
 - Generate it with whatever image tool is available. With the Codex CLI, the form that worked in
   grasp's own trial, run from the `assets/` folder: `codex exec --skip-git-repo-check -s
   workspace-write -C "$PWD" --enable image_generation "PROMPT" < /dev/null`, where the prompt
