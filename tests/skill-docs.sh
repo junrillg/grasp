@@ -183,4 +183,17 @@ test_setup_looks_for_a_second_writer() {
   grep -qF "page-writing rules of its own" "$ROOT/skills/grasp/references/setup.md" || _fail "setup does not look for a second writer"
 }
 
+test_explain_is_a_full_copy() {
+  local e="$ROOT/skills/grasp/references/explain.md" s
+  [[ -f "$e" ]] || _fail "references/explain.md missing"
+  for s in "this session" "BASE..HEAD" "--repo" "--docs" "--name" "--lessons" "--no-image" "check PAGE" \
+           "reconstructed" "what git does not see" "Set it up" "When something goes wrong" \
+           "How we built it, step by step" "## Things people look up" "## Not in git" "docs router" \
+           "change-map" "grasp-tools coverage" "never write a second set"; do
+    grep -qF -- "$s" "$e" || _fail "explain.md lacks: $s"
+  done
+  grep -qF "/grasp explain check" "$SKILL" || _fail "no usage line for explain check"
+  ! grep -rqiF "explain-build" "$ROOT/skills/grasp" || _fail "grasp must not depend on or mention the explain-build skill"
+}
+
 run_tests "${1:-.}"

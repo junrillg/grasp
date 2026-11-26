@@ -1,7 +1,7 @@
 ---
 name: grasp
-description: "Works one issue from any tracker (Jira, GitHub, ClickUp, Linear, GitLab, Azure DevOps, or plain text) so the team understands it before and after it is built, and keeps a record of what agents do in a repository. Understand first: restate the ask, one question at a time, two or three approaches, wait for a pick. Then build test-first, verify with fresh evidence, and write a visual-first learning page (diagrams, the concepts it leans on with checked lessons, a code walkthrough, long text folded; Obsidian-compatible Markdown in docs/, or Notion). `setup` live-tests the tracker, makes every agent run leave a short run record (a block in AGENTS.md or CLAUDE.md), and writes an overview of the app: core features, architecture and system design with lessons, each sub-project of a workspace. Use when given an issue key, URL or description to build, fix or investigate; to verify a fix; to review a pull request or resolve its comments; to record what a run did; to map or explain an app; or to set up or update grasp."
-argument-hint: "ISSUE [--plan] [--notebook markdown|notion|off] [--no-comment] | verify ISSUE|PR | review PR [--post] | resolve PR | page ISSUE|PR [--step work|verify|review|resolve] | record [\"NAME\"] | map | setup | update | help"
+description: "Works one issue from any tracker (Jira, GitHub, ClickUp, Linear, GitLab, Azure DevOps, or plain text) so the team understands it before and after it is built, and keeps a record of what agents do in a repository. Understand first: restate the ask, one question at a time, two or three approaches, wait for a pick. Then build test-first, verify with fresh evidence, and write a visual-first learning page (diagrams, the concepts it leans on with checked lessons, a code walkthrough, long text folded; Obsidian-compatible Markdown in docs/, or Notion). `setup` live-tests the tracker, makes every agent run leave a short run record (a block in AGENTS.md or CLAUDE.md), and writes an overview of the app: core features, architecture and system design with lessons. Use when given an issue key, URL or description to build, fix or investigate; to verify a fix; to review a pull request or resolve its comments; to explain finished work with no issue; to record what a run did; to map an app; or to set up or update grasp."
+argument-hint: "ISSUE [--plan] [--notebook markdown|notion|off] [--no-comment] | verify ISSUE|PR | review PR [--post] | resolve PR | page ISSUE|PR [--step work|verify|review|resolve] | explain [SOURCE] [--repo PATH] [--docs DIR] [--name SLUG] [--lessons all|free|none] [--no-image] | explain check PAGE [--repo PATH] [--base REF] | record [\"NAME\"] | map | setup | update | help"
 ---
 
 # grasp
@@ -16,7 +16,7 @@ task.
 
 | Argument | Type | Required | Default | Meaning |
 | -------- | ---- | -------- | ------- | ------- |
-| `ISSUE` | key, URL, file path or quoted text | yes, except for `record`, `map`, `setup`, `update` and `help` | none | `PROJ-123`, `#42`, `owner/repo#42`, `86abc123` (ClickUp), `LIN-7`, `AB#1234` (Azure DevOps), a tracker URL, a `.md` file, or `"text"` |
+| `ISSUE` | key, URL, file path or quoted text | yes, except for `explain`, `record`, `map`, `setup`, `update` and `help` | none | `PROJ-123`, `#42`, `owner/repo#42`, `86abc123` (ClickUp), `LIN-7`, `AB#1234` (Azure DevOps), a tracker URL, a `.md` file, or `"text"` |
 | `--plan` | flag | no | off | Stop after the approach is picked and the "before" page is written. No code. |
 | `--notebook` | `markdown`, `notion`, `off` | no | the `.grasp.md` setting, else `markdown` | Where the learning page goes. `markdown` writes `docs/how-it-works/` at the repository root (the folder is confirmed with you on the first run), in Markdown that renders in Obsidian, GitHub and static doc sites. `notion` needs a Notion tool. |
 | `--no-comment` | flag | no | off | Write nothing back to the tracker. |
@@ -26,6 +26,14 @@ task.
 | `resolve` | subcommand | no | none | Work the unresolved review threads on a pull request: verify, fix, one new commit, reply and resolve after approval, update the issue page. |
 | `page` | subcommand | no | none | Write or patch the issue's learning page from the current state (issue, branch diff, pull request). Nothing else: no code, commits or tracker writes. Connected skills call this. |
 | `--step` | `work`, `verify`, `review`, `resolve`, with `page` | no | `work` | Which skill is calling, so `page` knows which part of the page to write. |
+| `explain` | subcommand | no | none | Explain finished work that has no issue, or is wider than one: a setup, a pipeline, a migration, a whole session. Writes a page and its code sub-page. No code changes. |
+| `SOURCE` | nothing, a pull request, a branch or `BASE..HEAD`, with `explain` | no | this session | What to explain. |
+| `--repo` | path, repeatable, with `explain` | no | the repositories this session changed, else the current one | Where the code is. |
+| `--docs` | folder, with `explain` | no | `markdown folder` in `.grasp.md`, else `docs/how-it-works/` | Where the pages go. |
+| `--name` | slug, with `explain` | no | named after the work | File name of the page; the sub-page adds `-code`. |
+| `--lessons` | `all`, `free`, `none`, with `explain` | no | `all`, or `free` when `.grasp.md` says `linkedin learning: no` | `free` drops LinkedIn Learning. `none` turns the lessons off. |
+| `--no-image` | flag, with `explain` | no | off, or on when `.grasp.md` says `illustrations: no` | Diagrams only, no illustration. |
+| `--base` | ref, with `explain check` | no | the integration branch | What the work is compared with. |
 | `record` | subcommand | no | none | Write or update the run record for the task in this conversation: asked, changed, checked, problems, next. Nothing else: no code, commits or tracker writes. The block that `setup` adds to `AGENTS.md` makes every agent run do this. |
 | `"NAME"` | quoted text, with `record` | no | named after what changed | The record's short name. |
 | `map` | subcommand | no | none | Build or refresh the overview only: the app map, the architecture page (not in a small app), a page for each core feature that needs one and, at the top of a workspace, the workspace map and the app map of each sub-project that is new or stale. |
@@ -49,6 +57,9 @@ USAGE
   /grasp review PR [--post]
   /grasp resolve PR
   /grasp page ISSUE|PR [--step work|verify|review|resolve]
+  /grasp explain [SOURCE] [--repo PATH] [--docs DIR] [--name SLUG]
+                 [--lessons all|free|none] [--no-image]
+  /grasp explain check PAGE [--repo PATH] [--base REF]
   /grasp record ["NAME"]
   /grasp map
   /grasp setup
@@ -73,6 +84,16 @@ FLAGS
                     skill is calling, so page knows which part of the page to write.
   --post            off. With review only: offer to post the review comments, after you
                     approve the exact text.
+  --repo PATH       path, repeatable. With explain only. Default: the repositories this
+                    session changed, else the current one.
+  --docs DIR        folder. With explain only. Default: "markdown folder" in .grasp.md, else
+                    docs/how-it-works/.
+  --name SLUG       slug. With explain only. Default: named after the work.
+  --lessons VALUE   With explain only. all (default; free when .grasp.md says
+                    linkedin learning: no), free (no LinkedIn Learning), none.
+  --no-image        off (on when .grasp.md says illustrations: no). With explain only:
+                    diagrams only, no illustration.
+  --base REF        ref. With explain check only. Default: the integration branch.
 
 SUBCOMMANDS
   verify ISSUE|PR   prove an existing fix works with fresh evidence; fill the "after" half.
@@ -84,6 +105,13 @@ SUBCOMMANDS
   page ISSUE|PR     write or patch the issue's learning page from the current state, and
                     nothing else (no code, commits or tracker writes). The before half when
                     there is no branch diff and no pull request yet, otherwise the after half.
+  explain [SOURCE]  explain finished work with no issue, or wider than one issue, as a page
+                    and its code sub-page: every file, setting and checked lesson, with the
+                    change map. SOURCE: nothing (this session), a pull request number or
+                    URL, a branch, or BASE..HEAD. No code changes. Commits only under the
+                    project's rule or after a yes.
+  explain check PAGE
+                    run the checks on an existing explain page and report. Writes nothing.
   record ["NAME"]   write or update the run record for the task in this conversation: five
                     lines (asked, changed, checked, problems, next), a diagram when the
                     change has a shape, then rebuild the table of all runs. Nothing else.
@@ -132,6 +160,8 @@ EXAMPLES
   /grasp review 42                review pull request 42, report only, update the page
   /grasp resolve 42               work the review threads on your pull request 42
   /grasp page PROJ-123 --step verify   refresh the page after your own verify skill ran
+  /grasp explain                  explain what this session did, with no issue
+  /grasp explain 23 --repo ../web --lessons free   explain pull request 23, code in ../web
   /grasp record                   what did this session do? write it down in five lines
   /grasp map                      refresh the overview of the app and its features
   /grasp setup                    first time in a repo: settings, run records, the overview
@@ -141,6 +171,8 @@ IT WILL ASK YOU
   - why the change is wanted, when the issue does not say
   - one question at a time about anything that would change what gets built
   - which approach to take (no code before you pick)
+  - explain: which work to explain, when the session holds several and none is named; where
+    the docs go, when there is no .grasp.md and no docs/ folder
   - before a branch reset, a push, opening a pull request, any tracker write (exact text shown)
   - a prediction question before the build (never blocking)
   - setup (and the first run in a repo): the tracker and one real issue to test it with,
@@ -165,6 +197,7 @@ REFERENCES
   references/verify.md       evidence rules and the gate
   references/notebook.md     page layout, toggles, diagrams, concepts, links, illustrations
   references/records.md      run records, the AGENTS.md block, the Stop hook
+  references/explain.md      explain: finished work with no issue, the page and code sub-page
   references/overview.md     app map, architecture page, feature pages, workspaces
   references/setup.md        setup, update, connecting skills
   references/review.md       review and resolve: pull requests, and the page they update
@@ -333,6 +366,15 @@ from the current state and do nothing else: no code, no commits, no pushes, no t
    for the prediction and never starts a walk: it sets the status and, on an after half, ends
    with `Walk ready: /grasp walk KEY`.
 
+## `explain` subcommand
+
+Follow [references/explain.md](references/explain.md): explain finished work that has no issue,
+or is wider than one, as a page and its code sub-page in the standard 2 layout. It gathers the
+facts from the session and git, shows the outline first, patches existing pages, runs the three
+checks, adds the router rows and the run record, and ends with the walk line. `explain check PAGE`
+runs the checks and writes nothing. It never changes code, and with no `.grasp.md` it uses the
+defaults and does not run `setup`.
+
 ## `record` subcommand
 
 Follow "`/grasp record`" in [references/records.md](references/records.md): write or update the
@@ -373,6 +415,7 @@ confirmation before writing pages.
 - [references/verify.md](references/verify.md): step 5 and `verify`.
 - [references/notebook.md](references/notebook.md): steps 3, 6, 7 and `page`.
 - [references/records.md](references/records.md): step 7, `record`, the block in `AGENTS.md`.
+- [references/explain.md](references/explain.md): `explain`.
 - [references/overview.md](references/overview.md): `map`, setup's overview, workspaces.
 - [references/setup.md](references/setup.md): `setup`, `update` and the first run.
 - [references/review.md](references/review.md): `review` and `resolve`.

@@ -26,6 +26,10 @@ toggle title states a conclusion, never "Details". Run `grasp-tools lint-page PA
 - While `Status: planned` or `building`, a visible `## Steps` list and a `## Predict` question sit
   above `## More detail`. At `built`, both move into the "Planned and built" fold.
 - A blocker is a `> [!WARNING]` alert under the title, never folded.
+- **`explain` only:** `/grasp explain` adds the three folds `Set it up`, `When something goes
+  wrong` and `How we built it, step by step`, between "Open and not verified" and the walk fold,
+  and its title has no key ([explain.md](../references/explain.md)). Delete those three folds on
+  every other page.
 
 ---
 
@@ -109,6 +113,15 @@ flowchart LR
 </details>
 <details><summary>Open and not verified: {what is still open}</summary>
 <p>{what was not checked, and why}</p>
+</details>
+<details><summary>Set it up: {n} commands, then one that shows it worked</summary>
+<ol><li><code>{command}</code></li><li><code>{command that shows it worked}</code></li></ol>
+</details>
+<details><summary>When something goes wrong: {n} cases, each with its fix</summary>
+<table><tr><th>What you see</th><th>What to do</th></tr><tr><td>{the real message}</td><td>{the fix}</td></tr></table>
+</details>
+<details><summary>How we built it, step by step: {n} steps, {what went wrong, in a few words}</summary>
+<ol><li>{what was done, what went wrong there and how it was fixed}</li></ol>
 </details>
 <!-- grasp:walk:start -->
 <details><summary>Your walk: not done yet. Run /grasp walk {KEY}</summary></details>
