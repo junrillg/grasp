@@ -796,6 +796,16 @@ test_coverage_without_head_sees_the_working_tree() {
   assert_eq 0 "$rc" "and exits 0"
 }
 
+test_coverage_page_with_no_code_spans_names_nothing() {
+  local p t out rc=0; p=$(cov_repo); t=$(new_tmp); printf 'only prose, no code spans\n' > "$t/p.md"
+  out=$(gt coverage --repo "$p" --base HEAD~1 --head HEAD "$t/p.md") || rc=$?
+  assert_eq 1 "$rc" "exit 1"
+  assert_contains "$out" "MISSING web/a.ts" "first file"
+  assert_contains "$out" "MISSING web/b c.ts" "second file"
+  assert_contains "$out" "MISSING web/deep/d.ts" "third file"
+  assert_contains "$out" "0 of 3 changed files named" "count"
+}
+
 # ---- page template ----
 
 TEMPLATE="$ROOT/skills/grasp/templates/issue-page.md"

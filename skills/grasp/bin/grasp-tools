@@ -1008,13 +1008,14 @@ cmd_coverage() {
   done
   total=$(printf '%s' "$changed" | awk 'END { print NR }')
 
+  # the leading blank line keeps FNR == NR from outliving an empty quoted list
   # named: the path, REPO/path, or under a `folder/**` (with or without the REPO/ in front)
   missing=$(awk -F'\t' '
     FNR == NR { if ($0 ~ /\/\*\*$/) fold[++nf] = substr($0, 1, length($0) - 2); else exact[$0] = 1; next }
     { n = $1; f = substr($0, length(n) + 2); full = n "/" f
       if ((f in exact) || (full in exact)) next
       for (i = 1; i <= nf; i++) if (index(f, fold[i]) == 1 || index(full, fold[i]) == 1) next
-      print "MISSING " full }' <(cv_quoted "${pages[@]}") <(printf '%s' "$changed") | sort)
+      print "MISSING " full }' <({ printf '\n'; cv_quoted "${pages[@]}"; }) <(printf '%s' "$changed") | sort)
 
   # stale: a path in a first column that is not changed and not in any repository
   stale=$(cv_firstcol "${pages[@]}" | grep -E '^[A-Za-z0-9_.@/-]+/[A-Za-z0-9_.@-]+\.[A-Za-z0-9_]+$' | sort -u |
