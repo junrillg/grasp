@@ -245,8 +245,9 @@ the whole code base as boxes coloured by what the change did. Green is new, ambe
 is untouched, with file counts. On an issue page it is the picture under `## Where it fits`, with
 this issue's parts highlighted. `grasp-tools change-map --repo DIR --base REF` prints it from git
 (boxes are folders, cut further while there are more than 18); rename the boxes to the app map's
-names, keep the folder in the label, and add the arrows by hand from the code. Keep its legend line
-under it.
+names, keep the folder in the label, and add the arrows by hand from the code, plus a box for each
+outside system the change talks to (a database, storage, an outside API), grey unless it is new.
+Keep its legend line under it.
 
 An issue page has two levels, and each works alone:
 
@@ -363,8 +364,10 @@ A short page has no ideas section.
 Every idea gets one specific video and one page to read, in the format of the template. Search with
 the idea plus the project's stack.
 
-- **The video** is one YouTube video or, when `.grasp.md` says `linkedin learning: yes`, one video
-  inside a LinkedIn Learning course. For LinkedIn Learning, open the course page, find the video
+- **The video** is one YouTube video or one video inside a LinkedIn Learning course. LinkedIn
+  Learning is allowed when `.grasp.md` says `linkedin learning: yes`, and, for `explain` with
+  `--lessons all`, when there is no `.grasp.md` or no such line. Never when the settings say `no`,
+  and never under `--lessons free`. For LinkedIn Learning, open the course page, find the video
   whose title names the idea and use that video's own address (the course and the video, two
   parts). Never the course address, a channel, a playlist or a search page as the video. A course
   may follow on a `Course:` line, always in addition to the video line and never instead of it. It
@@ -372,6 +375,8 @@ the idea plus the project's stack.
 - The length on the Watch line is read from the video's own page, or from the course's table of
   contents for a LinkedIn Learning video. `check-link` does not print it. When it cannot be read,
   leave the length out of the line. Never guess it.
+- A video whose title does not name the idea or its field is the wrong video, whichever site it is
+  on: drop it.
 - Prefer a video that explains before it codes. For the design idea, prefer one that draws the
   system.
 - When a lesson uses an older version, another tool or another language than this code, say so in a few words on that link's line or in the fold's text.
@@ -380,7 +385,8 @@ the idea plus the project's stack.
 - The confirmation is `content checked` only when the chapters, the transcript or the course's
   table of contents were read and name the idea. Otherwise it is `title match only`. Never claim
   to have watched it.
-- Run `grasp-tools check-link URL` on every video. For YouTube it prints `ok`, the title and the
+- Run `grasp-tools check-link URL` on every video, with the URL in quotes in the shell (`?` is a
+  glob). For YouTube it prints `ok`, the title and the
   channel: use that title and channel. For LinkedIn Learning it prints `ok`, the final address and
   the title. `fail redirected FINAL` on a LinkedIn Learning video means the video is gone: pick
   another video, do not fall back to the course.

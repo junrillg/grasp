@@ -33,6 +33,7 @@ task.
 | `--name` | slug, with `explain` | no | named after the work | File name of the page; the sub-page adds `-code`. |
 | `--lessons` | `all`, `free`, `none`, with `explain` | no | `all`, or `free` when `.grasp.md` says `linkedin learning: no` | `free` drops LinkedIn Learning. `none` turns the lessons off. |
 | `--no-image` | flag, with `explain` | no | off, or on when `.grasp.md` says `illustrations: no` | Diagrams only, no illustration. |
+| `check` | subcommand, with `explain` | no | none | Run the checks on an existing explain page, the main page `NAME.md`, and write nothing. |
 | `--base` | ref, with `explain check` | no | the page's own ranges, else the integration branch | What the work is compared with. |
 | `record` | subcommand | no | none | Write or update the run record for the task in this conversation: asked, changed, checked, problems, next. Nothing else: no code, commits or tracker writes. The block that `setup` adds to `AGENTS.md` makes every agent run do this. |
 | `"NAME"` | quoted text, with `record` | no | named after what changed | The record's short name. |

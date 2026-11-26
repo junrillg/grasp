@@ -25,12 +25,12 @@ differently or adds.
 | -------- | ---- | ------- | ------- |
 | `SOURCE` | nothing, a pull request number or URL, a branch name, or `BASE..HEAD` | the work done in this session | What to explain. Several pieces of work in the session and none named: ask which |
 | `--repo` | path, repeatable | the repositories this session changed, else the current one | Where the code is. The docs may live in another repository than the code |
-| `--docs` | folder | `markdown folder` in `.grasp.md`, else `docs/how-it-works/` | Where the pages go. No `.grasp.md` and no `docs/` folder: ask |
+| `--docs` | folder | `markdown folder` in `.grasp.md`, else `docs/how-it-works/` at the root of the folder the session was started in (the workspace root when the session changed several repositories) | Where the pages go. No `.grasp.md` and no `docs/` folder there: ask |
 | `--name` | slug | named after the work, in the numbering and title style of the pages already in the folder | File name of the page. The sub-page is `NAME-code.md` |
-| `--lessons` | `all`, `free`, `none` | `all`; `free` when `.grasp.md` says `linkedin learning: no` | `free` drops LinkedIn Learning videos and `Course:` lines. `none` writes `<p>Lessons turned off</p>` in each idea's fold |
+| `--lessons` | `all`, `free`, `none` | `all`; `free` when `.grasp.md` says `linkedin learning: no` | `all` allows a LinkedIn Learning video when `.grasp.md` says `linkedin learning: yes` or has no such line (or there is no `.grasp.md`). `free` drops LinkedIn Learning videos and `Course:` lines. `none` writes `<p>Lessons turned off</p>` in each idea's fold |
 | `--no-image` | flag | off; on when `.grasp.md` says `illustrations: no` | Diagrams only: no illustration and no cutaway picture |
-| `check PAGE` | subcommand | none | Run "Prove" on an existing page and write nothing |
-| `--base` | ref, with `check` | the integration branch | What the work is compared with. A page with a `Checked against:` line is checked against its own ranges; `--base` is used when it has none, or when you pass it |
+| `check PAGE` | subcommand | none | Run "Prove" on an existing page and write nothing. `PAGE` is the main page, `NAME.md`; the sub-page is `NAME-code.md`, derived from it. Given a `-code.md` file, `check` uses its main page |
+| `--base` | ref, with `check` | the page's own ranges, else the integration branch | What the work is compared with. See "`check PAGE`" |
 
 ## Rules
 
@@ -63,7 +63,7 @@ both. Settings used:
 | `run records` | The folder for the run record |
 | `linkedin learning` | `no` means `--lessons free` |
 | `illustrations` | `no` means `--no-image` |
-| `integration branch` | The base for coverage and for `check` |
+| `integration branch` | The base when no other is named |
 | `Voice` | How the pages read |
 | `## Reader` | Which ideas to teach |
 
@@ -80,7 +80,9 @@ report and never run it (this overrides the first-run rule in SKILL.md). The hel
   of each. `SOURCE` decides the range: a pull request (its body, checks and head or merge commit),
   a branch against the merge base with the integration branch, `BASE..HEAD` as given, or this
   session's commits and working tree. `REPO` in `REPO@BASE..HEAD` is the repository folder's
-  name ([notebook.md](notebook.md), "A snapshot and a living page").
+  name ([notebook.md](notebook.md), "A snapshot and a living page"). When the work was committed
+  straight onto the integration branch, `BASE` is the commit that branch was at before the work's
+  first commit; when the session and the log do not tell, ask.
 - **Then, what git does not see:** settings in a web console, installed tools, permissions, steps a
   person must do.
 - Read each small file again; never describe a file from memory.
@@ -90,8 +92,7 @@ report and never run it (this overrides the first-run rule in SKILL.md). The hel
 
 ### 3. Show the outline
 
-Print: the two sentences, the change map with its arrows, the ideas (design idea first, at most
-8), the pictures, and the count of files per part. Go on unless the person objects or the source
+Print: the two sentences, the change map with its arrows, the ideas (design idea first), the pictures, and the count of files per part. Go on unless the person objects or the source
 is ambiguous. The change map is `grasp-tools change-map --repo DIR... --base REF`, with the
 arrows added and the boxes renamed as "Change map and depth" in [notebook.md](notebook.md) says;
 the illustration uses the same part names as its labels.
@@ -108,11 +109,12 @@ The page follows [templates/issue-page.md](../templates/issue-page.md) and "Stan
 | Part | On an `explain` page |
 | ---- | -------------------- |
 | Title | The work's name in the folder's title style, with no key |
+| `{KEY}` | Everywhere a template shows `{KEY}` (the titles, the `Code for [...]` link, the link to the sub-page, the walk fold's `/grasp walk` line) use `NAME` |
 | Status line | `Status: built` (`verified` only when a Proof row quotes a run made now). Replace `[issue]` with `no issue`, and `[pull request]` with `no pull request` when there is none. `Feature:` links the feature page, or `none` |
 | Asked | The request, or the pull request's title, 30 words at most |
 | Not done | Says who can finish it. Say here, plainly, when the work is not merged or not live |
 | Where it fits | The change map. More than about three parts: also the cutaway picture `NAME-change-map.png` ("Illustrations" in [notebook.md](notebook.md)) |
-| Ideas | The design idea first, then at most 7 more. `--lessons` applies to every fold |
+| Ideas | The design idea first, then at most 7 more, 8 in all. `--lessons` applies to every fold |
 | Illustration | Under `## In two sentences`, unless `--no-image`: `assets/NAME-idea.png` |
 | Length | Never a short page. Every fold and the sub-page are complete |
 
@@ -155,7 +157,7 @@ reads commits. For a repository with uncommitted or untracked work:
   line range in prose (`` `src/cart/total.ts` lines 10-24, not committed yet ``), with one or two
   sentences and no fence.
 - Put one line under the status lines: `Not pinned yet: this work was not committed when the page was written.`
-- Run `coverage` with `--base` and no `--head` (step 5).
+- `coverage` takes `--base` for it (step 5).
 - The report tells the person to finish the page with `/grasp repair NAME --only code` after the
   commit: it pins the page and pulls the real lines.
 - `explain` never commits the code itself to get around this.
@@ -169,15 +171,18 @@ them, named `NAME-what.png`.
 Run, and fix everything they print:
 
 ```
-grasp-tools lint-page PAGE PAGE-code.md
-grasp-tools snippet-check --repo DIR PAGE-code.md
-grasp-tools coverage --repo DIR --repo DIR2 [--base REF] PAGE PAGE-code.md
+grasp-tools lint-page NAME.md NAME-code.md
+grasp-tools snippet-check --repo DIR [--repo DIR2] NAME-code.md
+grasp-tools coverage --repo DIR [--repo DIR2] [--base REF] NAME.md NAME-code.md
 ```
 
+Give the main page first: `coverage` reads the ranges from the first page given, and the
+sub-page has no `Checked against:` line.
+
 - Everything committed: leave `--base` out. Each range is read from `Checked against:`.
-- Uncommitted or untracked files in the work (a head of `uncommitted`): pass `--base REF`, one ref that exists in every
-  repository (usually the integration branch). It counts those files too. With `--head`, only
-  commits count.
+- Uncommitted or untracked files in the work (a head of `uncommitted`): pass `--base REF`, one ref
+  that exists in every repository (usually the integration branch), and no `--head`. It counts
+  those files too. With `--head`, only commits count.
 - Repositories that need different bases and have uncommitted work: run `coverage` once per
   repository. A `STALE` line for a path of the other repository is then expected; every `MISSING`
   line is not.
@@ -186,6 +191,8 @@ grasp-tools coverage --repo DIR --repo DIR2 [--base REF] PAGE PAGE-code.md
 - Every diagram rendered, or at least linted, and the illustration opened and looked at. Say in
   the report which of these did not run.
 - Each number and claim on the pages checked against its source once.
+- The project's doc build, when it has one. Separate a failure that was already there from a new
+  one.
 
 ### 6. Connect it
 
@@ -199,22 +206,26 @@ grasp-tools coverage --repo DIR --repo DIR2 [--base REF] PAGE PAGE-code.md
   link to the page ([records.md](records.md)). A run that explains older work gets its own, even
   though its only writes are notebook pages. Then `grasp-tools record-index`, after reading its
   diff: stage only your own rows.
-- Stage only your own files. Commit and push only under the project's standing rule or after a yes.
+- Stage only your own files. Commit and push as the Rules say.
 
 ### 7. Report
 
 - Where the pages are.
-- Coverage, `N of N changed files named`.
+- Coverage, `N of M changed files named` for each repository (one `coverage` run per repository,
+  where a `STALE` line for another repository's path is expected), then the total from the run
+  over all of them.
 - What is not finished, and who can finish it.
 - Which checks did not run, and any bug found.
 - With no `.grasp.md`: that `/grasp setup` is available.
-- Work not committed yet: the page is finished by `/grasp repair NAME --only code` after the commit.
+- Work not committed yet: the finishing line from "Work that is not committed yet".
 - Last line: `Walk ready: /grasp walk NAME`. Never start a walk and never wait for one.
 
 ## `check PAGE`
 
 Run step 5 on `PAGE` and report. Write nothing: no page, router row, run record or image.
-`--repo` is repeated for each repository. When `PAGE` has a `Checked against:` line, run
-`coverage` with no `--base`: each repository's range is read from the page. Only when the page
-has no such line does `--base` apply, defaulting to the integration branch. An explicit `--base`
-always wins.
+`PAGE` is the main page, `NAME.md`; the sub-page is the same name plus `-code.md`. Given a
+`-code.md` file, use its main page. `--repo` is repeated for each repository. When the page has a
+`Checked against:` line, run `coverage` with no `--base`: each repository's range is read from the
+page. Unless a head reads `uncommitted`: then `--base`, default the integration branch. Only when
+the page has no `Checked against:` line does `--base` apply, defaulting to the integration branch.
+An explicit `--base` always wins.
